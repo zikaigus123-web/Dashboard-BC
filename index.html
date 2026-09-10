@@ -794,6 +794,13 @@
         let map = null;
         let mapMarkers = [];
 
+        function resetChart(id) {
+            if (chartInstances[id]) {
+                chartInstances[id].destroy();
+                delete chartInstances[id];
+            }
+        }
+
         const COORDS = {
             "JKT": { lat: -6.2088, lng: 106.8456, nama: "Jakarta" },
             "SMD": { lat: -0.5022, lng: 117.1536, nama: "Samarinda" },
