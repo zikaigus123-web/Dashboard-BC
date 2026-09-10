@@ -1,0 +1,631 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard Monitoring Development 8 DP</title>
+
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+    
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Leaflet CSS (Map) -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin=""/>
+    
+    <!-- SheetJS (Excel) -->
+    <script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
+
+    <style>
+        :root {
+            --primary-bg: #e5e7eb;
+            --sidebar-bg: #1e1e1e;
+            --sidebar-hover: #333333;
+            --brand-color: #ffc107;
+            --brand-hover: #e0a800;
+            --text-main: #333;
+            --card-bg: #ffffff;
+            --border-color: #000000;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--primary-bg);
+            color: var(--text-main);
+            overflow-x: hidden;
+            margin: 0;
+        }
+
+        /* --- SIDEBAR --- */
+        #appContainer { display: flex; min-height: 100vh; }
+        
+        .sidebar {
+            width: 250px;
+            background-color: var(--sidebar-bg);
+            color: white;
+            transition: all 0.3s ease;
+            display: flex;
+            flex-direction: column;
+            position: sticky;
+            top: 0;
+            height: 100vh;
+            z-index: 1000;
+            border-right: 3px solid var(--brand-color);
+        }
+        .sidebar.collapsed { width: 70px; }
+        .sidebar-brand {
+            padding: 1.5rem 1rem;
+            font-size: 1.2rem;
+            font-weight: 800;
+            text-align: center;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            color: var(--brand-color);
+        }
+        .nav-link-custom {
+            color: #d1d5db;
+            padding: 1rem 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            text-decoration: none;
+            border-left: 4px solid transparent;
+            font-weight: 600;
+            transition: 0.2s;
+            white-space: nowrap;
+        }
+        .nav-link-custom:hover, .nav-link-custom.active {
+            background-color: rgba(255, 193, 7, 0.1);
+            color: var(--brand-color);
+            border-left-color: var(--brand-color);
+        }
+        .sidebar.collapsed .nav-text { display: none; }
+
+        /* --- MAIN CONTENT & HEADER --- */
+        .main-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            width: calc(100% - 250px);
+        }
+        
+        .topbar {
+            background: #ffffff;
+            padding: 0.5rem 1.5rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 2px solid var(--border-color);
+            position: sticky;
+            top: 0;
+            z-index: 999;
+        }
+
+        .header-logos img { height: 40px; }
+
+        .content-body { padding: 1.5rem; }
+
+        /* --- FILTER BAR --- */
+        .filter-container {
+            background: #ffffff;
+            border: 2px solid var(--border-color);
+            border-radius: 6px;
+            padding: 10px 15px;
+            margin-bottom: 15px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            align-items: center;
+            justify-content: space-between;
+            box-shadow: 2px 2px 0px rgba(0,0,0,0.1);
+        }
+        
+        .filter-group { display: flex; align-items: center; gap: 8px; }
+        .filter-group label { font-weight: 700; font-size: 0.85rem; }
+        .form-select-sm { border: 1px solid #777; font-weight: 600; min-width: 130px; }
+
+        .btn-brand {
+            background-color: var(--brand-color);
+            color: #000;
+            border: 2px solid #000;
+            font-weight: 800;
+            transition: 0.2s;
+        }
+        .btn-brand:hover { background-color: var(--brand-hover); color: #000; transform: translateY(-1px); }
+
+        /* --- CARDS & KPI --- */
+        .card-custom {
+            background: var(--card-bg);
+            border-radius: 6px;
+            border: 2px solid var(--border-color);
+            padding: 1rem;
+            margin-bottom: 1rem;
+            box-shadow: 3px 3px 0px rgba(0,0,0,0.1);
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+        }
+        .card-header-title {
+            background: var(--brand-color);
+            border: 2px solid var(--border-color);
+            padding: 4px;
+            text-align: center;
+            font-weight: 800;
+            font-style: italic;
+            border-radius: 4px;
+            margin-bottom: 10px;
+            font-size: 0.95rem;
+        }
+        .kpi-title { font-size: 0.8rem; color: #555; font-weight: 700; text-transform: uppercase; }
+        .kpi-value { font-size: 1.8rem; font-weight: 800; color: #000; line-height: 1.1; margin-top: 5px; }
+
+        /* --- CHARTS --- */
+        .chart-wrapper { position: relative; flex: 1; min-height: 220px; width: 100%; }
+
+        /* --- TABLE --- */
+        .table-custom th {
+            background-color: var(--brand-color) !important;
+            color: #000 !important;
+            border: 1px solid var(--border-color);
+            font-weight: 700;
+            text-align: center;
+            font-size: 0.85rem;
+        }
+        .table-custom td {
+            border: 1px solid #ccc;
+            font-size: 0.85rem;
+            vertical-align: middle;
+        }
+
+        /* --- MAP --- */
+        #mapArea { height: 350px; width: 100%; border-radius: 6px; border: 1px solid #ccc; z-index: 1; }
+
+        /* --- FULLSCREEN FIX --- */
+        :fullscreen .sidebar { display: none !important; }
+        :fullscreen .topbar { display: none !important; }
+        :fullscreen .main-content { width: 100% !important; }
+        :fullscreen .content-body { padding: 10px; overflow-y: auto; height: 100vh; }
+    </style>
+</head>
+<body>
+
+    <div id="appContainer">
+        <!-- SIDEBAR -->
+        <div class="sidebar" id="sidebar">
+            <div class="sidebar-brand">
+                <i class="fas fa-chart-line fs-3"></i>
+                <span class="nav-text">8 DP Portal</span>
+            </div>
+            <div class="d-flex flex-column mt-3 gap-1">
+                <a href="#" class="nav-link-custom active"><i class="fas fa-home"></i> <span class="nav-text">Dashboard</span></a>
+                <a href="#" class="nav-link-custom"><i class="fas fa-database"></i> <span class="nav-text">Database</span></a>
+                <a href="#" class="nav-link-custom"><i class="fas fa-cog"></i> <span class="nav-text">Pengaturan</span></a>
+            </div>
+        </div>
+
+        <!-- MAIN CONTENT -->
+        <div class="main-content">
+            
+            <!-- TOPBAR -->
+            <div class="topbar">
+                <div class="d-flex align-items-center gap-3">
+                    <button class="btn btn-light border border-dark fw-bold" onclick="toggleSidebar()"><i class="fas fa-bars"></i></button>
+                    <div class="header-logos d-none d-md-flex align-items-center gap-2">
+                        <img src="logo ut.png" alt="UT" onerror="this.src='https://via.placeholder.com/80x40?text=Logo+UT'">
+                    </div>
+                </div>
+                <h4 class="mb-0 fw-bold fst-italic d-none d-lg-block" style="letter-spacing: -0.5px;">DASHBOARD MONITORING DEVELOPMENT 8 DP</h4>
+                <div class="header-logos">
+                    <img src="logo corpu.png" alt="Corpu" onerror="this.src='https://via.placeholder.com/80x40?text=Corpu'">
+                </div>
+            </div>
+
+            <div class="content-body" id="dashboardView">
+                
+                <!-- FILTER & ACTIONS -->
+                <div class="filter-container">
+                    <div class="d-flex flex-wrap gap-3">
+                        <div class="filter-group">
+                            <label>Filter Area:</label>
+                            <select id="filterArea" class="form-select form-select-sm" onchange="renderDashboard()">
+                                <option value="ALL">Semua Area</option>
+                                <option value="JKT">Jakarta (JKT)</option>
+                                <option value="SMD">Samarinda (SMD)</option>
+                                <option value="BLP">Balikpapan (BLP)</option>
+                                <option value="PKB">Pekanbaru (PKB)</option>
+                                <option value="BJM">Banjarmasin (BJM)</option>
+                                <option value="UPG">Ujung Pandang (UPG)</option>
+                            </select>
+                        </div>
+                        <div class="filter-group">
+                            <label>Filter Status:</label>
+                            <select id="filterStatus" class="form-select form-select-sm" onchange="renderDashboard()">
+                                <option value="ALL">Semua Status</option>
+                                <option value="DONE">Done</option>
+                                <option value="ON PROGRESS">On Progress</option>
+                                <option value="NOT YET">Not Yet</option>
+                            </select>
+                        </div>
+                        <div class="filter-group">
+                            <label>Filter PIC:</label>
+                            <select id="filterPIC" class="form-select form-select-sm" onchange="renderDashboard()">
+                                <option value="ALL">Semua PIC</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div class="d-flex gap-2">
+                        <input type="file" id="importExcel" class="d-none" accept=".xlsx, .xls" onchange="processExcel(event)">
+                        <button class="btn btn-brand btn-sm" onclick="document.getElementById('importExcel').click()"><i class="fas fa-upload me-1"></i> Upload Excel</button>
+                        <button class="btn btn-dark btn-sm fw-bold border-2 border-dark" onclick="toggleFullscreen()"><i class="fas fa-tv me-1"></i> Fullscreen</button>
+                    </div>
+                </div>
+
+                <!-- KPI SCORECARDS -->
+                <div class="row g-3 mb-3">
+                    <div class="col-md-4">
+                        <div class="card-custom text-center justify-content-center">
+                            <div class="kpi-title">Total Karyawan (Peserta)</div>
+                            <div class="kpi-value text-dark" id="kpiTotal">0</div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="card-custom text-center justify-content-center">
+                            <div class="kpi-title">Coverage (Tercapai / Target)</div>
+                            <div class="kpi-value text-success" id="kpiCoverage">0 <span style="font-size: 1rem; color: #555;">(0%)</span></div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="card-custom text-center justify-content-center">
+                            <div class="kpi-title">Progress (On Progress / Not Yet)</div>
+                            <div class="kpi-value"><span class="text-warning" id="kpiProgress">0</span> <span style="color:#ccc;">/</span> <span class="text-danger" id="kpiNotYet">0</span></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- PIE CHARTS ROW -->
+                <div class="row g-3 mb-3">
+                    <div class="col-md-4">
+                        <div class="card-custom">
+                            <div class="card-header-title">Training Coverage</div>
+                            <div class="chart-wrapper"><canvas id="pieCoverage"></canvas></div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="card-custom">
+                            <div class="card-header-title">Training Participant</div>
+                            <div class="chart-wrapper"><canvas id="pieParticipant"></canvas></div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="card-custom">
+                            <div class="card-header-title">Distribution By Area</div>
+                            <div class="chart-wrapper"><canvas id="pieArea"></canvas></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- BAR CHARTS ROW -->
+                <div class="row g-3 mb-3">
+                    <div class="col-md-6">
+                        <div class="card-custom">
+                            <div class="card-header-title">Training Coverage per Area</div>
+                            <div class="chart-wrapper"><canvas id="barCoverage"></canvas></div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="card-custom">
+                            <div class="card-header-title">Training Participant per Area</div>
+                            <div class="chart-wrapper"><canvas id="barParticipant"></canvas></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- MAP & TABLE ROW -->
+                <div class="row g-3">
+                    <div class="col-xl-5">
+                        <div class="card-custom p-2">
+                            <div class="card-header-title">Peta Persebaran Lokasi</div>
+                            <div id="mapArea"></div>
+                        </div>
+                    </div>
+                    <div class="col-xl-7">
+                        <div class="card-custom p-2">
+                            <div class="card-header-title">Detail Status Peserta</div>
+                            <div class="table-responsive" style="max-height: 350px;">
+                                <table class="table table-hover table-custom mb-0" id="tablePeserta">
+                                    <thead style="position: sticky; top: 0; z-index: 10;">
+                                        <tr>
+                                            <th>Nama / NRP</th>
+                                            <th>Area</th>
+                                            <th>PIC</th>
+                                            <th>Modul 1</th>
+                                            <th>Modul 2</th>
+                                            <th>Final Status</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr><td colspan="6" class="text-center py-4 text-muted">Silakan upload data Excel terlebih dahulu.</td></tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2"></script>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
+
+    <script>
+        Chart.register(ChartDataLabels);
+
+        // Sidebar & Fullscreen
+        function toggleSidebar() { document.getElementById('sidebar').classList.toggle('collapsed'); setTimeout(() => { if(map) map.invalidateSize(); }, 300); }
+        function toggleFullscreen() {
+            if (!document.fullscreenElement) {
+                document.documentElement.requestFullscreen();
+            } else {
+                document.exitFullscreen();
+            }
+        }
+        document.addEventListener('fullscreenchange', () => { setTimeout(() => { if(map) map.invalidateSize(); }, 300); });
+
+        // Database Global
+        let rawData = [];
+        let chartInstances = {};
+        let map = null;
+        let mapMarkers = [];
+
+        // Koordinat Kota Fix
+        const COORDS = {
+            "JKT": { lat: -6.2088, lng: 106.8456, nama: "Jakarta" },
+            "SMD": { lat: -0.5022, lng: 117.1536, nama: "Samarinda" },
+            "BLP": { lat: -1.2379, lng: 116.8529, nama: "Balikpapan" },
+            "PKB": { lat: 0.5333, lng: 101.4500,  nama: "Pekanbaru" },
+            "BJM": { lat: -3.3167, lng: 114.5901, nama: "Banjarmasin" },
+            "UPG": { lat: -5.1476, lng: 119.4327, nama: "Ujung Pandang" }
+        };
+        const AREA_KEYS = ["JKT", "SMD", "BLP", "PKB", "BJM", "UPG"];
+
+        // Init Map
+        function initMap() {
+            map = L.map('mapArea').setView([-2.5, 117.5], 4.5);
+            L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
+                attribution: '&copy; OpenStreetMap & CartoDB'
+            }).addTo(map);
+        }
+        initMap();
+
+        // Process Excel
+        function processExcel(e) {
+            const file = e.target.files[0];
+            if(!file) return;
+            const reader = new FileReader();
+            reader.onload = function(evt) {
+                const data = evt.target.result;
+                const workbook = XLSX.read(data, { type: 'binary' });
+                const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+                
+                // Gunakan header row 2 jika excel sesuai format foto 3
+                const jsonRaw = XLSX.utils.sheet_to_json(firstSheet, { defval: "" });
+                
+                rawData = [];
+                let picSet = new Set();
+
+                jsonRaw.forEach(row => {
+                    let name = row['NAME'] || row['NAMA'] || '';
+                    if(!name) return; // Skip baris kosong
+                    
+                    let nrp = row['NRP'] || '';
+                    let area = String(row['Cabang/ Site'] || row['BRANCH/SITE'] || '').toUpperCase().trim();
+                    let pic = row['PIC'] || 'Unknown';
+                    picSet.add(pic);
+
+                    // Membaca status langsung dari Excel
+                    let statM1 = String(row['Status Modul 1'] || '').toUpperCase().trim();
+                    let statM2 = String(row['Status Modul 2'] || '').toUpperCase().trim();
+                    
+                    // Kalkulasi Final Status Participant (Done, On Progress, Not Yet)
+                    let finalStatus = "NOT YET";
+                    let covStatus = "Not Coverage";
+
+                    if (statM1 === "DONE" && statM2 === "DONE") {
+                        finalStatus = "DONE";
+                        covStatus = "Tercoverage";
+                    } else if (statM1 === "DONE" || statM2 === "DONE" || statM1.includes("PROGRESS") || statM2.includes("PROGRESS")) {
+                        finalStatus = "ON PROGRESS";
+                    } else {
+                        finalStatus = "NOT YET";
+                    }
+
+                    rawData.push({ name, nrp, area, pic, statM1, statM2, finalStatus, covStatus });
+                });
+
+                // Update PIC Filter
+                let picSelect = document.getElementById("filterPIC");
+                picSelect.innerHTML = '<option value="ALL">Semua PIC</option>';
+                picSet.forEach(p => {
+                    picSelect.innerHTML += `<option value="${p}">${p}</option>`;
+                });
+
+                alert(`Berhasil memuat ${rawData.length} data karyawan!`);
+                renderDashboard();
+            };
+            reader.readAsBinaryString(file);
+        }
+
+        // Destroy Chart Helper
+        function resetChart(id) {
+            if(chartInstances[id]) chartInstances[id].destroy();
+        }
+
+        // Render Dashboard & Logic
+        function renderDashboard() {
+            if(rawData.length === 0) return;
+
+            const fArea = document.getElementById("filterArea").value;
+            const fStatus = document.getElementById("filterStatus").value;
+            const fPIC = document.getElementById("filterPIC").value;
+
+            // 1. FILTERING DATA
+            let filtered = rawData.filter(d => {
+                let mArea = fArea === "ALL" || d.area === fArea;
+                let mStat = fStatus === "ALL" || d.finalStatus === fStatus;
+                let mPIC = fPIC === "ALL" || d.pic === fPIC;
+                return mArea && mStat && mPIC;
+            });
+
+            // 2. HITUNG KPI
+            let totalPeserta = filtered.length;
+            let totalCoverage = 0;
+            let totalOnProgress = 0;
+            let totalNotYet = 0;
+
+            let areaCount = {};
+            AREA_KEYS.forEach(k => areaCount[k] = { total: 0, cov: 0, notCov: 0, done: 0, prog: 0, ny: 0 });
+
+            filtered.forEach(d => {
+                if(d.covStatus === "Tercoverage") totalCoverage++;
+                if(d.finalStatus === "ON PROGRESS") totalOnProgress++;
+                if(d.finalStatus === "NOT YET") totalNotYet++;
+
+                // Map area to valid keys if exists
+                let k = AREA_KEYS.includes(d.area) ? d.area : null;
+                if(k) {
+                    areaCount[k].total++;
+                    if(d.covStatus === "Tercoverage") areaCount[k].cov++;
+                    else areaCount[k].notCov++;
+
+                    if(d.finalStatus === "DONE") areaCount[k].done++;
+                    else if(d.finalStatus === "ON PROGRESS") areaCount[k].prog++;
+                    else areaCount[k].ny++;
+                }
+            });
+
+            let pctCov = totalPeserta === 0 ? 0 : ((totalCoverage / totalPeserta) * 100).toFixed(1);
+            document.getElementById("kpiTotal").innerText = totalPeserta;
+            document.getElementById("kpiCoverage").innerHTML = `${totalCoverage} <span style="font-size: 1rem; color: #555;">(${pctCov}%)</span>`;
+            document.getElementById("kpiProgress").innerText = totalOnProgress;
+            document.getElementById("kpiNotYet").innerText = totalNotYet;
+
+            // 3. GAMBAR CHARTS
+            const pieOptions = {
+                responsive: true, maintainAspectRatio: false,
+                plugins: {
+                    legend: { position: 'right', labels: { font: {size: 10, weight: 'bold'} } },
+                    datalabels: {
+                        color: '#fff', font: {weight: 'bold'},
+                        formatter: (val, ctx) => {
+                            let sum = ctx.chart.data.datasets[0].data.reduce((a,b)=>a+b,0);
+                            return sum===0||val===0 ? null : (val*100/sum).toFixed(1)+"%";
+                        }
+                    }
+                }
+            };
+
+            // Coverage Pie
+            resetChart('pieCoverage');
+            chartInstances['pieCoverage'] = new Chart(document.getElementById('pieCoverage'), {
+                type: 'pie',
+                data: { labels: ['Tercoverage', 'Not Yet'], datasets: [{ data: [totalCoverage, totalPeserta - totalCoverage], backgroundColor: ['#22c55e', '#ef4444'] }] },
+                options: pieOptions
+            });
+
+            // Participant Pie
+            resetChart('pieParticipant');
+            chartInstances['pieParticipant'] = new Chart(document.getElementById('pieParticipant'), {
+                type: 'pie',
+                data: { labels: ['Done', 'On Progress', 'Not Yet'], datasets: [{ data: [totalCoverage, totalOnProgress, totalNotYet], backgroundColor: ['#22c55e', '#f59e0b', '#ef4444'] }] },
+                options: pieOptions
+            });
+
+            // Area Dist Pie
+            let areaVals = AREA_KEYS.map(k => areaCount[k].total);
+            resetChart('pieArea');
+            chartInstances['pieArea'] = new Chart(document.getElementById('pieArea'), {
+                type: 'pie',
+                data: { labels: AREA_KEYS, datasets: [{ data: areaVals, backgroundColor: ['#3b82f6', '#f97316', '#8b5cf6', '#ec4899', '#14b8a6', '#64748b'] }] },
+                options: pieOptions
+            });
+
+            // Coverage Bar
+            resetChart('barCoverage');
+            chartInstances['barCoverage'] = new Chart(document.getElementById('barCoverage'), {
+                type: 'bar',
+                data: {
+                    labels: AREA_KEYS,
+                    datasets: [
+                        { label: 'Tercoverage', data: AREA_KEYS.map(k=>areaCount[k].cov), backgroundColor: '#22c55e' },
+                        { label: 'Not Yet', data: AREA_KEYS.map(k=>areaCount[k].notCov), backgroundColor: '#ef4444' }
+                    ]
+                },
+                options: { responsive:true, maintainAspectRatio:false, plugins:{datalabels:{display:false}}, scales:{x:{stacked:true},y:{stacked:true}} }
+            });
+
+            // Participant Bar
+            resetChart('barParticipant');
+            chartInstances['barParticipant'] = new Chart(document.getElementById('barParticipant'), {
+                type: 'bar',
+                data: {
+                    labels: AREA_KEYS,
+                    datasets: [
+                        { label: 'Done', data: AREA_KEYS.map(k=>areaCount[k].done), backgroundColor: '#22c55e' },
+                        { label: 'On Progress', data: AREA_KEYS.map(k=>areaCount[k].prog), backgroundColor: '#f59e0b' },
+                        { label: 'Not Yet', data: AREA_KEYS.map(k=>areaCount[k].ny), backgroundColor: '#ef4444' }
+                    ]
+                },
+                options: { responsive:true, maintainAspectRatio:false, plugins:{datalabels:{display:false}} }
+            });
+
+            // 4. MAP UPDATE
+            mapMarkers.forEach(m => map.removeLayer(m));
+            mapMarkers = [];
+            AREA_KEYS.forEach(k => {
+                if(areaCount[k].total > 0 && COORDS[k]) {
+                    let m = L.circleMarker([COORDS[k].lat, COORDS[k].lng], {
+                        radius: 12, fillColor: "#ffc107", color: "#000", weight: 2, fillOpacity: 1
+                    }).bindPopup(`
+                        <div class="text-center">
+                            <b class="fs-6">${COORDS[k].nama}</b><br>
+                            Total Peserta: <b>${areaCount[k].total}</b><br>
+                            Coverage: <b class="text-success">${areaCount[k].cov}</b>
+                        </div>
+                    `).addTo(map);
+                    mapMarkers.push(m);
+                }
+            });
+
+            // 5. TABLE UPDATE
+            let tbody = document.querySelector('#tablePeserta tbody');
+            let html = "";
+            filtered.forEach(d => {
+                let badge = d.finalStatus==="DONE" ? 'bg-success' : d.finalStatus==="ON PROGRESS" ? 'bg-warning text-dark' : 'bg-danger';
+                html += `
+                    <tr>
+                        <td><b>${d.name}</b><br><small class="text-muted">${d.nrp}</small></td>
+                        <td class="text-center fw-bold">${d.area}</td>
+                        <td class="text-center">${d.pic}</td>
+                        <td class="text-center">${d.statM1||'-'}</td>
+                        <td class="text-center">${d.statM2||'-'}</td>
+                        <td class="text-center"><span class="badge ${badge}">${d.finalStatus}</span></td>
+                    </tr>
+                `;
+            });
+            tbody.innerHTML = html || '<tr><td colspan="6" class="text-center text-muted">Data tidak ditemukan pada filter ini.</td></tr>';
+        }
+    </script>
+</body>
+</html>
