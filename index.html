@@ -6,7 +6,7 @@
     <title>Dashboard Monitoring Development 8 DP</title>
 
     <!-- Google Fonts -->
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     
     <!-- Bootstrap 5 CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
@@ -22,16 +22,22 @@
 
     <!-- SheetJS (Excel) -->
     <script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
+    
+    <!-- jsPDF & AutoTable for PDF Export (Fitur Report) -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.1/jspdf.plugin.autotable.min.js"></script>
 
     <style>
         :root {
-            --primary-bg: #e5e7eb;
+            --primary-bg: #F1F5F9;
             --sidebar-bg: #1A1A1A;
+            --sidebar-hover: #2D3748;
             --brand-color: #ffc107;
             --brand-hover: #e0a800;
-            --text-main: #333;
+            --text-main: #2D3748;
+            --text-muted: #718096;
             --card-bg: #ffffff;
-            --border-color: #000000;
+            --border-color: #E2E8F0;
         }
 
         body {
@@ -42,6 +48,44 @@
             margin: 0;
             height: 100vh;
         }
+
+        /* ==========================================
+           MODAL LOGIN STYLES (FITUR BARU)
+           ========================================== */
+        .login-wrapper { 
+            height: 100vh; 
+            display: flex; 
+            align-items: center; 
+            justify-content: center; 
+            background: linear-gradient(135deg, #1A1A1A 0%, #2D3748 100%); 
+            position: fixed; 
+            top: 0; left: 0; width: 100%; z-index: 9999;
+            overflow: hidden; 
+        }
+        .login-wrapper::before { 
+            content: ''; 
+            position: absolute; 
+            width: 400px; 
+            height: 400px; 
+            background: var(--brand-color); 
+            border-radius: 50%; 
+            top: -100px; 
+            left: -100px; 
+            opacity: 0.15; 
+            filter: blur(50px); 
+        }
+        .login-card { 
+            background: rgba(255, 255, 255, 0.98); 
+            padding: 3rem; 
+            border-radius: 1.5rem; 
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5); 
+            width: 100%; 
+            max-width: 420px; 
+            z-index: 10; 
+            border-top: 8px solid var(--brand-color); 
+        }
+        .fade-in { animation: fadeIn 0.4s cubic-bezier(0.4, 0, 0.2, 1); }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(15px); } to { opacity: 1; transform: translateY(0); } }
 
         /* --- SIDEBAR --- */
         #appContainer { display: flex; min-height: 100vh; height: 100vh; }
@@ -126,7 +170,7 @@
         /* --- FILTER BAR --- */
         .filter-container {
             background: #ffffff;
-            border: 2px solid var(--border-color);
+            border: 2px solid #000;
             border-radius: 6px;
             padding: 10px 15px;
             margin-bottom: 15px;
@@ -140,8 +184,8 @@
         }
         
         .filter-group { display: flex; align-items: center; gap: 8px; }
-        .filter-group label { font-weight: 700; font-size: 0.85rem; }
-        .form-select-sm { border: 1px solid #777; font-weight: 600; min-width: 130px; }
+        .filter-group label { font-weight: 700; font-size: 0.85rem; color:#000; }
+        .form-select-sm { border: 1px solid #777; font-weight: 600; min-width: 130px; color:#000; }
 
         .btn-brand {
             background-color: var(--brand-color);
@@ -154,9 +198,9 @@
 
         /* --- CARDS & KPI --- */
         .card-custom {
-            background: var(--card-bg);
+            background: #ffffff;
             border-radius: 6px;
-            border: 2px solid var(--border-color);
+            border: 2px solid #000;
             padding: 1rem;
             margin-bottom: 1rem;
             box-shadow: 3px 3px 0px rgba(0,0,0,0.1);
@@ -166,7 +210,7 @@
         }
         .card-header-title {
             background: var(--brand-color);
-            border: 2px solid var(--border-color);
+            border: 2px solid #000;
             padding: 6px;
             text-align: center;
             font-weight: 800;
@@ -174,21 +218,27 @@
             border-radius: 4px;
             margin-bottom: 10px;
             font-size: 0.95rem;
+            color: #000;
             flex-shrink: 0;
         }
         .kpi-title { font-size: 0.85rem; color: #555; font-weight: 700; text-transform: uppercase; }
         .kpi-value { font-size: 2rem; font-weight: 800; color: #000; line-height: 1.1; margin-top: 5px; }
 
-        /* --- CHARTS (REVISI STRETCHING) --- */
+        /* --- CHARTS (REVISI STRETCHING & KANVAS) --- */
         .chart-wrapper { 
             position: relative; 
-            flex: 1 1 0; /* Flex basis 0 sangat penting agar tidak stretching sembarangan */
-            min-height: 0; /* Mencegah overflow flexbox */
+            flex: 1 1 0; 
+            min-height: 0; 
             width: 100%;
             height: 100%;
             display: flex;
             justify-content: center;
             align-items: center;
+        }
+        .canvas-container {
+            position: relative;
+            width: 100%;
+            height: 100%;
         }
         canvas { max-height: 100% !important; max-width: 100% !important; }
 
@@ -196,7 +246,7 @@
         .table-custom th {
             background-color: var(--brand-color) !important;
             color: #000 !important;
-            border: 1px solid var(--border-color);
+            border: 1px solid #000;
             font-weight: 700;
             text-align: center;
             font-size: 0.85rem;
@@ -208,25 +258,26 @@
             border: 1px solid #ccc;
             font-size: 0.85rem;
             vertical-align: middle;
+            color:#000;
         }
 
         /* --- MAP --- */
-        #mapArea { flex: 1 1 0; min-height: 250px; width: 100%; border-radius: 6px; border: 1px solid #ccc; z-index: 1; }
+        #mapArea { flex: 1 1 0; min-height: 250px; width: 100%; border-radius: 6px; border: 1px solid #000; z-index: 1; }
 
-        /* --- REVISI FULLSCREEN (TANPA SCROLL) --- */
+        /* --- REVISI FULLSCREEN (TANPA SCROLL & RAPI) --- */
         :fullscreen .sidebar { display: none !important; }
         :fullscreen .topbar { display: none !important; }
         :fullscreen .main-content { width: 100% !important; overflow: hidden !important; }
-        :fullscreen .content-body { padding: 10px !important; overflow: hidden !important; gap: 8px; }
+        :fullscreen .content-body { padding: 8px !important; overflow: hidden !important; gap: 6px; }
         
-        :fullscreen .filter-container { margin-bottom: 0 !important; padding: 5px 10px !important; }
-        :fullscreen .row { margin-bottom: 0 !important; flex: 1 1 0; min-height: 0; gap: 8px; }
+        :fullscreen .filter-container { margin-bottom: 0 !important; padding: 4px 8px !important; }
+        :fullscreen .row { margin-bottom: 0 !important; flex: 1 1 0; min-height: 0; gap: 6px; }
         :fullscreen .row > div { padding: 0 4px !important; display: flex; flex-direction: column; }
         
-        :fullscreen .card-custom { padding: 8px; margin-bottom: 0 !important; }
-        :fullscreen .card-header-title { margin-bottom: 5px; padding: 2px; font-size: 0.8rem; }
-        :fullscreen .kpi-title { font-size: 0.7rem; }
-        :fullscreen .kpi-value { font-size: 1.5rem; margin-top: 0; }
+        :fullscreen .card-custom { padding: 6px; margin-bottom: 0 !important; }
+        :fullscreen .card-header-title { margin-bottom: 4px; padding: 2px; font-size: 0.75rem; }
+        :fullscreen .kpi-title { font-size: 0.65rem; }
+        :fullscreen .kpi-value { font-size: 1.3rem; margin-top: 0; }
         
         :fullscreen .table-responsive { max-height: none !important; flex: 1 1 0; min-height: 0; overflow-y: auto; }
         :fullscreen #mapArea { min-height: 0 !important; }
@@ -235,16 +286,16 @@
         :-webkit-full-screen .sidebar { display: none !important; }
         :-webkit-full-screen .topbar { display: none !important; }
         :-webkit-full-screen .main-content { width: 100% !important; overflow: hidden !important; }
-        :-webkit-full-screen .content-body { padding: 10px !important; overflow: hidden !important; gap: 8px; }
+        :-webkit-full-screen .content-body { padding: 8px !important; overflow: hidden !important; gap: 6px; }
         
-        :-webkit-full-screen .filter-container { margin-bottom: 0 !important; padding: 5px 10px !important; }
-        :-webkit-full-screen .row { margin-bottom: 0 !important; flex: 1 1 0; min-height: 0; gap: 8px; }
+        :-webkit-full-screen .filter-container { margin-bottom: 0 !important; padding: 4px 8px !important; }
+        :-webkit-full-screen .row { margin-bottom: 0 !important; flex: 1 1 0; min-height: 0; gap: 6px; }
         :-webkit-full-screen .row > div { padding: 0 4px !important; display: flex; flex-direction: column; }
         
-        :-webkit-full-screen .card-custom { padding: 8px; margin-bottom: 0 !important; }
-        :-webkit-full-screen .card-header-title { margin-bottom: 5px; padding: 2px; font-size: 0.8rem; }
-        :-webkit-full-screen .kpi-title { font-size: 0.7rem; }
-        :-webkit-full-screen .kpi-value { font-size: 1.5rem; margin-top: 0; }
+        :-webkit-full-screen .card-custom { padding: 6px; margin-bottom: 0 !important; }
+        :-webkit-full-screen .card-header-title { margin-bottom: 4px; padding: 2px; font-size: 0.75rem; }
+        :-webkit-full-screen .kpi-title { font-size: 0.65rem; }
+        :-webkit-full-screen .kpi-value { font-size: 1.3rem; margin-top: 0; }
         
         :-webkit-full-screen .table-responsive { max-height: none !important; flex: 1 1 0; min-height: 0; overflow-y: auto; }
         :-webkit-full-screen #mapArea { min-height: 0 !important; }
@@ -256,7 +307,40 @@
 </head>
 <body>
 
-    <div id="appContainer">
+    <!-- ==========================================
+         SECURE LOGIN SCREEN
+         ========================================== -->
+    <div id="loginScreen" class="login-wrapper fade-in">
+        <div class="login-card text-center">
+            <div class="mb-3 d-flex justify-content-center gap-3">
+                <img src="logo ut.png" alt="UT" style="height: 40px; object-fit: contain;" onerror="this.src='https://via.placeholder.com/80x40?text=Logo+UT'">
+                <img src="logo corpu.png" alt="Corpu" style="height: 50px; object-fit: contain;" onerror="this.src='https://via.placeholder.com/80x40?text=Corpu'">
+            </div>
+            <h3 class="fw-bold mb-1 text-dark">8 DP Portal</h3>
+            <p class="fw-bold text-dark mb-4" style="font-size: 0.85rem;">SECURE ENTERPRISE LOGIN</p>
+            
+            <form id="loginForm" onsubmit="handleLogin(event)">
+                <div class="mb-3 text-start">
+                    <label class="form-label fw-bold small text-dark">Username</label>
+                    <div class="input-group">
+                        <span class="input-group-text bg-light border-end-0"><i class="fas fa-user text-muted"></i></span>
+                        <input type="text" class="form-control border-start-0 ps-0 bg-light" id="username" required placeholder="Gunakan: admin">
+                    </div>
+                </div>
+                <div class="mb-4 text-start">
+                    <label class="form-label fw-bold small text-dark">Password</label>
+                    <div class="input-group">
+                        <span class="input-group-text bg-light border-end-0"><i class="fas fa-lock text-muted"></i></span>
+                        <input type="password" class="form-control border-start-0 ps-0 bg-light" id="password" required placeholder="Gunakan: utcorp2026">
+                        <button class="btn btn-light border" type="button" onclick="togglePassword()"><i class="fas fa-eye text-muted" id="eyeIcon"></i></button>
+                    </div>
+                </div>
+                <button type="submit" class="btn btn-brand w-100 py-2 fs-6 shadow-sm border-2">MASUK KE SISTEM <i class="fas fa-arrow-right ms-2"></i></button>
+            </form>
+        </div>
+    </div>
+
+    <div id="appContainer" class="d-none">
         <!-- SIDEBAR -->
         <div class="sidebar" id="sidebar">
             <div class="sidebar-brand">
@@ -271,6 +355,15 @@
                 <div class="nav-link-custom" onclick="switchView('database', this)">
                     <i class="fas fa-database"></i> <span class="nav-text">Master Data</span>
                 </div>
+                <div class="nav-link-custom" onclick="switchView('report', this)">
+                    <i class="fas fa-file-invoice-dollar"></i> <span class="nav-text">Laporan (Report)</span>
+                </div>
+                
+                <div class="mt-auto mb-3 pt-3 px-2">
+                    <div class="nav-link-custom py-2 text-danger" onclick="logout()" style="border-radius: 4px;">
+                        <i class="fas fa-sign-out-alt"></i> <span class="nav-text">Keluar</span>
+                    </div>
+                </div>
             </div>
         </div>
 
@@ -282,10 +375,10 @@
                 <div class="d-flex align-items-center gap-3">
                     <button class="btn btn-light border border-dark fw-bold" onclick="toggleSidebar()"><i class="fas fa-bars"></i></button>
                     <div class="header-logos d-none d-md-flex align-items-center gap-2">
-                        <img src="logo ut.png.png" alt="UT" onerror="this.src='https://via.placeholder.com/80x40?text=Logo+UT'">
+                        <img src="logo ut.png" alt="UT" onerror="this.src='https://via.placeholder.com/80x40?text=Logo+UT'">
                     </div>
                 </div>
-                <h4 class="mb-0 fw-bold fst-italic d-none d-lg-block" style="letter-spacing: -0.5px;">DASHBOARD MONITORING DEVELOPMENT 8 DP</h4>
+                <h4 class="mb-0 fw-bold fst-italic d-none d-lg-block" style="letter-spacing: -0.5px; color:#000;">DASHBOARD MONITORING DEVELOPMENT 8 DP</h4>
                 <div class="header-logos">
                     <img src="logo corpu.png" alt="Corpu" onerror="this.src='https://via.placeholder.com/80x40?text=Corpu'">
                 </div>
@@ -301,7 +394,7 @@
                         <div class="d-flex flex-wrap gap-3">
                             <div class="filter-group">
                                 <label>Filter Area:</label>
-                                <select id="filterArea" class="form-select form-select-sm" onchange="renderDashboard()">
+                                <select id="filterArea" class="form-select form-select-sm shadow-sm" onchange="renderDashboard()">
                                     <option value="ALL">Semua Area</option>
                                     <option value="JKT">Jakarta (JKT)</option>
                                     <option value="SMD">Samarinda (SMD)</option>
@@ -313,7 +406,7 @@
                             </div>
                             <div class="filter-group">
                                 <label>Filter Status:</label>
-                                <select id="filterStatus" class="form-select form-select-sm" onchange="renderDashboard()">
+                                <select id="filterStatus" class="form-select form-select-sm shadow-sm" onchange="renderDashboard()">
                                     <option value="ALL">Semua Status</option>
                                     <option value="DONE">Done</option>
                                     <option value="ON PROGRESS">On Progress</option>
@@ -322,7 +415,7 @@
                             </div>
                             <div class="filter-group">
                                 <label>Filter PIC:</label>
-                                <select id="filterPIC" class="form-select form-select-sm" onchange="renderDashboard()">
+                                <select id="filterPIC" class="form-select form-select-sm shadow-sm" onchange="renderDashboard()">
                                     <option value="ALL">Sedang Memuat...</option>
                                 </select>
                             </div>
@@ -361,19 +454,25 @@
                         <div class="col-md-4">
                             <div class="card-custom">
                                 <div class="card-header-title">Training Coverage</div>
-                                <div class="chart-wrapper"><canvas id="pieCoverage"></canvas></div>
+                                <div class="chart-wrapper">
+                                    <div class="canvas-container"><canvas id="pieCoverage"></canvas></div>
+                                </div>
                             </div>
                         </div>
                         <div class="col-md-4">
                             <div class="card-custom">
                                 <div class="card-header-title">Training Participant</div>
-                                <div class="chart-wrapper"><canvas id="pieParticipant"></canvas></div>
+                                <div class="chart-wrapper">
+                                    <div class="canvas-container"><canvas id="pieParticipant"></canvas></div>
+                                </div>
                             </div>
                         </div>
                         <div class="col-md-4">
                             <div class="card-custom">
                                 <div class="card-header-title">Distribution By Area</div>
-                                <div class="chart-wrapper"><canvas id="pieArea"></canvas></div>
+                                <div class="chart-wrapper">
+                                    <div class="canvas-container"><canvas id="pieArea"></canvas></div>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -383,13 +482,17 @@
                         <div class="col-md-6">
                             <div class="card-custom">
                                 <div class="card-header-title">Training Coverage per Area</div>
-                                <div class="chart-wrapper"><canvas id="barCoverage"></canvas></div>
+                                <div class="chart-wrapper">
+                                    <div class="canvas-container"><canvas id="barCoverage"></canvas></div>
+                                </div>
                             </div>
                         </div>
                         <div class="col-md-6">
                             <div class="card-custom">
                                 <div class="card-header-title">Training Participant per Area</div>
-                                <div class="chart-wrapper"><canvas id="barParticipant"></canvas></div>
+                                <div class="chart-wrapper">
+                                    <div class="canvas-container"><canvas id="barParticipant"></canvas></div>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -429,10 +532,23 @@
 
                 <!-- ==================== VIEW 2: DATABASE MASTER DATA ==================== -->
                 <div id="view-database" class="view-section">
-                    <div class="d-flex justify-content-between align-items-center mb-3 border-bottom pb-3">
-                        <h3 class="mb-0 fw-bold">Database Master Data (Spreadsheet)</h3>
-                        <div class="d-flex gap-2">
-                            <a href="https://docs.google.com/spreadsheets/d/1MswJRi_KEwzvgEAlwAJ6uHw-Y7mQEyPiBig3zv09aVw/edit?usp=sharing" target="_blank" class="btn btn-outline-info fw-bold bg-white text-dark border-2 border-info shadow-sm">
+                    <div class="d-flex justify-content-between align-items-center mb-3 border-bottom pb-3 flex-wrap gap-2">
+                        <h3 class="mb-0 fw-bold text-dark">Database Master Data (Spreadsheet)</h3>
+                        
+                        <div class="d-flex gap-2 flex-wrap align-items-center">
+                            <!-- Filter Area Master Data (Fitur Baru) -->
+                            <label class="fw-bold small text-dark mb-0 me-1">Filter Area:</label>
+                            <select id="filterAreaMaster" class="form-select form-select-sm shadow-sm" style="width: auto;" onchange="renderMasterTable()">
+                                <option value="ALL">Semua Area</option>
+                                <option value="JKT">Jakarta (JKT)</option>
+                                <option value="SMD">Samarinda (SMD)</option>
+                                <option value="BLP">Balikpapan (BLP)</option>
+                                <option value="PKB">Pekanbaru (PKB)</option>
+                                <option value="BJM">Banjarmasin (BJM)</option>
+                                <option value="UPG">Ujung Pandang (UPG)</option>
+                            </select>
+
+                            <a href="https://docs.google.com/spreadsheets/d/1MswJRi_KEwzvgEAlwAJ6uHw-Y7mQEyPiBig3zv09aVw/edit?usp=sharing" target="_blank" class="btn btn-outline-info fw-bold bg-white text-dark border-2 border-info shadow-sm ms-2">
                                 <i class="fas fa-external-link-alt me-2 text-info"></i> Buka Spreadsheet
                             </a>
                             <!-- Input File Hidden -->
@@ -465,6 +581,67 @@
                     </div>
                 </div>
 
+                <!-- ==================== VIEW 3: LAPORAN (REPORT) ==================== -->
+                <div id="view-report" class="view-section fade-in">
+                    <h3 class="mb-4 fw-bold text-dark border-bottom pb-2">Laporan Ringkasan Karyawan (Report)</h3>
+                    
+                    <div class="card-custom mb-4 bg-light border-2">
+                        <div class="row g-3 align-items-end">
+                            <div class="col-md-3">
+                                <label class="form-label small fw-bold text-dark">Filter Area</label>
+                                <select class="form-select shadow-sm border-dark" id="reportFilterArea">
+                                    <option value="ALL">Semua Area (ALL)</option>
+                                    <option value="JKT">Jakarta (JKT)</option>
+                                    <option value="SMD">Samarinda (SMD)</option>
+                                    <option value="BLP">Balikpapan (BLP)</option>
+                                    <option value="PKB">Pekanbaru (PKB)</option>
+                                    <option value="BJM">Banjarmasin (BJM)</option>
+                                    <option value="UPG">Ujung Pandang (UPG)</option>
+                                </select>
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label small fw-bold text-dark">Filter Status Akhir</label>
+                                <select class="form-select shadow-sm border-dark" id="reportFilterStatus">
+                                    <option value="ALL">Semua Status (ALL)</option>
+                                    <option value="DONE">Done</option>
+                                    <option value="ON PROGRESS">On Progress</option>
+                                    <option value="NOT YET">Not Yet</option>
+                                </select>
+                            </div>
+                            <div class="col-md-2">
+                                <button class="btn btn-dark w-100 shadow-sm fw-bold border-2" onclick="generateReport()"><i class="fas fa-bolt me-2 text-warning"></i> Tarik Data</button>
+                            </div>
+                            <div class="col-md-2">
+                                <button class="btn btn-outline-success bg-white w-100 shadow-sm fw-bold border-2" onclick="exportReportExcel()"><i class="fas fa-file-excel me-2"></i> Excel</button>
+                            </div>
+                            <div class="col-md-2">
+                                <button class="btn btn-outline-danger bg-white w-100 shadow-sm fw-bold border-2" onclick="exportReportPDF()"><i class="fas fa-file-pdf me-2"></i> PDF</button>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="card-custom flex-grow-1">
+                        <div class="table-responsive" style="height: 100%;">
+                            <table class="table table-hover table-custom" id="tblReport">
+                                <thead>
+                                    <tr>
+                                        <th>NAMA PESERTA</th>
+                                        <th>NRP</th>
+                                        <th>AREA</th>
+                                        <th>PIC</th>
+                                        <th>MODUL 1</th>
+                                        <th>MODUL 2</th>
+                                        <th>FINAL STATUS</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr><td colspan="7" class="text-center py-5 text-muted fw-bold"><i class="fas fa-table fs-3 mb-2 text-secondary"></i><br>Klik "Tarik Data" untuk menampilkan Laporan</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
             </div>
         </div>
     </div>
@@ -481,21 +658,70 @@
         Chart.register(ChartDataLabels);
 
         // --- KONFIGURASI API GOOGLE APPS SCRIPT ---
-        // PASTIKAN URL INI ADALAH URL DEPLOY BARU SETELAH ANDA MENAMBAHKAN FUNGSI doPost
-        const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxE9bK2ka8_EyoCwzx4I1D1xrucx7JM_cR-U8UYNMEUgPu9hqXdsr6_3nI7pk7ZIJYO-Q/exec';
+        const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxV839HVgAZemQRPKgT4bJJWJsGrI4kYh0HZjLbXwu0vQor_IqMi20ofG3jIgYlMrjIRQ/exec';
+
+        // --- LOGIN SECURITY (FITUR BARU) ---
+        function togglePassword() {
+            const pass = document.getElementById('password');
+            const icon = document.getElementById('eyeIcon');
+            if(pass.type === 'password') { 
+                pass.type = 'text'; 
+                icon.className = 'fas fa-eye-slash text-dark'; 
+            } else { 
+                pass.type = 'password'; 
+                icon.className = 'fas fa-eye text-muted'; 
+            }
+        }
+
+        function handleLogin(e) {
+            e.preventDefault();
+            const u = document.getElementById('username').value.trim();
+            const p = document.getElementById('password').value;
+            
+            // Kredensial Hardcode (admin / utcorp2026)
+            if(u === 'admin' && p === 'utcorp2026') {
+                document.getElementById('loginScreen').classList.add('d-none');
+                document.getElementById('appContainer').classList.remove('d-none');
+                
+                // Load data API setelah login sukses
+                loadDataFromAPI();
+                
+                Swal.fire({
+                    title: 'Login Berhasil',
+                    text: 'Selamat datang di 8 DP Portal',
+                    icon: 'success',
+                    timer: 1500,
+                    showConfirmButton: false
+                });
+            } else {
+                Swal.fire({title: 'Akses Ditolak', text: 'Username atau password salah.', icon: 'error', confirmButtonColor: '#1A1A1A' });
+            }
+        }
+
+        function logout() {
+            Swal.fire({
+                title: 'Konfirmasi',
+                text: 'Apakah Anda yakin ingin keluar?',
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonColor: '#d33',
+                cancelButtonColor: '#3085d6',
+                confirmButtonText: 'Ya, Keluar'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    location.reload(); 
+                }
+            });
+        }
 
         // --- NAVIGASI VIEW ---
         function switchView(viewName, element) {
-            // Sembunyikan semua view
             document.querySelectorAll('.view-section').forEach(el => el.classList.remove('active'));
-            // Tampilkan view yang dipilih
             document.getElementById('view-' + viewName).classList.add('active');
             
-            // Ubah state active pada menu sidebar
             document.querySelectorAll('.nav-link-custom').forEach(el => el.classList.remove('active'));
             element.classList.add('active');
 
-            // Render ulang peta jika masuk dashboard agar tidak glitch
             if(viewName === 'dashboard') {
                 setTimeout(() => { if(map) map.invalidateSize(); }, 200);
             }
@@ -504,7 +730,10 @@
         // --- SIDEBAR & FULLSCREEN CONTROLS ---
         function toggleSidebar() { 
             document.getElementById('sidebar').classList.toggle('collapsed'); 
-            setTimeout(() => { if(map) map.invalidateSize(); }, 300); 
+            setTimeout(() => { 
+                if(map) map.invalidateSize(); 
+                Object.values(chartInstances).forEach(c => c.resize());
+            }, 300); 
         }
 
         function toggleFullscreen() {
@@ -517,17 +746,25 @@
                 else if (document.webkitExitFullscreen) document.webkitExitFullscreen();
             }
         }
-        document.addEventListener('fullscreenchange', () => { setTimeout(() => { if(map) map.invalidateSize(); }, 300); });
-        document.addEventListener('webkitfullscreenchange', () => { setTimeout(() => { if(map) map.invalidateSize(); }, 300); });
+        
+        // Memastikan resize peta dan chart saat masuk/keluar fullscreen
+        function handleResize() {
+            setTimeout(() => { 
+                if(map) map.invalidateSize(); 
+                Object.values(chartInstances).forEach(c => c.resize());
+            }, 350);
+        }
+        document.addEventListener('fullscreenchange', handleResize);
+        document.addEventListener('webkitfullscreenchange', handleResize);
+        window.addEventListener('resize', handleResize);
 
         // --- GLOBAL VARIABLES ---
         let rawData = [];
-        let rawDataFromSheet = []; // Menyimpan raw utuh untuk tabel Master Data
+        let rawDataFromSheet = []; 
         let chartInstances = {};
         let map = null;
         let mapMarkers = [];
 
-        // Koordinat 6 Kota
         const COORDS = {
             "JKT": { lat: -6.2088, lng: 106.8456, nama: "Jakarta" },
             "SMD": { lat: -0.5022, lng: 117.1536, nama: "Samarinda" },
@@ -552,9 +789,8 @@
             const btnRefresh = document.getElementById('btnRefresh');
             const iconRefresh = document.getElementById('iconRefresh');
             
-            // Animasi Loading
-            btnRefresh.disabled = true;
-            iconRefresh.classList.add('fa-spin-fast');
+            if(btnRefresh) btnRefresh.disabled = true;
+            if(iconRefresh) iconRefresh.classList.add('fa-spin-fast');
             document.querySelector('#tablePeserta tbody').innerHTML = '<tr><td colspan="6" class="text-center py-5 text-muted fw-bold"><i class="fas fa-spinner fa-spin-fast me-2"></i> Sinkronisasi Data Spreadsheet...</td></tr>';
             document.querySelector('#tblMasterData tbody').innerHTML = '<tr><td colspan="7" class="text-center py-5 text-muted fw-bold"><i class="fas fa-spinner fa-spin-fast me-2"></i> Sinkronisasi Data Spreadsheet...</td></tr>';
 
@@ -564,23 +800,21 @@
 
                 if (result.status === "success") {
                     rawData = [];
-                    rawDataFromSheet = result.data; // Simpan asli
+                    rawDataFromSheet = result.data; 
                     let picSet = new Set();
 
                     result.data.forEach(row => {
                         let name = row['NAME'] || row['NAMA'] || '';
-                        if (!name) return; // Lewati jika tidak ada nama
+                        if (!name) return; 
                         
                         let nrp = row['NRP'] || '';
                         let area = String(row['Cabang/ Site'] || row['BRANCH/SITE'] || '').toUpperCase().trim();
                         let pic = row['PIC'] || 'Unknown';
                         picSet.add(pic);
 
-                        // Ambil Status
                         let statM1 = String(row['Status Modul 1'] || '').toUpperCase().trim();
                         let statM2 = String(row['Status Modul 2'] || '').toUpperCase().trim();
                         
-                        // Kalkulasi Logic Final Status
                         let finalStatus = "NOT YET";
                         let covStatus = "Not Coverage";
 
@@ -596,16 +830,16 @@
                         rawData.push({ name, nrp, area, pic, statM1, statM2, finalStatus, covStatus });
                     });
 
-                    // Update Dropdown Filter PIC
                     let picSelect = document.getElementById("filterPIC");
-                    picSelect.innerHTML = '<option value="ALL">Semua PIC</option>';
-                    picSet.forEach(p => {
-                        if (p !== 'Unknown' && p.trim() !== '') {
-                            picSelect.innerHTML += `<option value="${p}">${p}</option>`;
-                        }
-                    });
+                    if(picSelect) {
+                        picSelect.innerHTML = '<option value="ALL">Semua PIC</option>';
+                        picSet.forEach(p => {
+                            if (p !== 'Unknown' && p.trim() !== '') {
+                                picSelect.innerHTML += `<option value="${p}">${p}</option>`;
+                            }
+                        });
+                    }
 
-                    // Render ulang dashboard dan tabel master data
                     renderDashboard();
                     renderMasterTable();
                 } else {
@@ -613,22 +847,22 @@
                 }
             } catch (error) {
                 console.error("Gagal terhubung ke API:", error);
-                Swal.fire('Koneksi Gagal', 'Gagal memuat data. Periksa koneksi internet atau script Google Anda.', 'error');
+                Swal.fire('Koneksi Gagal', 'Gagal memuat data. Periksa koneksi internet.', 'error');
                 document.querySelector('#tablePeserta tbody').innerHTML = '<tr><td colspan="6" class="text-center py-4 text-danger fw-bold">Gagal memuat data.</td></tr>';
             } finally {
-                btnRefresh.disabled = false;
-                iconRefresh.classList.remove('fa-spin-fast');
+                if(btnRefresh) btnRefresh.disabled = false;
+                if(iconRefresh) iconRefresh.classList.remove('fa-spin-fast');
             }
         }
 
-        // --- UPLOAD EXCEL LANGSUNG KE GOOGLE SHEETS (POST REQUEST) ---
+        // --- UPLOAD EXCEL (REVISI DATA 61 BACA 2) ---
         function uploadExcelToCloud(e) {
             const file = e.target.files[0];
             if(!file) return;
 
             Swal.fire({ 
                 title: 'Membaca dan Mengunggah File...', 
-                html: 'Mohon tunggu, data sedang dikirim ke Google Sheets.',
+                html: 'Mohon tunggu, memproses Excel dan mengirim ke Google Sheets.',
                 allowOutsideClick: false, 
                 showConfirmButton: false, 
                 didOpen: () => { Swal.showLoading() } 
@@ -638,21 +872,45 @@
             reader.onload = function(evt) {
                 const data = evt.target.result;
                 const workbook = XLSX.read(data, { type: 'binary' });
-                const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
                 
-                // Ambil data dengan Header di Baris ke-2 (range: 1)
-                const jsonRaw = XLSX.utils.sheet_to_json(firstSheet, { range: 1, defval: "" });
+                // Cari Sheet yang benar ("ATS_PTCP (PLAN)") atau gunakan sheet pertama sebagai fallback
+                const targetSheetName = "ATS_PTCP (PLAN)";
+                const sheet = workbook.Sheets[targetSheetName] || workbook.Sheets[workbook.SheetNames[0]];
+                
+                // Baca sebagai array of arrays untuk mencari baris header
+                const sheetDataRaw = XLSX.utils.sheet_to_json(sheet, { header: 1 });
+                let headerRowIdx = -1;
+                
+                // Scan ke bawah mencari baris yang mengandung 'NAME'
+                for(let i=0; i<sheetDataRaw.length; i++) {
+                    const rowText = sheetDataRaw[i].join("").toUpperCase();
+                    if(rowText.includes("NAME") || rowText.includes("CABANG/ SITE")) {
+                        headerRowIdx = i; 
+                        break;
+                    }
+                }
+
+                if(headerRowIdx === -1) {
+                    Swal.fire('Format Salah', 'Tidak menemukan kolom "NAME" pada Excel Anda.', 'error');
+                    e.target.value = '';
+                    return;
+                }
+
+                // Parsing dari baris header yang ditemukan
+                const jsonRaw = XLSX.utils.sheet_to_json(sheet, { range: headerRowIdx, defval: "" });
+                
+                // Buang baris yang kosong atau tidak memiliki NAME (menghindari array kotor)
+                const cleanJson = jsonRaw.filter(r => (r['NAME'] || r['NAMA']) && String(r['NAME'] || r['NAMA']).trim() !== '');
                 
                 // Kirim POST Request ke Apps Script
                 fetch(SCRIPT_URL, {
                     method: 'POST',
-                    body: JSON.stringify({ data: jsonRaw })
+                    body: JSON.stringify({ data: cleanJson })
                 })
                 .then(res => res.json())
                 .then(result => {
                     if(result.status === 'success') {
-                        Swal.fire('Berhasil!', 'Data telah berhasil diunggah ke Spreadsheet.', 'success');
-                        // Refresh data setelah berhasil upload
+                        Swal.fire('Berhasil!', `Total ${cleanJson.length} data karyawan telah diunggah.`, 'success');
                         loadDataFromAPI();
                     } else {
                         Swal.fire('Gagal!', result.message, 'error');
@@ -660,18 +918,18 @@
                 })
                 .catch(err => {
                     console.error('Error Upload:', err);
-                    Swal.fire('Error', 'Gagal terhubung ke server saat mengunggah data.', 'error');
+                    Swal.fire('Error', 'Gagal mengirim data ke server.', 'error');
                 });
                 
-                // Reset input file
                 e.target.value = '';
             };
             reader.readAsBinaryString(file);
         }
 
-        // --- RENDER TABEL MASTER DATA (VIEW 2) ---
+        // --- RENDER TABEL MASTER DATA & FILTER AREA (FITUR BARU) ---
         function renderMasterTable() {
             const tbody = document.querySelector('#tblMasterData tbody');
+            const fAreaMaster = document.getElementById('filterAreaMaster').value;
             let html = '';
             
             if(rawDataFromSheet.length === 0) {
@@ -679,38 +937,37 @@
                 return;
             }
 
-            rawDataFromSheet.forEach((row, index) => {
-                let name = row['NAME'] || row['NAMA'] || '-';
-                if(name === '-') return; // Skip empty rows
+            let count = 1;
+            rawDataFromSheet.forEach((row) => {
+                let name = row['NAME'] || row['NAMA'] || '';
+                if(name.trim() === '') return; 
+
+                let areaStr = String(row['Cabang/ Site'] || row['BRANCH/SITE'] || '').toUpperCase().trim();
+                
+                // Filter Area Logika
+                if(fAreaMaster !== 'ALL' && areaStr !== fAreaMaster) return;
 
                 html += `
                     <tr>
-                        <td class="text-center fw-bold">${index + 1}</td>
+                        <td class="text-center fw-bold">${count++}</td>
                         <td class="fw-bold text-dark">${name}</td>
                         <td>${row['NRP'] || '-'}</td>
-                        <td class="text-center"><span class="badge border border-dark text-dark">${row['Cabang/ Site'] || '-'}</span></td>
+                        <td class="text-center"><span class="badge border border-dark text-dark">${areaStr || '-'}</span></td>
                         <td>${row['PIC'] || '-'}</td>
                         <td class="text-center">${row['Status Modul 1'] || '-'}</td>
                         <td class="text-center">${row['Status Modul 2'] || '-'}</td>
                     </tr>
                 `;
             });
-            tbody.innerHTML = html;
+            
+            tbody.innerHTML = html || '<tr><td colspan="7" class="text-center py-4 text-muted fw-bold">Data tidak ditemukan pada area ini.</td></tr>';
         }
 
-        // Panggil saat halaman pertama kali dibuka
-        document.addEventListener("DOMContentLoaded", () => {
-            loadDataFromAPI();
-        });
-
-        // --- RESET CHART HELPER ---
+        // --- RENDER DASHBOARD CHARTS ---
         function resetChart(id) {
-            if(chartInstances[id]) {
-                chartInstances[id].destroy();
-            }
+            if(chartInstances[id]) chartInstances[id].destroy();
         }
 
-        // --- RENDER SELURUH DASHBOARD (VIEW 1) ---
         function renderDashboard() {
             if (rawData.length === 0) {
                 document.querySelector('#tablePeserta tbody').innerHTML = '<tr><td colspan="6" class="text-center py-4 text-muted fw-bold">Data kosong. Pastikan spreadsheet telah diisi.</td></tr>';
@@ -729,7 +986,7 @@
                 return mArea && mStat && mPIC;
             });
 
-            // 2. Kalkulasi Data KPI
+            // 2. Kalkulasi KPI
             let totalPeserta = filtered.length;
             let totalCoverage = 0;
             let totalOnProgress = 0;
@@ -755,20 +1012,20 @@
                 }
             });
 
-            // Update Angka Scorecard
             let pctCov = totalPeserta === 0 ? 0 : ((totalCoverage / totalPeserta) * 100).toFixed(1);
             document.getElementById("kpiTotal").innerText = totalPeserta;
             document.getElementById("kpiCoverage").innerHTML = `${totalCoverage} <span style="font-size: 1.1rem; color: #555;">(${pctCov}%)</span>`;
             document.getElementById("kpiProgress").innerText = totalOnProgress;
             document.getElementById("kpiNotYet").innerText = totalNotYet;
 
-            // 3. Render Grafik (Chart.js)
+            // 3. Render Grafik (Revisi: Opsi ditekankan pada proper maintainAspectRatio)
             const pieOptions = {
-                responsive: true, maintainAspectRatio: false,
+                responsive: true, 
+                maintainAspectRatio: false,
                 plugins: {
-                    legend: { position: 'right', labels: { font: {size: 11, weight: 'bold'}, boxWidth: 12 } },
+                    legend: { position: 'right', labels: { font: {size: 10, weight: 'bold'}, boxWidth: 12 } },
                     datalabels: {
-                        color: '#fff', font: {weight: 'bold', size: 12},
+                        color: '#fff', font: {weight: 'bold', size: 10},
                         formatter: (val, ctx) => {
                             let sum = ctx.chart.data.datasets[0].data.reduce((a,b)=>a+b,0);
                             return sum===0||val===0 ? null : (val*100/sum).toFixed(1)+"%";
@@ -832,7 +1089,7 @@
                 options: barOptions
             });
 
-            // 4. Update Titik Peta
+            // 4. Update Peta
             mapMarkers.forEach(m => map.removeLayer(m));
             mapMarkers = [];
             
@@ -852,7 +1109,7 @@
                 }
             });
 
-            // 5. Update Tabel Peserta Dashboard
+            // 5. Update Tabel
             let tbody = document.querySelector('#tablePeserta tbody');
             let htmlTable = "";
             
@@ -873,6 +1130,65 @@
             });
             
             tbody.innerHTML = htmlTable || '<tr><td colspan="6" class="text-center py-4 text-muted fw-bold">Data tidak ditemukan pada filter yang dipilih.</td></tr>';
+        }
+
+        // --- FITUR REPORT / LAPORAN (FITUR BARU) ---
+        function generateReport() {
+            const statFilter = document.getElementById('reportFilterStatus').value; 
+            const areaFilter = document.getElementById('reportFilterArea').value; 
+            
+            let filtered = rawData.filter(d => {
+                let matchStat = statFilter === 'ALL' || d.finalStatus === statFilter;
+                let matchArea = areaFilter === 'ALL' || d.area === areaFilter;
+                return matchStat && matchArea;
+            });
+            
+            let html = '';
+            filtered.forEach(e => {
+                let badgeClass = e.finalStatus === "DONE" ? 'bg-success' : 
+                                 e.finalStatus === "ON PROGRESS" ? 'bg-warning text-dark' : 'bg-danger';
+                
+                html += `<tr>
+                    <td class="fw-bold text-dark">${e.name}</td>
+                    <td>${e.nrp}</td>
+                    <td class="text-center"><span class="badge border border-dark text-dark">${e.area}</span></td>
+                    <td>${e.pic}</td>
+                    <td class="text-center">${e.statM1 || '-'}</td>
+                    <td class="text-center">${e.statM2 || '-'}</td>
+                    <td class="text-center"><span class="badge ${badgeClass}">${e.finalStatus}</span></td>
+                </tr>`;
+            });
+            
+            document.querySelector('#tblReport tbody').innerHTML = html || '<tr><td colspan="7" class="text-center py-4">Data tidak ditemukan</td></tr>';
+        }
+
+        function exportReportExcel() {
+            let table = document.getElementById('tblReport');
+            if (table.rows.length <= 1 || table.rows[1].cells.length === 1) {
+                return Swal.fire('Kosong', 'Tarik data terlebih dahulu sebelum diekspor.', 'warning');
+            }
+            let wb = XLSX.utils.table_to_book(table, {sheet:"Laporan 8DP"}); 
+            XLSX.writeFile(wb, "Laporan_Karyawan_8DP.xlsx"); 
+        }
+
+        function exportReportPDF() {
+            let table = document.getElementById('tblReport');
+            if (table.rows.length <= 1 || table.rows[1].cells.length === 1) {
+                return Swal.fire('Kosong', 'Tarik data terlebih dahulu sebelum diekspor.', 'warning');
+            }
+            const doc = new window.jspdf.jsPDF('landscape'); 
+            doc.setFontSize(16); 
+            doc.text("Laporan Ringkasan Karyawan 8 DP", 14, 22); 
+            doc.setFontSize(10); 
+            doc.text("Waktu cetak: " + new Date().toLocaleString('id-ID'), 14, 28);
+            
+            doc.autoTable({ 
+                html: '#tblReport', 
+                startY: 34, 
+                theme: 'grid', 
+                headStyles: { fillColor: [255, 193, 7], textColor: [0, 0, 0] } 
+            }); 
+            doc.save('Laporan_Karyawan_8DP.pdf'); 
         }
     </script>
 </body>
