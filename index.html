@@ -876,7 +876,7 @@
 
                         if(pic !== 'Unknown' && pic.trim() !== '') picSet.add(pic);
 
-                        let key = nrp && nrp.trim() !== '' ? nrp.trim() : name.toUpperCase(); 
+                        let key = nrp && String(nrp).trim() !== '' ? String(nrp).trim() : name.toUpperCase(); 
                         if (!uniqueData[key]) {
                             uniqueData[key] = { name, nrp, area, pic, statM1, statM2, finalStatus, covStatus };
                         } else {
