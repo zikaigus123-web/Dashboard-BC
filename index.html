@@ -23,7 +23,7 @@
     <!-- SheetJS (Excel) -->
     <script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
     
-    <!-- jsPDF & AutoTable for PDF Export -->
+    <!-- jsPDF & AutoTable for PDF Export (Fitur Report) -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.1/jspdf.plugin.autotable.min.js"></script>
 
@@ -224,7 +224,7 @@
         .kpi-title { font-size: 0.85rem; color: #555; font-weight: 700; text-transform: uppercase; }
         .kpi-value { font-size: 2rem; font-weight: 800; color: #000; line-height: 1.1; margin-top: 5px; }
 
-        /* --- CHARTS (REVISI 1: PENGEMBALIAN KE STANDAR CHART.JS) --- */
+        /* --- CHARTS --- */
         .chart-wrapper { 
             position: relative; 
             width: 100%;
@@ -254,7 +254,7 @@
         /* --- MAP --- */
         #mapArea { flex: 1 1 0; min-height: 250px; width: 100%; border-radius: 6px; border: 1px solid #000; z-index: 1; }
 
-        /* --- REVISI 8: FULLSCREEN (GRID SUPER KETAT TANPA SCROLL & TINGGI ABSOLUT) --- */
+        /* --- FULLSCREEN --- */
         :fullscreen .sidebar { display: none !important; }
         :fullscreen .topbar { display: none !important; }
         :fullscreen .main-content { width: 100vw !important; height: 100vh !important; overflow: hidden !important; }
@@ -276,7 +276,6 @@
         :fullscreen .kpi-title { font-size: 0.65rem; }
         :fullscreen .kpi-value { font-size: 1.4rem; margin-top: 2px; }
         
-        /* FIX Chart JS Hilang di Fullscreen */
         :fullscreen .chart-wrapper { height: 26vh !important; min-height: 0 !important; }
         :fullscreen .table-responsive { height: 100% !important; min-height: 0 !important; overflow-y: hidden; display: flex; flex-direction: column; }
         :fullscreen #mapArea { height: 35vh !important; min-height: 0 !important; }
@@ -348,7 +347,7 @@
     </div>
 
     <!-- ==========================================
-         MODAL LIHAT SEMUA KARYAWAN (REVISI 7)
+         MODAL LIHAT SEMUA KARYAWAN
          ========================================== -->
     <div class="modal fade" id="modalPeserta" tabindex="-1" aria-hidden="true">
       <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
@@ -565,7 +564,6 @@
                         <h3 class="mb-0 fw-bold text-dark">Database Master Data (Spreadsheet)</h3>
                         
                         <div class="d-flex gap-2 flex-wrap align-items-center">
-                            <!-- Filter Area Master Data -->
                             <label class="fw-bold small text-dark mb-0 me-1">Filter Area:</label>
                             <select id="filterAreaMaster" class="form-select form-select-sm shadow-sm" style="width: auto;" onchange="renderMasterTable()">
                                 <option value="ALL">Semua Area</option>
@@ -580,7 +578,6 @@
                             <a href="https://docs.google.com/spreadsheets/d/1MswJRi_KEwzvgEAlwAJ6uHw-Y7mQEyPiBig3zv09aVw/edit?usp=sharing" target="_blank" class="btn btn-outline-info fw-bold bg-white text-dark border-2 border-info shadow-sm ms-2">
                                 <i class="fas fa-external-link-alt me-2 text-info"></i> Buka Spreadsheet
                             </a>
-                            <!-- Input File Hidden -->
                             <input type="file" id="importExcelInput" class="d-none" accept=".xlsx, .xls" onchange="uploadExcelToCloud(event)">
                             <button class="btn btn-outline-secondary fw-bold bg-white text-dark border-2 border-secondary shadow-sm" onclick="document.getElementById('importExcelInput').click()">
                                 <i class="fas fa-upload me-2 text-secondary"></i> Import Data (Upload)
@@ -685,7 +682,6 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2"></script>
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
-    <!-- SweetAlert2 JS -->
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
     <script>
@@ -817,7 +813,7 @@
         }
         initMap();
 
-        // --- FUNGSI BANTU MENCARI KOLOM (REVISI 3: ANTI SPASI & UNKNOWN PIC) ---
+        // --- FUNGSI BANTU MENCARI KOLOM ---
         function getCol(row, possibleNames) {
             for (let key in row) {
                 let cleanKey = key.toString().trim().toUpperCase();
@@ -839,8 +835,15 @@
             document.querySelector('#tblMasterData tbody').innerHTML = '<tr><td colspan="7" class="text-center py-5 text-muted fw-bold"><i class="fas fa-spinner fa-spin-fast me-2"></i> Sinkronisasi Data Spreadsheet...</td></tr>';
 
             try {
-                const response = await fetch(SCRIPT_URL + "?nocache=" + new Date().getTime());
-                const result = await response.json();
+                // Perbaikan fetch tanpa nocache (kembali normal agar tidak ditolak server Google)
+                const response = await fetch(SCRIPT_URL);
+                let result;
+                
+                try {
+                    result = await response.json();
+                } catch(e) {
+                    throw new Error("Server tidak merespons JSON (Mungkin Anda belum mengatur hak akses Apps Script ke 'Siapa Saja').");
+                }
 
                 if (result.status === "success") {
                     rawDataFromSheet = result.data || []; 
@@ -848,12 +851,10 @@
                     let picSet = new Set();
 
                     rawDataFromSheet.forEach(row => {
-                        let name = getCol(row, ['NAME', 'NAMA']);
-                        let cleanName = String(name).trim().toUpperCase();
+                        let nameRaw = String(getCol(row, ['NAME', 'NAMA'])).trim();
+                        if (nameRaw === '' || nameRaw.toUpperCase() === 'NAME' || nameRaw.toUpperCase() === 'NAMA') return; 
                         
-                        // Filter super ketat untuk mengabaikan Header duplikat & baris kosong
-                        if (!name || cleanName === '' || cleanName === 'NAME' || cleanName === 'NAMA') return; 
-                        
+                        let name = nameRaw;
                         let nrp = getCol(row, ['NRP']);
                         let area = getCol(row, ['CABANG/ SITE', 'BRANCH/SITE', 'CABANG/SITE', 'CABANG / SITE']).toUpperCase().trim();
                         let pic = getCol(row, ['PIC']) || 'Unknown';
@@ -861,7 +862,6 @@
                         let statM1 = getCol(row, ['STATUS MODUL 1']);
                         let statM2 = getCol(row, ['STATUS MODUL 2']);
                         
-                        // REVISI 2 & 3: Ambil Status Langsung dari Kolom Spreadsheet
                         let partStatusRaw = getCol(row, ['STATUS PARTICIPANT', 'STATUS KELULUSAN']).toUpperCase().trim();
                         let covStatusRaw = getCol(row, ['STATUS COVERAGE', 'ALL COVERAGE']).toUpperCase().trim();
 
@@ -876,16 +876,13 @@
 
                         if(pic !== 'Unknown' && pic.trim() !== '') picSet.add(pic);
 
-                        // REVISI 1: PENGELOMPOKAN BERDASARKAN NRP/NAMA UNTUK MENGHINDARI DOUBLE HITUNG
-                        let key = nrp && nrp.trim() !== '' ? nrp.trim() : cleanName; 
+                        let key = nrp && nrp.trim() !== '' ? nrp.trim() : name.toUpperCase(); 
                         if (!uniqueData[key]) {
                             uniqueData[key] = { name, nrp, area, pic, statM1, statM2, finalStatus, covStatus };
                         } else {
-                            // Merge data modul jika baris pertama kosong tapi baris kedua ada
                             if(statM1 && statM1 !== '-' && (!uniqueData[key].statM1 || uniqueData[key].statM1 === '-')) uniqueData[key].statM1 = statM1;
                             if(statM2 && statM2 !== '-' && (!uniqueData[key].statM2 || uniqueData[key].statM2 === '-')) uniqueData[key].statM2 = statM2;
                             
-                            // Jika ada baris yang DONE, pastikan final status tetap DONE
                             if(finalStatus === 'DONE') uniqueData[key].finalStatus = 'DONE';
                             else if(finalStatus === 'ON PROGRESS' && uniqueData[key].finalStatus !== 'DONE') uniqueData[key].finalStatus = 'ON PROGRESS';
                             
@@ -914,8 +911,8 @@
                 }
             } catch (error) {
                 console.error("Gagal terhubung ke API:", error);
-                Swal.fire('Koneksi Gagal', 'Gagal memuat data. Periksa koneksi internet.', 'error');
-                document.querySelector('#tablePeserta tbody').innerHTML = '<tr><td colspan="6" class="text-center py-4 text-danger fw-bold">Gagal memuat data.</td></tr>';
+                Swal.fire('Koneksi Gagal', error.message || 'Gagal memuat data. Periksa koneksi internet.', 'error');
+                document.querySelector('#tablePeserta tbody').innerHTML = '<tr><td colspan="6" class="text-center py-4 text-danger fw-bold">Gagal memuat data. Periksa Koneksi Internet.</td></tr>';
             } finally {
                 if(btnRefresh) btnRefresh.disabled = false;
                 if(iconRefresh) iconRefresh.classList.remove('fa-spin-fast');
@@ -961,7 +958,6 @@
                 }
 
                 const jsonRaw = XLSX.utils.sheet_to_json(sheet, { range: headerRowIdx, defval: "" });
-                // Filter ketat sebelum push data
                 const cleanJson = jsonRaw.filter(r => {
                     let n = String(getCol(r, ['NAME','NAMA'])).trim().toUpperCase();
                     return n !== '' && n !== 'NAME' && n !== 'NAMA';
@@ -974,7 +970,7 @@
                 .then(res => res.json())
                 .then(result => {
                     if(result.status === 'success') {
-                        Swal.fire('Berhasil!', `Total ${cleanJson.length} data telah diunggah.`, 'success');
+                        Swal.fire('Berhasil!', `Total ${cleanJson.length} baris data telah diunggah.`, 'success');
                         loadDataFromAPI();
                     } else {
                         Swal.fire('Gagal!', result.message, 'error');
@@ -996,7 +992,6 @@
             const fAreaMaster = document.getElementById('filterAreaMaster').value;
             let html = '';
             
-            // Filter ketat membuang data hantu dari view master
             let validSheetData = rawDataFromSheet.filter(r => {
                 let n = String(getCol(r, ['NAME','NAMA'])).trim().toUpperCase();
                 return n !== '' && n !== 'NAME' && n !== 'NAMA';
@@ -1060,7 +1055,6 @@
                 return mArea && mStat && mPIC;
             });
 
-            // Hitungan Unik 1 Karyawan
             let totalPeserta = filtered.length;
             let totalCoverage = 0;
             let totalOnProgress = 0;
@@ -1089,9 +1083,8 @@
             let pctCov = totalPeserta === 0 ? 0 : ((totalCoverage / totalPeserta) * 100).toFixed(1);
             document.getElementById("kpiTotal").innerText = totalPeserta;
             document.getElementById("kpiCoverage").innerHTML = `${totalCoverage} <span style="font-size: 1.1rem; color: #555;">(${pctCov}%)</span>`;
-            document.getElementById("kpiProgress").innerHTML = `<span class="text-warning">${totalOnProgress}</span> <span style="color:#ccc;">/</span> <span class="text-danger">${totalPeserta}</span>`;
+            document.getElementById("kpiProgress").innerHTML = `<span class="text-warning">${totalOnProgress}</span> <span style="color:#ccc;">/</span> <span class="text-danger">${totalNotYet}</span>`;
 
-            // Opsi Default Chart.js (Responsive Normal)
             const pieOptions = {
                 responsive: true, 
                 maintainAspectRatio: false,
@@ -1117,7 +1110,7 @@
             resetChart('pieParticipant');
             chartInstances['pieParticipant'] = new Chart(document.getElementById('pieParticipant'), {
                 type: 'pie',
-                data: { labels: ['Done', 'On Progress', 'Not Yet'], datasets: [{ data: [totalCoverage, totalOnProgress, totalNotYet], backgroundColor: ['#34a853', '#fbbc04', '#ea4335'] }] },
+                data: { labels: ['Done', 'On Progress', 'Not Yet'], datasets: [{ data: [totalPeserta - totalOnProgress - totalNotYet, totalOnProgress, totalNotYet], backgroundColor: ['#34a853', '#fbbc04', '#ea4335'] }] },
                 options: pieOptions
             });
 
@@ -1162,7 +1155,6 @@
                 options: barOptions
             });
 
-            // Update Peta
             mapMarkers.forEach(m => map.removeLayer(m));
             mapMarkers = [];
             AREA_KEYS.forEach(k => {
@@ -1181,7 +1173,6 @@
                 }
             });
 
-            // Update Tabel Peserta (REVISI 7: TAMPILKAN 5 SAJA DI DASHBOARD, SISANYA DI MODAL)
             let htmlTable = "";
             let htmlTableFull = "";
             
@@ -1237,7 +1228,7 @@
                 </tr>`;
             });
             
-            document.querySelector('#tblReport tbody').innerHTML = html || '<tr><td colspan="7" class="text-center py-4 text-muted fw-bold">Data tidak ditemukan</td></tr>';
+            document.querySelector('#tblReport tbody').innerHTML = html || '<tr><td colspan="7" class="text-center py-4">Data tidak ditemukan</td></tr>';
         }
 
         function exportReportExcel() {
