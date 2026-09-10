@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dashboard Monitoring Development 8 DP</title>
+    <title>Dashboard Monitoring Development BC</title>
 
     <!-- Google Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
@@ -16,9 +16,6 @@
     
     <!-- Leaflet CSS (Map) -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin=""/>
-    
-    <!-- SheetJS (Excel) -->
-    <script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
 
     <style>
         :root {
@@ -108,6 +105,7 @@
             z-index: 999;
         }
 
+        .header-logos img { height: 40px; object-fit: contain; }
         .content-body { padding: 1.5rem; }
 
         /* --- FILTER BAR --- */
@@ -175,6 +173,9 @@
             font-weight: 700;
             text-align: center;
             font-size: 0.85rem;
+            position: sticky; 
+            top: 0; 
+            z-index: 10;
         }
         .table-custom td {
             border: 1px solid #ccc;
@@ -194,6 +195,10 @@
         :-webkit-full-screen .topbar { display: none !important; }
         :-webkit-full-screen .main-content { width: 100% !important; }
         :-webkit-full-screen .content-body { padding: 15px; overflow-y: auto; height: 100vh; }
+
+        /* SPINNER Animasi Load */
+        @keyframes spin { 100% { transform: rotate(360deg); } }
+        .fa-spin-fast { animation: spin 0.8s linear infinite; }
     </style>
 </head>
 <body>
@@ -206,8 +211,8 @@
                 <span class="nav-text">8 DP Portal</span>
             </div>
             <div class="d-flex flex-column mt-3 gap-1">
-                <a href="#" class="nav-link-custom active"><i class="fas fa-home"></i> <span class="nav-text">Dashboard</span></a>
-                <a href="#" class="nav-link-custom"><i class="fas fa-database"></i> <span class="nav-text">Database</span></a>
+                <a href="#" class="nav-link-custom active"><i class="fas fa-home"></i> <span class="nav-text">Dashboard Overview</span></a>
+                <a href="https://docs.google.com/spreadsheets/d/1MswJRi_KEwzvgEAlwAJ6uHw-Y7mQEyPiBig3zv09aVw/edit?usp=sharing" target="_blank" class="nav-link-custom"><i class="fas fa-database"></i> <span class="nav-text">Master Data</span></a>
             </div>
         </div>
 
@@ -218,7 +223,13 @@
             <div class="topbar">
                 <div class="d-flex align-items-center gap-3">
                     <button class="btn btn-light border border-dark fw-bold" onclick="toggleSidebar()"><i class="fas fa-bars"></i></button>
-                    <div class="fw-bold fs-5 fst-italic d-none d-md-block">DASHBOARD MONITORING DEVELOPMENT 8 DP</div>
+                    <div class="header-logos d-none d-md-flex align-items-center gap-2">
+                        <img src="logo ut.png.png" alt="UT" onerror="this.src='https://via.placeholder.com/80x40?text=Logo+UT'">
+                    </div>
+                </div>
+                <h4 class="mb-0 fw-bold fst-italic d-none d-lg-block" style="letter-spacing: -0.5px;">DASHBOARD MONITORING DEVELOPMENT BC</h4>
+                <div class="header-logos">
+                    <img src="logo corpu.png" alt="Corpu" onerror="this.src='https://via.placeholder.com/80x40?text=Corpu'">
                 </div>
             </div>
 
@@ -251,14 +262,14 @@
                         <div class="filter-group">
                             <label>Filter PIC:</label>
                             <select id="filterPIC" class="form-select form-select-sm" onchange="renderDashboard()">
-                                <option value="ALL">Semua PIC</option>
+                                <option value="ALL">Sedang Memuat...</option>
                             </select>
                         </div>
                     </div>
                     
                     <div class="d-flex gap-2">
-                        <input type="file" id="importExcel" class="d-none" accept=".xlsx, .xls" onchange="processExcel(event)">
-                        <button class="btn btn-brand btn-sm" onclick="document.getElementById('importExcel').click()"><i class="fas fa-upload me-1"></i> Upload Excel</button>
+                        <a href="https://docs.google.com/spreadsheets/d/1MswJRi_KEwzvgEAlwAJ6uHw-Y7mQEyPiBig3zv09aVw/edit?usp=sharing" target="_blank" class="btn btn-outline-dark btn-sm fw-bold border-2"><i class="fas fa-external-link-alt me-1"></i> Spreadsheet</a>
+                        <button class="btn btn-brand btn-sm" id="btnRefresh" onclick="loadDataFromAPI()"><i class="fas fa-sync-alt me-1" id="iconRefresh"></i> Refresh Data</button>
                         <button class="btn btn-dark btn-sm fw-bold border-2 border-dark" onclick="toggleFullscreen()"><i class="fas fa-tv me-1"></i> Fullscreen</button>
                     </div>
                 </div>
@@ -336,7 +347,7 @@
                             <div class="card-header-title">Detail Status Peserta</div>
                             <div class="table-responsive" style="max-height: 350px;">
                                 <table class="table table-hover table-custom mb-0" id="tablePeserta">
-                                    <thead style="position: sticky; top: 0; z-index: 10;">
+                                    <thead>
                                         <tr>
                                             <th>Nama / NRP</th>
                                             <th>Area</th>
@@ -347,7 +358,7 @@
                                         </tr>
                                     </thead>
                                     <tbody>
-                                        <tr><td colspan="6" class="text-center py-4 text-muted fw-bold">Silakan unggah (upload) file Excel Master Data terlebih dahulu.</td></tr>
+                                        <tr><td colspan="6" class="text-center py-5 text-muted fw-bold"><i class="fas fa-spinner fa-spin me-2"></i> Sedang memuat data dari Spreadsheet...</td></tr>
                                     </tbody>
                                 </table>
                             </div>
@@ -365,7 +376,11 @@
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
 
     <script>
+        // Registrasi plugin DataLabels untuk Chart.js
         Chart.register(ChartDataLabels);
+
+        // --- KONFIGURASI API GOOGLE APPS SCRIPT ---
+        const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxV839HVgAZemQRPKgT4bJJWJsGrI4kYh0HZjLbXwu0vQor_IqMi20ofG3jIgYlMrjIRQ/exec';
 
         // --- SIDEBAR & FULLSCREEN CONTROLS ---
         function toggleSidebar() { 
@@ -384,7 +399,6 @@
             }
         }
         document.addEventListener('fullscreenchange', () => { setTimeout(() => { if(map) map.invalidateSize(); }, 300); });
-        document.addEventListener('webkitfullscreenchange', () => { setTimeout(() => { if(map) map.invalidateSize(); }, 300); });
 
         // --- GLOBAL VARIABLES ---
         let rawData = [];
@@ -392,7 +406,7 @@
         let map = null;
         let mapMarkers = [];
 
-        // Koordinat 6 Kota Sesuai Permintaan
+        // Koordinat 6 Kota
         const COORDS = {
             "JKT": { lat: -6.2088, lng: 106.8456, nama: "Jakarta" },
             "SMD": { lat: -0.5022, lng: 117.1536, nama: "Samarinda" },
@@ -412,66 +426,82 @@
         }
         initMap();
 
-        // --- PROSES UPLOAD EXCEL ---
-        function processExcel(e) {
-            const file = e.target.files[0];
-            if(!file) return;
+        // --- FETCH DATA FROM GOOGLE SHEETS API ---
+        async function loadDataFromAPI() {
+            const btnRefresh = document.getElementById('btnRefresh');
+            const iconRefresh = document.getElementById('iconRefresh');
             
-            const reader = new FileReader();
-            reader.onload = function(evt) {
-                const data = evt.target.result;
-                const workbook = XLSX.read(data, { type: 'binary' });
-                const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
-                
-                // MENGGUNAKAN range: 1 UNTUK MEMBACA HEADER DI BARIS KE-2
-                const jsonRaw = XLSX.utils.sheet_to_json(firstSheet, { range: 1, defval: "" });
-                
-                rawData = [];
-                let picSet = new Set();
+            // Animasi Loading
+            btnRefresh.disabled = true;
+            iconRefresh.classList.add('fa-spin-fast');
+            document.querySelector('#tablePeserta tbody').innerHTML = '<tr><td colspan="6" class="text-center py-5 text-muted fw-bold"><i class="fas fa-spinner fa-spin-fast me-2"></i> Sinkronisasi Data Spreadsheet...</td></tr>';
 
-                jsonRaw.forEach(row => {
-                    let name = row['NAME'] || row['NAMA'] || '';
-                    if(!name) return; // Lewati baris kosong
-                    
-                    let nrp = row['NRP'] || '';
-                    let area = String(row['Cabang/ Site'] || row['BRANCH/SITE'] || '').toUpperCase().trim();
-                    let pic = row['PIC'] || 'Unknown';
-                    picSet.add(pic);
+            try {
+                const response = await fetch(SCRIPT_URL);
+                const result = await response.json();
 
-                    // Membaca status per modul
-                    let statM1 = String(row['Status Modul 1'] || '').toUpperCase().trim();
-                    let statM2 = String(row['Status Modul 2'] || '').toUpperCase().trim();
-                    
-                    // Kalkulasi Status
-                    let finalStatus = "NOT YET";
-                    let covStatus = "Not Coverage";
+                if (result.status === "success") {
+                    rawData = [];
+                    let picSet = new Set();
 
-                    if (statM1 === "DONE" && statM2 === "DONE") {
-                        finalStatus = "DONE";
-                        covStatus = "Tercoverage";
-                    } else if (statM1 === "DONE" || statM2 === "DONE" || statM1.includes("PROGRESS") || statM2.includes("PROGRESS")) {
-                        finalStatus = "ON PROGRESS";
-                    } else {
-                        finalStatus = "NOT YET";
-                    }
+                    result.data.forEach(row => {
+                        let name = row['NAME'] || row['NAMA'] || '';
+                        if (!name) return; // Lewati jika tidak ada nama
+                        
+                        let nrp = row['NRP'] || '';
+                        let area = String(row['Cabang/ Site'] || row['BRANCH/SITE'] || '').toUpperCase().trim();
+                        let pic = row['PIC'] || 'Unknown';
+                        picSet.add(pic);
 
-                    rawData.push({ name, nrp, area, pic, statM1, statM2, finalStatus, covStatus });
-                });
+                        // Ambil Status
+                        let statM1 = String(row['Status Modul 1'] || '').toUpperCase().trim();
+                        let statM2 = String(row['Status Modul 2'] || '').toUpperCase().trim();
+                        
+                        // Kalkulasi Logic Final Status
+                        let finalStatus = "NOT YET";
+                        let covStatus = "Not Coverage";
 
-                // Update Dropdown Filter PIC
-                let picSelect = document.getElementById("filterPIC");
-                picSelect.innerHTML = '<option value="ALL">Semua PIC</option>';
-                picSet.forEach(p => {
-                    if (p !== 'Unknown' && p.trim() !== '') {
-                        picSelect.innerHTML += `<option value="${p}">${p}</option>`;
-                    }
-                });
+                        if (statM1 === "DONE" && statM2 === "DONE") {
+                            finalStatus = "DONE";
+                            covStatus = "Tercoverage";
+                        } else if (statM1 === "DONE" || statM2 === "DONE" || statM1.includes("PROGRESS") || statM2.includes("PROGRESS")) {
+                            finalStatus = "ON PROGRESS";
+                        } else {
+                            finalStatus = "NOT YET";
+                        }
 
-                alert(`Berhasil memuat ${rawData.length} data karyawan dari Excel!`);
-                renderDashboard();
-            };
-            reader.readAsBinaryString(file);
+                        rawData.push({ name, nrp, area, pic, statM1, statM2, finalStatus, covStatus });
+                    });
+
+                    // Update Dropdown Filter PIC
+                    let picSelect = document.getElementById("filterPIC");
+                    picSelect.innerHTML = '<option value="ALL">Semua PIC</option>';
+                    picSet.forEach(p => {
+                        if (p !== 'Unknown' && p.trim() !== '') {
+                            picSelect.innerHTML += `<option value="${p}">${p}</option>`;
+                        }
+                    });
+
+                    // Render ulang dashboard setelah data didapat
+                    renderDashboard();
+                } else {
+                    alert("Error dari server: " + result.message);
+                }
+            } catch (error) {
+                console.error("Gagal terhubung ke API:", error);
+                alert("Gagal memuat data. Periksa koneksi internet atau script Google Anda.");
+                document.querySelector('#tablePeserta tbody').innerHTML = '<tr><td colspan="6" class="text-center py-4 text-danger fw-bold">Gagal memuat data.</td></tr>';
+            } finally {
+                // Matikan animasi loading
+                btnRefresh.disabled = false;
+                iconRefresh.classList.remove('fa-spin-fast');
+            }
         }
+
+        // Panggil saat halaman pertama kali dibuka
+        document.addEventListener("DOMContentLoaded", () => {
+            loadDataFromAPI();
+        });
 
         // --- RESET CHART HELPER ---
         function resetChart(id) {
@@ -480,7 +510,10 @@
 
         // --- RENDER SELURUH DASHBOARD ---
         function renderDashboard() {
-            if(rawData.length === 0) return;
+            if (rawData.length === 0) {
+                document.querySelector('#tablePeserta tbody').innerHTML = '<tr><td colspan="6" class="text-center py-4 text-muted fw-bold">Data kosong. Pastikan spreadsheet telah diisi.</td></tr>';
+                return;
+            }
 
             const fArea = document.getElementById("filterArea").value;
             const fStatus = document.getElementById("filterStatus").value;
@@ -508,11 +541,9 @@
                 if(d.finalStatus === "ON PROGRESS") totalOnProgress++;
                 if(d.finalStatus === "NOT YET") totalNotYet++;
 
-                // Pengelompokan per Area (Jika area valid)
                 let k = AREA_KEYS.includes(d.area) ? d.area : null;
                 if(k) {
                     areaCount[k].total++;
-                    
                     if(d.covStatus === "Tercoverage") areaCount[k].cov++;
                     else areaCount[k].notCov++;
 
@@ -544,7 +575,6 @@
                 }
             };
 
-            // Pie 1: Training Coverage
             resetChart('pieCoverage');
             chartInstances['pieCoverage'] = new Chart(document.getElementById('pieCoverage'), {
                 type: 'pie',
@@ -552,7 +582,6 @@
                 options: pieOptions
             });
 
-            // Pie 2: Participant Status
             resetChart('pieParticipant');
             chartInstances['pieParticipant'] = new Chart(document.getElementById('pieParticipant'), {
                 type: 'pie',
@@ -560,7 +589,6 @@
                 options: pieOptions
             });
 
-            // Pie 3: Distribution By Area
             let areaVals = AREA_KEYS.map(k => areaCount[k].total);
             resetChart('pieArea');
             chartInstances['pieArea'] = new Chart(document.getElementById('pieArea'), {
@@ -575,7 +603,6 @@
                 scales: { x: { stacked: true }, y: { stacked: true, beginAtZero: true } } 
             };
 
-            // Bar 1: Coverage per Area
             resetChart('barCoverage');
             chartInstances['barCoverage'] = new Chart(document.getElementById('barCoverage'), {
                 type: 'bar',
@@ -589,7 +616,6 @@
                 options: barOptions
             });
 
-            // Bar 2: Participant per Area
             resetChart('barParticipant');
             chartInstances['barParticipant'] = new Chart(document.getElementById('barParticipant'), {
                 type: 'bar',
