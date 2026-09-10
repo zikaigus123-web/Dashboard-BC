@@ -258,53 +258,53 @@
         :fullscreen .sidebar { display: none !important; }
         :fullscreen .topbar { display: none !important; }
         :fullscreen .main-content { width: 100vw !important; height: 100vh !important; overflow-y: auto !important; }
-        :fullscreen #view-dashboard { display: flex; flex-direction: column; padding: 8px !important; gap: 8px; height: auto !important; min-height: 100vh; overflow-y: auto !important; }
+        :fullscreen #view-dashboard { display: flex; flex-direction: column; padding: 15px !important; gap: 15px; height: auto !important; min-height: 100vh; overflow-y: auto !important; }
         
-        :fullscreen .filter-container { flex: 0 0 auto; margin-bottom: 0 !important; padding: 4px 8px !important; }
-        :fullscreen .row { margin-bottom: 0 !important; flex-wrap: nowrap !important; gap: 8px; }
+        :fullscreen .filter-container { flex: 0 0 auto; margin-bottom: 0 !important; padding: 10px 15px !important; }
+        :fullscreen .row { flex: 0 0 auto !important; margin-bottom: 10px !important; flex-wrap: nowrap !important; gap: 15px; }
         :fullscreen .row > div { padding: 0 !important; display: flex; flex-direction: column; flex: 1; }
         
         :fullscreen .kpi-row { flex: 0 0 auto !important; }
-        :fullscreen .pie-row { flex: 1; min-height: 0; }
-        :fullscreen .bar-row { flex: 1; min-height: 0; }
-        :fullscreen .map-row { flex: 1.2; min-height: 0; }
+        :fullscreen .pie-row { flex: 0 0 auto !important; min-height: 300px; }
+        :fullscreen .bar-row { flex: 0 0 auto !important; min-height: 300px; }
+        :fullscreen .map-row { flex: 0 0 auto !important; min-height: 400px; }
         :fullscreen .map-row > div:nth-child(1) { flex: 0 0 35%; }
         :fullscreen .map-row > div:nth-child(2) { flex: 0 0 65%; }
 
-        :fullscreen .card-custom { padding: 8px; margin-bottom: 0 !important; height: 100%; }
-        :fullscreen .card-header-title { margin-bottom: 4px; padding: 2px; font-size: 0.75rem; }
-        :fullscreen .kpi-title { font-size: 0.65rem; }
-        :fullscreen .kpi-value { font-size: 1.4rem; margin-top: 2px; }
+        :fullscreen .card-custom { padding: 12px; margin-bottom: 0 !important; height: 100%; }
+        :fullscreen .card-header-title { margin-bottom: 8px; padding: 4px; font-size: 0.85rem; }
+        :fullscreen .kpi-title { font-size: 0.75rem; }
+        :fullscreen .kpi-value { font-size: 1.6rem; margin-top: 4px; }
         
-        :fullscreen .chart-wrapper { height: 26vh !important; min-height: 0 !important; }
-        :fullscreen .table-responsive { height: 100% !important; min-height: 0 !important; overflow-y: hidden; display: flex; flex-direction: column; }
-        :fullscreen #mapArea { height: 35vh !important; min-height: 0 !important; }
+        :fullscreen .chart-wrapper { height: 35vh !important; min-height: 250px !important; }
+        :fullscreen .table-responsive { height: 100% !important; min-height: 300px !important; overflow-y: auto; display: flex; flex-direction: column; }
+        :fullscreen #mapArea { height: 40vh !important; min-height: 300px !important; }
 
         /* Kompatibilitas Webkit Fullscreen */
         :-webkit-full-screen .sidebar { display: none !important; }
         :-webkit-full-screen .topbar { display: none !important; }
         :-webkit-full-screen .main-content { width: 100vw !important; height: 100vh !important; overflow-y: auto !important; }
-        :-webkit-full-screen #view-dashboard { display: flex; flex-direction: column; padding: 8px !important; gap: 8px; height: auto !important; min-height: 100vh; overflow-y: auto !important; }
+        :-webkit-full-screen #view-dashboard { display: flex; flex-direction: column; padding: 15px !important; gap: 15px; height: auto !important; min-height: 100vh; overflow-y: auto !important; }
         
-        :-webkit-full-screen .filter-container { flex: 0 0 auto; margin-bottom: 0 !important; padding: 4px 8px !important; }
-        :-webkit-full-screen .row { margin-bottom: 0 !important; flex-wrap: nowrap !important; gap: 8px; }
+        :-webkit-full-screen .filter-container { flex: 0 0 auto; margin-bottom: 0 !important; padding: 10px 15px !important; }
+        :-webkit-full-screen .row { flex: 0 0 auto !important; margin-bottom: 10px !important; flex-wrap: nowrap !important; gap: 15px; }
         :-webkit-full-screen .row > div { padding: 0 !important; display: flex; flex-direction: column; flex: 1; }
         
         :-webkit-full-screen .kpi-row { flex: 0 0 auto !important; }
-        :-webkit-full-screen .pie-row { flex: 1; min-height: 0; }
-        :-webkit-full-screen .bar-row { flex: 1; min-height: 0; }
-        :-webkit-full-screen .map-row { flex: 1.2; min-height: 0; }
+        :-webkit-full-screen .pie-row { flex: 0 0 auto !important; min-height: 300px; }
+        :-webkit-full-screen .bar-row { flex: 0 0 auto !important; min-height: 300px; }
+        :-webkit-full-screen .map-row { flex: 0 0 auto !important; min-height: 400px; }
         :-webkit-full-screen .map-row > div:nth-child(1) { flex: 0 0 35%; }
         :-webkit-full-screen .map-row > div:nth-child(2) { flex: 0 0 65%; }
 
-        :-webkit-full-screen .card-custom { padding: 8px; margin-bottom: 0 !important; height: 100%; }
-        :-webkit-full-screen .card-header-title { margin-bottom: 4px; padding: 2px; font-size: 0.75rem; }
-        :-webkit-full-screen .kpi-title { font-size: 0.65rem; }
-        :-webkit-full-screen .kpi-value { font-size: 1.4rem; margin-top: 2px; }
+        :-webkit-full-screen .card-custom { padding: 12px; margin-bottom: 0 !important; height: 100%; }
+        :-webkit-full-screen .card-header-title { margin-bottom: 8px; padding: 4px; font-size: 0.85rem; }
+        :-webkit-full-screen .kpi-title { font-size: 0.75rem; }
+        :-webkit-full-screen .kpi-value { font-size: 1.6rem; margin-top: 4px; }
         
-        :-webkit-full-screen .chart-wrapper { height: 26vh !important; min-height: 0 !important; }
-        :-webkit-full-screen .table-responsive { height: 100% !important; min-height: 0 !important; overflow-y: hidden; display: flex; flex-direction: column; }
-        :-webkit-full-screen #mapArea { height: 35vh !important; min-height: 0 !important; }
+        :-webkit-full-screen .chart-wrapper { height: 35vh !important; min-height: 250px !important; }
+        :-webkit-full-screen .table-responsive { height: 100% !important; min-height: 300px !important; overflow-y: auto; display: flex; flex-direction: column; }
+        :-webkit-full-screen #mapArea { height: 40vh !important; min-height: 300px !important; }
 
         /* SPINNER Animasi Load */
         @keyframes spin { 100% { transform: rotate(360deg); } }
@@ -430,13 +430,11 @@
                                 <select id="filterArea" class="form-select form-select-sm shadow-sm" onchange="renderDashboard()">
                                     <option value="ALL">Semua Area</option>
                                     <option value="JKT">Jakarta (JKT)</option>
-                                    <option value="SMD">Samarinda (SMD)</option>
-                                    <option value="BLP">Balikpapan (BLP)</option>
                                     <option value="PKB">Pekanbaru (PKB)</option>
+                                    <option value="BLP">Balikpapan (BLP)</option>
+                                    <option value="SMD">Samarinda (SMD)</option>
                                     <option value="BJM">Banjarmasin (BJM)</option>
                                     <option value="UPG">Ujung Pandang (UPG)</option>
-                                    <option value="SOD">Sorowako (SOD)</option>
-                                    <option value="BLG">Balangan (BLG)</option>
                                 </select>
                             </div>
                             <div class="filter-group">
@@ -570,13 +568,11 @@
                             <select id="filterAreaMaster" class="form-select form-select-sm shadow-sm" style="width: auto;" onchange="renderMasterTable()">
                                 <option value="ALL">Semua Area</option>
                                 <option value="JKT">Jakarta (JKT)</option>
-                                <option value="SMD">Samarinda (SMD)</option>
-                                <option value="BLP">Balikpapan (BLP)</option>
                                 <option value="PKB">Pekanbaru (PKB)</option>
+                                <option value="BLP">Balikpapan (BLP)</option>
+                                <option value="SMD">Samarinda (SMD)</option>
                                 <option value="BJM">Banjarmasin (BJM)</option>
                                 <option value="UPG">Ujung Pandang (UPG)</option>
-                                <option value="SOD">Sorowako (SOD)</option>
-                                <option value="BLG">Balangan (BLG)</option>
                             </select>
 
                             <a href="https://docs.google.com/spreadsheets/d/1MswJRi_KEwzvgEAlwAJ6uHw-Y7mQEyPiBig3zv09aVw/edit?usp=sharing" target="_blank" class="btn btn-outline-info fw-bold bg-white text-dark border-2 border-info shadow-sm ms-2">
@@ -622,13 +618,11 @@
                                 <select class="form-select shadow-sm border-dark" id="reportFilterArea">
                                     <option value="ALL">Semua Area (ALL)</option>
                                     <option value="JKT">Jakarta (JKT)</option>
-                                    <option value="SMD">Samarinda (SMD)</option>
-                                    <option value="BLP">Balikpapan (BLP)</option>
                                     <option value="PKB">Pekanbaru (PKB)</option>
+                                    <option value="BLP">Balikpapan (BLP)</option>
+                                    <option value="SMD">Samarinda (SMD)</option>
                                     <option value="BJM">Banjarmasin (BJM)</option>
                                     <option value="UPG">Ujung Pandang (UPG)</option>
-                                    <option value="SOD">Sorowako (SOD)</option>
-                                    <option value="BLG">Balangan (BLG)</option>
                                 </select>
                             </div>
                             <div class="col-md-2">
@@ -797,6 +791,7 @@
         // --- GLOBAL VARIABLES ---
         let rawData = [];
         let rawDataFromSheet = []; 
+        let rawEventData = []; // Variabel baru khusus untuk mengolah data Event (Tanpa Duplicate Karyawan)
         let chartInstances = {};
         let map = null;
         let mapMarkers = [];
@@ -808,17 +803,16 @@
             }
         }
 
+        // Fokus pada 6 Lokasi Spesifik
         const COORDS = {
             "JKT": { lat: -6.2088, lng: 106.8456, nama: "Jakarta" },
             "SMD": { lat: -0.5022, lng: 117.1536, nama: "Samarinda" },
             "BLP": { lat: -1.2379, lng: 116.8529, nama: "Balikpapan" },
             "PKB": { lat: 0.5333, lng: 101.4500,  nama: "Pekanbaru" },
             "BJM": { lat: -3.3167, lng: 114.5901, nama: "Banjarmasin" },
-            "UPG": { lat: -5.1476, lng: 119.4327, nama: "Ujung Pandang" },
-            "SOD": { lat: -2.5333, lng: 121.3500, nama: "Sorowako" },
-            "BLG": { lat: -2.3333, lng: 115.5000, nama: "Balangan" }
+            "UPG": { lat: -5.1476, lng: 119.4327, nama: "Ujung Pandang" }
         };
-        const AREA_KEYS = ["JKT", "SMD", "BLP", "PKB", "BJM", "UPG", "SOD", "BLG"];
+        const AREA_KEYS = ["JKT", "PKB", "BLP", "SMD", "BJM", "UPG"];
 
         // --- INITIALIZE MAP ---
         function initMap() {
@@ -864,6 +858,7 @@
                     rawDataFromSheet = result.data || []; 
                     let uniqueData = {};
                     let picSet = new Set();
+                    let allEvents = []; // Penampung Data Event untuk Logika Baru
 
                     rawDataFromSheet.forEach(row => {
                         let nameRaw = String(getCol(row, ['NAME', 'NAMA'])).trim();
@@ -872,7 +867,7 @@
                         let name = nameRaw;
                         let nrp = getCol(row, ['NRP']);
                         
-                        // Menambahkan UT CORPU sebagai identifier kolom lokasi serta pemetaan kata kunci
+                        // Logika Mendeteksi Area via UT CORPU secara ketat ke 6 lokasi
                         let areaRaw = String(getCol(row, ['UT CORPU', 'CABANG/ SITE', 'BRANCH/SITE', 'CABANG/SITE', 'CABANG / SITE'])).toUpperCase().trim();
                         let area = areaRaw;
                         if (areaRaw.includes('JAKARTA')) area = 'JKT';
@@ -881,11 +876,22 @@
                         else if (areaRaw.includes('PEKANBARU')) area = 'PKB';
                         else if (areaRaw.includes('BANJARMASIN')) area = 'BJM';
                         else if (areaRaw.includes('UJUNG PANDANG') || areaRaw.includes('MAKASSAR')) area = 'UPG';
-                        else if (areaRaw.includes('SOROWAKO')) area = 'SOD';
-                        else if (areaRaw.includes('BALANGAN')) area = 'BLG';
 
                         let pic = getCol(row, ['PIC']) || 'Unknown';
                         
+                        // Ekstraksi Logika Khusus Event
+                        let modulName = String(getCol(row, ['TRAINING MODUL', 'NAMA MODUL', 'MODUL', 'EVENT'])).trim();
+                        let nilaiRaw = String(getCol(row, ['NILAI', 'SCORE'])).trim();
+                        // Jika ada nilainya, artinya event ini sudah dilakukan
+                        let hasNilai = (nilaiRaw !== '' && nilaiRaw !== '-');
+                        
+                        allEvents.push({
+                            area: area,
+                            pic: pic,
+                            modulName: modulName,
+                            hasNilai: hasNilai
+                        });
+
                         let statM1 = getCol(row, ['STATUS MODUL 1']);
                         let statM2 = getCol(row, ['STATUS MODUL 2']);
                         
@@ -903,6 +909,7 @@
 
                         if(pic !== 'Unknown' && pic.trim() !== '') picSet.add(pic);
 
+                        // Pengelompokan Data Partisipan Karyawan (Tanpa Dobel Data)
                         let key = nrp && String(nrp).trim() !== '' ? String(nrp).trim() : name.toUpperCase(); 
                         if (!uniqueData[key]) {
                             uniqueData[key] = { name, nrp, area, pic, statM1, statM2, finalStatus, covStatus };
@@ -918,6 +925,7 @@
                     });
 
                     rawData = Object.values(uniqueData);
+                    rawEventData = allEvents; // Menyimpan data murni (termasuk duplikat peserta) ke Event Chart
 
                     let picSelect = document.getElementById("filterPIC");
                     if(picSelect) {
@@ -1051,8 +1059,6 @@
                 else if (areaRaw.includes('PEKANBARU')) areaStr = 'PKB';
                 else if (areaRaw.includes('BANJARMASIN')) areaStr = 'BJM';
                 else if (areaRaw.includes('UJUNG PANDANG') || areaRaw.includes('MAKASSAR')) areaStr = 'UPG';
-                else if (areaRaw.includes('SOROWAKO')) areaStr = 'SOD';
-                else if (areaRaw.includes('BALANGAN')) areaStr = 'BLG';
 
                 let pic = getCol(row, ['PIC']);
                 let m1 = getCol(row, ['STATUS MODUL 1']);
@@ -1082,7 +1088,7 @@
                 document.getElementById("kpiTotal").innerText = 0;
                 document.getElementById("kpiCoverage").innerHTML = `0 <span style="font-size: 1.1rem; color: #555;">(0%)</span>`;
                 
-                // Reset KPI secara individual agar tidak menimpa format HTML
+                // Mencegah error duplikasi dengan menembak langsung innerText HTML
                 document.getElementById("kpiProgress").innerText = "0";
                 document.getElementById("kpiNotYet").innerText = "0";
                 
@@ -1099,11 +1105,19 @@
             const fStatus = document.getElementById("filterStatus").value;
             const fPIC = document.getElementById("filterPIC").value;
 
+            // --- FILTER PARTICIPANT (Data Unique) ---
             let filtered = rawData.filter(d => {
                 let mArea = fArea === "ALL" || d.area === fArea;
                 let mStat = fStatus === "ALL" || d.finalStatus === fStatus;
                 let mPIC = fPIC === "ALL" || d.pic === fPIC;
                 return mArea && mStat && mPIC;
+            });
+
+            // --- FILTER EVENT (Data Keseluruhan modul spesifik) ---
+            let filteredEvents = rawEventData.filter(d => {
+                let mArea = fArea === "ALL" || d.area === fArea;
+                let mPIC = fPIC === "ALL" || d.pic === fPIC;
+                return mArea && mPIC;
             });
 
             let totalPeserta = filtered.length;
@@ -1112,9 +1126,9 @@
             let totalNotYet = 0;
 
             let areaCount = {};
-            // Menginisialisasi perhitungan event (eventDone & eventNotYet)
             AREA_KEYS.forEach(k => areaCount[k] = { total: 0, cov: 0, notCov: 0, done: 0, prog: 0, ny: 0, eventDone: 0, eventNotYet: 0 });
 
+            // KALKULASI PARTICIPANT
             filtered.forEach(d => {
                 if(d.covStatus === "Tercoverage") totalCoverage++;
                 if(d.finalStatus === "ON PROGRESS") totalOnProgress++;
@@ -1129,21 +1143,42 @@
                     if(d.finalStatus === "DONE") areaCount[k].done++;
                     else if(d.finalStatus === "ON PROGRESS") areaCount[k].prog++;
                     else areaCount[k].ny++;
-                    
-                    // Kalkulasi Event: Setiap Karyawan memiliki 2 Modul (Event)
-                    let m1Done = (d.statM1 && (d.statM1.toUpperCase().includes('FINISH') || d.statM1.toUpperCase().includes('DONE') || d.statM1.toUpperCase().includes('LULUS'))) ? 1 : 0;
-                    let m2Done = (d.statM2 && (d.statM2.toUpperCase().includes('FINISH') || d.statM2.toUpperCase().includes('DONE') || d.statM2.toUpperCase().includes('LULUS'))) ? 1 : 0;
-                    
-                    areaCount[k].eventDone += (m1Done + m2Done);
-                    areaCount[k].eventNotYet += (2 - m1Done - m2Done);
                 }
             });
 
+            // KALKULASI EVENT BERDASARKAN SYARAT
+            let eventMap = {};
+            AREA_KEYS.forEach(k => eventMap[k] = {});
+
+            filteredEvents.forEach(d => {
+                let k = d.area;
+                if (AREA_KEYS.includes(k) && d.modulName !== '') {
+                    // Daftarkan modul ke Area 
+                    if (eventMap[k][d.modulName] === undefined) {
+                        eventMap[k][d.modulName] = false;
+                    }
+                    // Jika ada minimal 1 anak yg mendapatkan nilai, event modul itu otomatis True/Done
+                    if (d.hasNilai) {
+                        eventMap[k][d.modulName] = true; 
+                    }
+                }
+            });
+
+            AREA_KEYS.forEach(k => {
+                for (let mod in eventMap[k]) {
+                    if (eventMap[k][mod] === true) {
+                        areaCount[k].eventDone++;
+                    } else {
+                        areaCount[k].eventNotYet++;
+                    }
+                }
+            });
+
+            // UPDATE KPI DASHBOARD TEXT SCORE
             let pctCov = totalPeserta === 0 ? 0 : ((totalCoverage / totalPeserta) * 100).toFixed(1);
             document.getElementById("kpiTotal").innerText = totalPeserta;
             document.getElementById("kpiCoverage").innerHTML = `${totalCoverage} <span style="font-size: 1.1rem; color: #555;">(${pctCov}%)</span>`;
             
-            // Meng-update teks KPI secara terpisah agar tidak menyebabkan duplikasi " / "
             document.getElementById("kpiProgress").innerText = totalOnProgress;
             document.getElementById("kpiNotYet").innerText = totalNotYet;
 
@@ -1180,7 +1215,7 @@
             resetChart('pieArea');
             chartInstances['pieArea'] = new Chart(document.getElementById('pieArea'), {
                 type: 'pie',
-                data: { labels: AREA_KEYS, datasets: [{ data: areaVals, backgroundColor: ['#4285f4', '#f97316', '#a855f7', '#ec4899', '#14b8a6', '#64748b', '#eab308', '#22c55e'] }] },
+                data: { labels: AREA_KEYS, datasets: [{ data: areaVals, backgroundColor: ['#4285f4', '#f97316', '#a855f7', '#ec4899', '#14b8a6', '#64748b'] }] },
                 options: pieOptions
             });
 
@@ -1190,7 +1225,7 @@
                 scales: { x: { stacked: true }, y: { stacked: true, beginAtZero: true } } 
             };
 
-            // Mengubah Bar Coverage menjadi Bar Event
+            // RENDER TRAINING EVENT PER AREA (BERDASARKAN STATUS MODULE)
             resetChart('barCoverage');
             chartInstances['barCoverage'] = new Chart(document.getElementById('barCoverage'), {
                 type: 'bar',
