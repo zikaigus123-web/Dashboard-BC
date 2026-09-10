@@ -50,7 +50,7 @@
         }
 
         /* ==========================================
-           MODAL LOGIN STYLES (FITUR BARU)
+           MODAL LOGIN STYLES 
            ========================================== */
         .login-wrapper { 
             height: 100vh; 
@@ -230,17 +230,18 @@
             flex: 1 1 0; 
             min-height: 0; 
             width: 100%;
-            height: 100%;
             display: flex;
             justify-content: center;
             align-items: center;
         }
+        /* REVISI 1 & 2: Posisi Absolute mencegah flexbox stretching tak terhingga */
         .canvas-container {
-            position: relative;
-            width: 100%;
-            height: 100%;
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
         }
-        canvas { max-height: 100% !important; max-width: 100% !important; }
 
         /* --- TABLE --- */
         .table-custom th {
@@ -264,20 +265,23 @@
         /* --- MAP --- */
         #mapArea { flex: 1 1 0; min-height: 250px; width: 100%; border-radius: 6px; border: 1px solid #000; z-index: 1; }
 
-        /* --- REVISI FULLSCREEN (TANPA SCROLL & RAPI) --- */
+        /* --- REVISI 2: FULLSCREEN (TANPA SCROLL & RAPI) --- */
         :fullscreen .sidebar { display: none !important; }
         :fullscreen .topbar { display: none !important; }
-        :fullscreen .main-content { width: 100% !important; overflow: hidden !important; }
-        :fullscreen .content-body { padding: 8px !important; overflow: hidden !important; gap: 6px; }
+        :fullscreen .main-content { width: 100vw !important; height: 100vh !important; overflow: hidden !important; }
+        :fullscreen #view-dashboard { display: flex; flex-direction: column; padding: 10px !important; gap: 6px; height: 100vh; overflow: hidden !important; }
         
-        :fullscreen .filter-container { margin-bottom: 0 !important; padding: 4px 8px !important; }
-        :fullscreen .row { margin-bottom: 0 !important; flex: 1 1 0; min-height: 0; gap: 6px; }
-        :fullscreen .row > div { padding: 0 4px !important; display: flex; flex-direction: column; }
+        :fullscreen .filter-container { flex: 0 0 auto; margin-bottom: 0 !important; padding: 6px 10px !important; }
+        :fullscreen .row { flex: 1 1 0; min-height: 0; margin-bottom: 0 !important; gap: 6px; }
+        :fullscreen .row.g-3 > div { padding: 0 4px !important; display: flex; flex-direction: column; }
         
-        :fullscreen .card-custom { padding: 6px; margin-bottom: 0 !important; }
-        :fullscreen .card-header-title { margin-bottom: 4px; padding: 2px; font-size: 0.75rem; }
-        :fullscreen .kpi-title { font-size: 0.65rem; }
-        :fullscreen .kpi-value { font-size: 1.3rem; margin-top: 0; }
+        /* Baris KPI tidak butuh flex besar */
+        :fullscreen .row.kpi-row { flex: 0 0 auto !important; }
+        
+        :fullscreen .card-custom { padding: 8px; margin-bottom: 0 !important; }
+        :fullscreen .card-header-title { margin-bottom: 4px; padding: 2px; font-size: 0.8rem; }
+        :fullscreen .kpi-title { font-size: 0.7rem; }
+        :fullscreen .kpi-value { font-size: 1.4rem; margin-top: 0; }
         
         :fullscreen .table-responsive { max-height: none !important; flex: 1 1 0; min-height: 0; overflow-y: auto; }
         :fullscreen #mapArea { min-height: 0 !important; }
@@ -285,17 +289,19 @@
         /* Kompatibilitas Webkit Fullscreen */
         :-webkit-full-screen .sidebar { display: none !important; }
         :-webkit-full-screen .topbar { display: none !important; }
-        :-webkit-full-screen .main-content { width: 100% !important; overflow: hidden !important; }
-        :-webkit-full-screen .content-body { padding: 8px !important; overflow: hidden !important; gap: 6px; }
+        :-webkit-full-screen .main-content { width: 100vw !important; height: 100vh !important; overflow: hidden !important; }
+        :-webkit-full-screen #view-dashboard { display: flex; flex-direction: column; padding: 10px !important; gap: 6px; height: 100vh; overflow: hidden !important; }
         
-        :-webkit-full-screen .filter-container { margin-bottom: 0 !important; padding: 4px 8px !important; }
-        :-webkit-full-screen .row { margin-bottom: 0 !important; flex: 1 1 0; min-height: 0; gap: 6px; }
-        :-webkit-full-screen .row > div { padding: 0 4px !important; display: flex; flex-direction: column; }
+        :-webkit-full-screen .filter-container { flex: 0 0 auto; margin-bottom: 0 !important; padding: 6px 10px !important; }
+        :-webkit-full-screen .row { flex: 1 1 0; min-height: 0; margin-bottom: 0 !important; gap: 6px; }
+        :-webkit-full-screen .row.g-3 > div { padding: 0 4px !important; display: flex; flex-direction: column; }
         
-        :-webkit-full-screen .card-custom { padding: 6px; margin-bottom: 0 !important; }
-        :-webkit-full-screen .card-header-title { margin-bottom: 4px; padding: 2px; font-size: 0.75rem; }
-        :-webkit-full-screen .kpi-title { font-size: 0.65rem; }
-        :-webkit-full-screen .kpi-value { font-size: 1.3rem; margin-top: 0; }
+        :-webkit-full-screen .row.kpi-row { flex: 0 0 auto !important; }
+        
+        :-webkit-full-screen .card-custom { padding: 8px; margin-bottom: 0 !important; }
+        :-webkit-full-screen .card-header-title { margin-bottom: 4px; padding: 2px; font-size: 0.8rem; }
+        :-webkit-full-screen .kpi-title { font-size: 0.7rem; }
+        :-webkit-full-screen .kpi-value { font-size: 1.4rem; margin-top: 0; }
         
         :-webkit-full-screen .table-responsive { max-height: none !important; flex: 1 1 0; min-height: 0; overflow-y: auto; }
         :-webkit-full-screen #mapArea { min-height: 0 !important; }
@@ -428,7 +434,7 @@
                     </div>
 
                     <!-- KPI SCORECARDS -->
-                    <div class="row g-3">
+                    <div class="row g-3 kpi-row">
                         <div class="col-md-4">
                             <div class="card-custom text-center justify-content-center">
                                 <div class="kpi-title">Total Karyawan (Peserta)</div>
@@ -508,7 +514,7 @@
                         <div class="col-xl-7">
                             <div class="card-custom p-2">
                                 <div class="card-header-title">Detail Status Peserta</div>
-                                <div class="table-responsive" style="flex: 1 1 0; min-height: 200px;">
+                                <div class="table-responsive">
                                     <table class="table table-hover table-custom mb-0" id="tablePeserta">
                                         <thead>
                                             <tr>
@@ -536,7 +542,7 @@
                         <h3 class="mb-0 fw-bold text-dark">Database Master Data (Spreadsheet)</h3>
                         
                         <div class="d-flex gap-2 flex-wrap align-items-center">
-                            <!-- Filter Area Master Data (Fitur Baru) -->
+                            <!-- Filter Area Master Data -->
                             <label class="fw-bold small text-dark mb-0 me-1">Filter Area:</label>
                             <select id="filterAreaMaster" class="form-select form-select-sm shadow-sm" style="width: auto;" onchange="renderMasterTable()">
                                 <option value="ALL">Semua Area</option>
@@ -587,7 +593,8 @@
                     
                     <div class="card-custom mb-4 bg-light border-2">
                         <div class="row g-3 align-items-end">
-                            <div class="col-md-3">
+                            <!-- REVISI 4: PENGATURAN GRID KOLOM AGAR FITUR PIC BISA MASUK DENGAN RAPI -->
+                            <div class="col-md-2">
                                 <label class="form-label small fw-bold text-dark">Filter Area</label>
                                 <select class="form-select shadow-sm border-dark" id="reportFilterArea">
                                     <option value="ALL">Semua Area (ALL)</option>
@@ -599,13 +606,19 @@
                                     <option value="UPG">Ujung Pandang (UPG)</option>
                                 </select>
                             </div>
-                            <div class="col-md-3">
+                            <div class="col-md-2">
                                 <label class="form-label small fw-bold text-dark">Filter Status Akhir</label>
                                 <select class="form-select shadow-sm border-dark" id="reportFilterStatus">
                                     <option value="ALL">Semua Status (ALL)</option>
                                     <option value="DONE">Done</option>
                                     <option value="ON PROGRESS">On Progress</option>
                                     <option value="NOT YET">Not Yet</option>
+                                </select>
+                            </div>
+                            <div class="col-md-2">
+                                <label class="form-label small fw-bold text-dark">Filter PIC</label>
+                                <select class="form-select shadow-sm border-dark" id="reportFilterPIC">
+                                    <option value="ALL">Semua PIC (ALL)</option>
                                 </select>
                             </div>
                             <div class="col-md-2">
@@ -660,7 +673,7 @@
         // --- KONFIGURASI API GOOGLE APPS SCRIPT ---
         const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxV839HVgAZemQRPKgT4bJJWJsGrI4kYh0HZjLbXwu0vQor_IqMi20ofG3jIgYlMrjIRQ/exec';
 
-        // --- LOGIN SECURITY (FITUR BARU) ---
+        // --- LOGIN SECURITY ---
         function togglePassword() {
             const pass = document.getElementById('password');
             const icon = document.getElementById('eyeIcon');
@@ -678,12 +691,10 @@
             const u = document.getElementById('username').value.trim();
             const p = document.getElementById('password').value;
             
-            // Kredensial Hardcode (admin / utcorp2026)
             if(u === 'admin' && p === 'utcorp2026') {
                 document.getElementById('loginScreen').classList.add('d-none');
                 document.getElementById('appContainer').classList.remove('d-none');
                 
-                // Load data API setelah login sukses
                 loadDataFromAPI();
                 
                 Swal.fire({
@@ -747,7 +758,6 @@
             }
         }
         
-        // Memastikan resize peta dan chart saat masuk/keluar fullscreen
         function handleResize() {
             setTimeout(() => { 
                 if(map) map.invalidateSize(); 
@@ -784,7 +794,7 @@
         }
         initMap();
 
-        // --- FETCH DATA FROM GOOGLE SHEETS API ---
+        // --- FETCH DATA (REVISI 3: ANTI GHOST DATA / BYPASS CACHE) ---
         async function loadDataFromAPI() {
             const btnRefresh = document.getElementById('btnRefresh');
             const iconRefresh = document.getElementById('iconRefresh');
@@ -795,17 +805,18 @@
             document.querySelector('#tblMasterData tbody').innerHTML = '<tr><td colspan="7" class="text-center py-5 text-muted fw-bold"><i class="fas fa-spinner fa-spin-fast me-2"></i> Sinkronisasi Data Spreadsheet...</td></tr>';
 
             try {
-                const response = await fetch(SCRIPT_URL);
+                // PARAMETER '?nocache=' MENCEGAH DATA LAMA (YANG SUDAH DIHAPUS) MUNCUL LAGI
+                const response = await fetch(SCRIPT_URL + "?nocache=" + new Date().getTime());
                 const result = await response.json();
 
                 if (result.status === "success") {
                     rawData = [];
-                    rawDataFromSheet = result.data; 
+                    rawDataFromSheet = result.data || []; 
                     let picSet = new Set();
 
-                    result.data.forEach(row => {
+                    rawDataFromSheet.forEach(row => {
                         let name = row['NAME'] || row['NAMA'] || '';
-                        if (!name) return; 
+                        if (!name || name.trim() === '') return; 
                         
                         let nrp = row['NRP'] || '';
                         let area = String(row['Cabang/ Site'] || row['BRANCH/SITE'] || '').toUpperCase().trim();
@@ -830,12 +841,24 @@
                         rawData.push({ name, nrp, area, pic, statM1, statM2, finalStatus, covStatus });
                     });
 
+                    // Update Dropdown Filter PIC (Dashboard)
                     let picSelect = document.getElementById("filterPIC");
                     if(picSelect) {
                         picSelect.innerHTML = '<option value="ALL">Semua PIC</option>';
                         picSet.forEach(p => {
                             if (p !== 'Unknown' && p.trim() !== '') {
                                 picSelect.innerHTML += `<option value="${p}">${p}</option>`;
+                            }
+                        });
+                    }
+
+                    // Update Dropdown Filter PIC (Report)
+                    let reportPicSelect = document.getElementById("reportFilterPIC");
+                    if(reportPicSelect) {
+                        reportPicSelect.innerHTML = '<option value="ALL">Semua PIC (ALL)</option>';
+                        picSet.forEach(p => {
+                            if (p !== 'Unknown' && p.trim() !== '') {
+                                reportPicSelect.innerHTML += `<option value="${p}">${p}</option>`;
                             }
                         });
                     }
@@ -855,7 +878,7 @@
             }
         }
 
-        // --- UPLOAD EXCEL (REVISI DATA 61 BACA 2) ---
+        // --- UPLOAD EXCEL ---
         function uploadExcelToCloud(e) {
             const file = e.target.files[0];
             if(!file) return;
@@ -873,15 +896,12 @@
                 const data = evt.target.result;
                 const workbook = XLSX.read(data, { type: 'binary' });
                 
-                // Cari Sheet yang benar ("ATS_PTCP (PLAN)") atau gunakan sheet pertama sebagai fallback
                 const targetSheetName = "ATS_PTCP (PLAN)";
                 const sheet = workbook.Sheets[targetSheetName] || workbook.Sheets[workbook.SheetNames[0]];
                 
-                // Baca sebagai array of arrays untuk mencari baris header
                 const sheetDataRaw = XLSX.utils.sheet_to_json(sheet, { header: 1 });
                 let headerRowIdx = -1;
                 
-                // Scan ke bawah mencari baris yang mengandung 'NAME'
                 for(let i=0; i<sheetDataRaw.length; i++) {
                     const rowText = sheetDataRaw[i].join("").toUpperCase();
                     if(rowText.includes("NAME") || rowText.includes("CABANG/ SITE")) {
@@ -896,13 +916,9 @@
                     return;
                 }
 
-                // Parsing dari baris header yang ditemukan
                 const jsonRaw = XLSX.utils.sheet_to_json(sheet, { range: headerRowIdx, defval: "" });
-                
-                // Buang baris yang kosong atau tidak memiliki NAME (menghindari array kotor)
                 const cleanJson = jsonRaw.filter(r => (r['NAME'] || r['NAMA']) && String(r['NAME'] || r['NAMA']).trim() !== '');
                 
-                // Kirim POST Request ke Apps Script
                 fetch(SCRIPT_URL, {
                     method: 'POST',
                     body: JSON.stringify({ data: cleanJson })
@@ -926,7 +942,7 @@
             reader.readAsBinaryString(file);
         }
 
-        // --- RENDER TABEL MASTER DATA & FILTER AREA (FITUR BARU) ---
+        // --- RENDER TABEL MASTER DATA ---
         function renderMasterTable() {
             const tbody = document.querySelector('#tblMasterData tbody');
             const fAreaMaster = document.getElementById('filterAreaMaster').value;
@@ -944,7 +960,6 @@
 
                 let areaStr = String(row['Cabang/ Site'] || row['BRANCH/SITE'] || '').toUpperCase().trim();
                 
-                // Filter Area Logika
                 if(fAreaMaster !== 'ALL' && areaStr !== fAreaMaster) return;
 
                 html += `
@@ -970,7 +985,19 @@
 
         function renderDashboard() {
             if (rawData.length === 0) {
+                // Kosongkan Scorecard
+                document.getElementById("kpiTotal").innerText = 0;
+                document.getElementById("kpiCoverage").innerHTML = `0 <span style="font-size: 1.1rem; color: #555;">(0%)</span>`;
+                document.getElementById("kpiProgress").innerText = 0;
+                document.getElementById("kpiNotYet").innerText = 0;
+
+                // Tampilkan pesan kosong pada tabel
                 document.querySelector('#tablePeserta tbody').innerHTML = '<tr><td colspan="6" class="text-center py-4 text-muted fw-bold">Data kosong. Pastikan spreadsheet telah diisi.</td></tr>';
+                
+                // Hancurkan diagram agar bersih
+                ["pieCoverage", "pieParticipant", "pieArea", "barCoverage", "barParticipant"].forEach(id => resetChart(id));
+                mapMarkers.forEach(m => map.removeLayer(m));
+                mapMarkers = [];
                 return;
             }
 
@@ -978,7 +1005,6 @@
             const fStatus = document.getElementById("filterStatus").value;
             const fPIC = document.getElementById("filterPIC").value;
 
-            // 1. Filter Data Aktif
             let filtered = rawData.filter(d => {
                 let mArea = fArea === "ALL" || d.area === fArea;
                 let mStat = fStatus === "ALL" || d.finalStatus === fStatus;
@@ -986,7 +1012,6 @@
                 return mArea && mStat && mPIC;
             });
 
-            // 2. Kalkulasi KPI
             let totalPeserta = filtered.length;
             let totalCoverage = 0;
             let totalOnProgress = 0;
@@ -1018,7 +1043,6 @@
             document.getElementById("kpiProgress").innerText = totalOnProgress;
             document.getElementById("kpiNotYet").innerText = totalNotYet;
 
-            // 3. Render Grafik (Revisi: Opsi ditekankan pada proper maintainAspectRatio)
             const pieOptions = {
                 responsive: true, 
                 maintainAspectRatio: false,
@@ -1089,10 +1113,8 @@
                 options: barOptions
             });
 
-            // 4. Update Peta
             mapMarkers.forEach(m => map.removeLayer(m));
             mapMarkers = [];
-            
             AREA_KEYS.forEach(k => {
                 if (areaCount[k].total > 0 && COORDS[k]) {
                     let marker = L.circleMarker([COORDS[k].lat, COORDS[k].lng], {
@@ -1109,14 +1131,11 @@
                 }
             });
 
-            // 5. Update Tabel
             let tbody = document.querySelector('#tablePeserta tbody');
             let htmlTable = "";
-            
             filtered.forEach(d => {
                 let badgeClass = d.finalStatus === "DONE" ? 'bg-success' : 
                                  d.finalStatus === "ON PROGRESS" ? 'bg-warning text-dark' : 'bg-danger';
-                
                 htmlTable += `
                     <tr>
                         <td><b class="text-dark">${d.name}</b><br><small class="text-muted">${d.nrp}</small></td>
@@ -1128,19 +1147,20 @@
                     </tr>
                 `;
             });
-            
             tbody.innerHTML = htmlTable || '<tr><td colspan="6" class="text-center py-4 text-muted fw-bold">Data tidak ditemukan pada filter yang dipilih.</td></tr>';
         }
 
-        // --- FITUR REPORT / LAPORAN (FITUR BARU) ---
+        // --- FITUR REPORT / LAPORAN ---
         function generateReport() {
             const statFilter = document.getElementById('reportFilterStatus').value; 
             const areaFilter = document.getElementById('reportFilterArea').value; 
+            const picFilter = document.getElementById('reportFilterPIC').value; 
             
             let filtered = rawData.filter(d => {
                 let matchStat = statFilter === 'ALL' || d.finalStatus === statFilter;
                 let matchArea = areaFilter === 'ALL' || d.area === areaFilter;
-                return matchStat && matchArea;
+                let matchPic = picFilter === 'ALL' || d.pic === picFilter;
+                return matchStat && matchArea && matchPic;
             });
             
             let html = '';
