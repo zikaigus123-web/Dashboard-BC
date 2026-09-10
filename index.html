@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dashboard Monitoring Development BC</title>
+    <title>Dashboard Monitoring Development 8 DP</title>
 
     <!-- Google Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
@@ -16,6 +16,12 @@
     
     <!-- Leaflet CSS (Map) -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin=""/>
+
+    <!-- SweetAlert2 (Untuk Popup Loading/Upload) -->
+    <link href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css" rel="stylesheet">
+
+    <!-- SheetJS (Excel) -->
+    <script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
 
     <style>
         :root {
@@ -34,10 +40,11 @@
             color: var(--text-main);
             overflow-x: hidden;
             margin: 0;
+            height: 100vh;
         }
 
         /* --- SIDEBAR --- */
-        #appContainer { display: flex; min-height: 100vh; }
+        #appContainer { display: flex; min-height: 100vh; height: 100vh; }
         
         .sidebar {
             width: 250px;
@@ -76,6 +83,7 @@
             font-weight: 600;
             transition: 0.2s;
             white-space: nowrap;
+            cursor: pointer;
         }
         .nav-link-custom:hover, .nav-link-custom.active {
             background-color: rgba(255, 193, 7, 0.1);
@@ -91,6 +99,8 @@
             flex-direction: column;
             width: calc(100% - 250px);
             transition: all 0.3s ease;
+            height: 100vh;
+            overflow-y: auto;
         }
         
         .topbar {
@@ -103,10 +113,15 @@
             position: sticky;
             top: 0;
             z-index: 999;
+            flex-shrink: 0;
         }
 
         .header-logos img { height: 40px; object-fit: contain; }
-        .content-body { padding: 1.5rem; }
+        .content-body { padding: 1.5rem; flex: 1; display: flex; flex-direction: column; }
+
+        /* View Toggle */
+        .view-section { display: none; flex: 1; flex-direction: column; }
+        .view-section.active { display: flex; }
 
         /* --- FILTER BAR --- */
         .filter-container {
@@ -121,6 +136,7 @@
             align-items: center;
             justify-content: space-between;
             box-shadow: 2px 2px 0px rgba(0,0,0,0.1);
+            flex-shrink: 0;
         }
         
         .filter-group { display: flex; align-items: center; gap: 8px; }
@@ -156,14 +172,25 @@
             font-weight: 800;
             font-style: italic;
             border-radius: 4px;
-            margin-bottom: 15px;
+            margin-bottom: 10px;
             font-size: 0.95rem;
+            flex-shrink: 0;
         }
         .kpi-title { font-size: 0.85rem; color: #555; font-weight: 700; text-transform: uppercase; }
         .kpi-value { font-size: 2rem; font-weight: 800; color: #000; line-height: 1.1; margin-top: 5px; }
 
-        /* --- CHARTS --- */
-        .chart-wrapper { position: relative; flex: 1; min-height: 220px; width: 100%; }
+        /* --- CHARTS (REVISI STRETCHING) --- */
+        .chart-wrapper { 
+            position: relative; 
+            flex: 1 1 0; /* Flex basis 0 sangat penting agar tidak stretching sembarangan */
+            min-height: 0; /* Mencegah overflow flexbox */
+            width: 100%;
+            height: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        canvas { max-height: 100% !important; max-width: 100% !important; }
 
         /* --- TABLE --- */
         .table-custom th {
@@ -184,17 +211,43 @@
         }
 
         /* --- MAP --- */
-        #mapArea { height: 350px; width: 100%; border-radius: 6px; border: 1px solid #ccc; z-index: 1; }
+        #mapArea { flex: 1 1 0; min-height: 250px; width: 100%; border-radius: 6px; border: 1px solid #ccc; z-index: 1; }
 
-        /* --- FULLSCREEN FIX --- */
+        /* --- REVISI FULLSCREEN (TANPA SCROLL) --- */
         :fullscreen .sidebar { display: none !important; }
         :fullscreen .topbar { display: none !important; }
-        :fullscreen .main-content { width: 100% !important; }
-        :fullscreen .content-body { padding: 15px; overflow-y: auto; height: 100vh; }
+        :fullscreen .main-content { width: 100% !important; overflow: hidden !important; }
+        :fullscreen .content-body { padding: 10px !important; overflow: hidden !important; gap: 8px; }
+        
+        :fullscreen .filter-container { margin-bottom: 0 !important; padding: 5px 10px !important; }
+        :fullscreen .row { margin-bottom: 0 !important; flex: 1 1 0; min-height: 0; gap: 8px; }
+        :fullscreen .row > div { padding: 0 4px !important; display: flex; flex-direction: column; }
+        
+        :fullscreen .card-custom { padding: 8px; margin-bottom: 0 !important; }
+        :fullscreen .card-header-title { margin-bottom: 5px; padding: 2px; font-size: 0.8rem; }
+        :fullscreen .kpi-title { font-size: 0.7rem; }
+        :fullscreen .kpi-value { font-size: 1.5rem; margin-top: 0; }
+        
+        :fullscreen .table-responsive { max-height: none !important; flex: 1 1 0; min-height: 0; overflow-y: auto; }
+        :fullscreen #mapArea { min-height: 0 !important; }
+
+        /* Kompatibilitas Webkit Fullscreen */
         :-webkit-full-screen .sidebar { display: none !important; }
         :-webkit-full-screen .topbar { display: none !important; }
-        :-webkit-full-screen .main-content { width: 100% !important; }
-        :-webkit-full-screen .content-body { padding: 15px; overflow-y: auto; height: 100vh; }
+        :-webkit-full-screen .main-content { width: 100% !important; overflow: hidden !important; }
+        :-webkit-full-screen .content-body { padding: 10px !important; overflow: hidden !important; gap: 8px; }
+        
+        :-webkit-full-screen .filter-container { margin-bottom: 0 !important; padding: 5px 10px !important; }
+        :-webkit-full-screen .row { margin-bottom: 0 !important; flex: 1 1 0; min-height: 0; gap: 8px; }
+        :-webkit-full-screen .row > div { padding: 0 4px !important; display: flex; flex-direction: column; }
+        
+        :-webkit-full-screen .card-custom { padding: 8px; margin-bottom: 0 !important; }
+        :-webkit-full-screen .card-header-title { margin-bottom: 5px; padding: 2px; font-size: 0.8rem; }
+        :-webkit-full-screen .kpi-title { font-size: 0.7rem; }
+        :-webkit-full-screen .kpi-value { font-size: 1.5rem; margin-top: 0; }
+        
+        :-webkit-full-screen .table-responsive { max-height: none !important; flex: 1 1 0; min-height: 0; overflow-y: auto; }
+        :-webkit-full-screen #mapArea { min-height: 0 !important; }
 
         /* SPINNER Animasi Load */
         @keyframes spin { 100% { transform: rotate(360deg); } }
@@ -211,8 +264,13 @@
                 <span class="nav-text">8 DP Portal</span>
             </div>
             <div class="d-flex flex-column mt-3 gap-1">
-                <a href="#" class="nav-link-custom active"><i class="fas fa-home"></i> <span class="nav-text">Dashboard Overview</span></a>
-                <a href="https://docs.google.com/spreadsheets/d/1MswJRi_KEwzvgEAlwAJ6uHw-Y7mQEyPiBig3zv09aVw/edit?usp=sharing" target="_blank" class="nav-link-custom"><i class="fas fa-database"></i> <span class="nav-text">Master Data</span></a>
+                <!-- Navigasi View -->
+                <div class="nav-link-custom active" onclick="switchView('dashboard', this)">
+                    <i class="fas fa-home"></i> <span class="nav-text">Dashboard Overview</span>
+                </div>
+                <div class="nav-link-custom" onclick="switchView('database', this)">
+                    <i class="fas fa-database"></i> <span class="nav-text">Master Data</span>
+                </div>
             </div>
         </div>
 
@@ -227,141 +285,182 @@
                         <img src="logo ut.png.png" alt="UT" onerror="this.src='https://via.placeholder.com/80x40?text=Logo+UT'">
                     </div>
                 </div>
-                <h4 class="mb-0 fw-bold fst-italic d-none d-lg-block" style="letter-spacing: -0.5px;">DASHBOARD MONITORING DEVELOPMENT BC</h4>
+                <h4 class="mb-0 fw-bold fst-italic d-none d-lg-block" style="letter-spacing: -0.5px;">DASHBOARD MONITORING DEVELOPMENT 8 DP</h4>
                 <div class="header-logos">
                     <img src="logo corpu.png" alt="Corpu" onerror="this.src='https://via.placeholder.com/80x40?text=Corpu'">
                 </div>
             </div>
 
-            <div class="content-body" id="dashboardView">
+            <div class="content-body">
                 
-                <!-- FILTER & ACTIONS -->
-                <div class="filter-container">
-                    <div class="d-flex flex-wrap gap-3">
-                        <div class="filter-group">
-                            <label>Filter Area:</label>
-                            <select id="filterArea" class="form-select form-select-sm" onchange="renderDashboard()">
-                                <option value="ALL">Semua Area</option>
-                                <option value="JKT">Jakarta (JKT)</option>
-                                <option value="SMD">Samarinda (SMD)</option>
-                                <option value="BLP">Balikpapan (BLP)</option>
-                                <option value="PKB">Pekanbaru (PKB)</option>
-                                <option value="BJM">Banjarmasin (BJM)</option>
-                                <option value="UPG">Ujung Pandang (UPG)</option>
-                            </select>
-                        </div>
-                        <div class="filter-group">
-                            <label>Filter Status:</label>
-                            <select id="filterStatus" class="form-select form-select-sm" onchange="renderDashboard()">
-                                <option value="ALL">Semua Status</option>
-                                <option value="DONE">Done</option>
-                                <option value="ON PROGRESS">On Progress</option>
-                                <option value="NOT YET">Not Yet</option>
-                            </select>
-                        </div>
-                        <div class="filter-group">
-                            <label>Filter PIC:</label>
-                            <select id="filterPIC" class="form-select form-select-sm" onchange="renderDashboard()">
-                                <option value="ALL">Sedang Memuat...</option>
-                            </select>
-                        </div>
-                    </div>
+                <!-- ==================== VIEW 1: DASHBOARD OVERVIEW ==================== -->
+                <div id="view-dashboard" class="view-section active">
                     
-                    <div class="d-flex gap-2">
-                        <a href="https://docs.google.com/spreadsheets/d/1MswJRi_KEwzvgEAlwAJ6uHw-Y7mQEyPiBig3zv09aVw/edit?usp=sharing" target="_blank" class="btn btn-outline-dark btn-sm fw-bold border-2"><i class="fas fa-external-link-alt me-1"></i> Spreadsheet</a>
-                        <button class="btn btn-brand btn-sm" id="btnRefresh" onclick="loadDataFromAPI()"><i class="fas fa-sync-alt me-1" id="iconRefresh"></i> Refresh Data</button>
-                        <button class="btn btn-dark btn-sm fw-bold border-2 border-dark" onclick="toggleFullscreen()"><i class="fas fa-tv me-1"></i> Fullscreen</button>
-                    </div>
-                </div>
-
-                <!-- KPI SCORECARDS -->
-                <div class="row g-3 mb-3">
-                    <div class="col-md-4">
-                        <div class="card-custom text-center justify-content-center">
-                            <div class="kpi-title">Total Karyawan (Peserta)</div>
-                            <div class="kpi-value text-dark" id="kpiTotal">0</div>
-                        </div>
-                    </div>
-                    <div class="col-md-4">
-                        <div class="card-custom text-center justify-content-center">
-                            <div class="kpi-title">Coverage (Tercapai / Karyawan)</div>
-                            <div class="kpi-value text-success" id="kpiCoverage">0 <span style="font-size: 1.1rem; color: #555;">(0%)</span></div>
-                        </div>
-                    </div>
-                    <div class="col-md-4">
-                        <div class="card-custom text-center justify-content-center">
-                            <div class="kpi-title">Progress (On Progress / Not Yet)</div>
-                            <div class="kpi-value"><span class="text-warning" id="kpiProgress">0</span> <span style="color:#ccc;">/</span> <span class="text-danger" id="kpiNotYet">0</span></div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- PIE CHARTS ROW -->
-                <div class="row g-3 mb-3">
-                    <div class="col-md-4">
-                        <div class="card-custom">
-                            <div class="card-header-title">Training Coverage</div>
-                            <div class="chart-wrapper"><canvas id="pieCoverage"></canvas></div>
-                        </div>
-                    </div>
-                    <div class="col-md-4">
-                        <div class="card-custom">
-                            <div class="card-header-title">Training Participant</div>
-                            <div class="chart-wrapper"><canvas id="pieParticipant"></canvas></div>
-                        </div>
-                    </div>
-                    <div class="col-md-4">
-                        <div class="card-custom">
-                            <div class="card-header-title">Distribution By Area</div>
-                            <div class="chart-wrapper"><canvas id="pieArea"></canvas></div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- BAR CHARTS ROW -->
-                <div class="row g-3 mb-3">
-                    <div class="col-md-6">
-                        <div class="card-custom">
-                            <div class="card-header-title">Training Coverage per Area</div>
-                            <div class="chart-wrapper"><canvas id="barCoverage"></canvas></div>
-                        </div>
-                    </div>
-                    <div class="col-md-6">
-                        <div class="card-custom">
-                            <div class="card-header-title">Training Participant per Area</div>
-                            <div class="chart-wrapper"><canvas id="barParticipant"></canvas></div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- MAP & TABLE ROW -->
-                <div class="row g-3">
-                    <div class="col-xl-5">
-                        <div class="card-custom p-2">
-                            <div class="card-header-title">Peta Persebaran Lokasi</div>
-                            <div id="mapArea"></div>
-                        </div>
-                    </div>
-                    <div class="col-xl-7">
-                        <div class="card-custom p-2">
-                            <div class="card-header-title">Detail Status Peserta</div>
-                            <div class="table-responsive" style="max-height: 350px;">
-                                <table class="table table-hover table-custom mb-0" id="tablePeserta">
-                                    <thead>
-                                        <tr>
-                                            <th>Nama / NRP</th>
-                                            <th>Area</th>
-                                            <th>PIC</th>
-                                            <th>Modul 1</th>
-                                            <th>Modul 2</th>
-                                            <th>Final Status</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        <tr><td colspan="6" class="text-center py-5 text-muted fw-bold"><i class="fas fa-spinner fa-spin me-2"></i> Sedang memuat data dari Spreadsheet...</td></tr>
-                                    </tbody>
-                                </table>
+                    <!-- FILTER & ACTIONS -->
+                    <div class="filter-container">
+                        <div class="d-flex flex-wrap gap-3">
+                            <div class="filter-group">
+                                <label>Filter Area:</label>
+                                <select id="filterArea" class="form-select form-select-sm" onchange="renderDashboard()">
+                                    <option value="ALL">Semua Area</option>
+                                    <option value="JKT">Jakarta (JKT)</option>
+                                    <option value="SMD">Samarinda (SMD)</option>
+                                    <option value="BLP">Balikpapan (BLP)</option>
+                                    <option value="PKB">Pekanbaru (PKB)</option>
+                                    <option value="BJM">Banjarmasin (BJM)</option>
+                                    <option value="UPG">Ujung Pandang (UPG)</option>
+                                </select>
                             </div>
+                            <div class="filter-group">
+                                <label>Filter Status:</label>
+                                <select id="filterStatus" class="form-select form-select-sm" onchange="renderDashboard()">
+                                    <option value="ALL">Semua Status</option>
+                                    <option value="DONE">Done</option>
+                                    <option value="ON PROGRESS">On Progress</option>
+                                    <option value="NOT YET">Not Yet</option>
+                                </select>
+                            </div>
+                            <div class="filter-group">
+                                <label>Filter PIC:</label>
+                                <select id="filterPIC" class="form-select form-select-sm" onchange="renderDashboard()">
+                                    <option value="ALL">Sedang Memuat...</option>
+                                </select>
+                            </div>
+                        </div>
+                        
+                        <div class="d-flex gap-2">
+                            <button class="btn btn-brand btn-sm" id="btnRefresh" onclick="loadDataFromAPI()"><i class="fas fa-sync-alt me-1" id="iconRefresh"></i> Refresh Data</button>
+                            <button class="btn btn-dark btn-sm fw-bold border-2 border-dark" onclick="toggleFullscreen()"><i class="fas fa-tv me-1"></i> Fullscreen</button>
+                        </div>
+                    </div>
+
+                    <!-- KPI SCORECARDS -->
+                    <div class="row g-3">
+                        <div class="col-md-4">
+                            <div class="card-custom text-center justify-content-center">
+                                <div class="kpi-title">Total Karyawan (Peserta)</div>
+                                <div class="kpi-value text-dark" id="kpiTotal">0</div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="card-custom text-center justify-content-center">
+                                <div class="kpi-title">Coverage (Tercapai / Karyawan)</div>
+                                <div class="kpi-value text-success" id="kpiCoverage">0 <span style="font-size: 1.1rem; color: #555;">(0%)</span></div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="card-custom text-center justify-content-center">
+                                <div class="kpi-title">Progress (On Progress / Not Yet)</div>
+                                <div class="kpi-value"><span class="text-warning" id="kpiProgress">0</span> <span style="color:#ccc;">/</span> <span class="text-danger" id="kpiNotYet">0</span></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- PIE CHARTS ROW -->
+                    <div class="row g-3">
+                        <div class="col-md-4">
+                            <div class="card-custom">
+                                <div class="card-header-title">Training Coverage</div>
+                                <div class="chart-wrapper"><canvas id="pieCoverage"></canvas></div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="card-custom">
+                                <div class="card-header-title">Training Participant</div>
+                                <div class="chart-wrapper"><canvas id="pieParticipant"></canvas></div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="card-custom">
+                                <div class="card-header-title">Distribution By Area</div>
+                                <div class="chart-wrapper"><canvas id="pieArea"></canvas></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- BAR CHARTS ROW -->
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <div class="card-custom">
+                                <div class="card-header-title">Training Coverage per Area</div>
+                                <div class="chart-wrapper"><canvas id="barCoverage"></canvas></div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="card-custom">
+                                <div class="card-header-title">Training Participant per Area</div>
+                                <div class="chart-wrapper"><canvas id="barParticipant"></canvas></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- MAP & TABLE ROW -->
+                    <div class="row g-3">
+                        <div class="col-xl-5">
+                            <div class="card-custom p-2">
+                                <div class="card-header-title">Peta Persebaran Lokasi</div>
+                                <div id="mapArea"></div>
+                            </div>
+                        </div>
+                        <div class="col-xl-7">
+                            <div class="card-custom p-2">
+                                <div class="card-header-title">Detail Status Peserta</div>
+                                <div class="table-responsive" style="flex: 1 1 0; min-height: 200px;">
+                                    <table class="table table-hover table-custom mb-0" id="tablePeserta">
+                                        <thead>
+                                            <tr>
+                                                <th>Nama / NRP</th>
+                                                <th>Area</th>
+                                                <th>PIC</th>
+                                                <th>Modul 1</th>
+                                                <th>Modul 2</th>
+                                                <th>Final Status</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <tr><td colspan="6" class="text-center py-5 text-muted fw-bold"><i class="fas fa-spinner fa-spin me-2"></i> Sedang memuat data dari Spreadsheet...</td></tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ==================== VIEW 2: DATABASE MASTER DATA ==================== -->
+                <div id="view-database" class="view-section">
+                    <div class="d-flex justify-content-between align-items-center mb-3 border-bottom pb-3">
+                        <h3 class="mb-0 fw-bold">Database Master Data (Spreadsheet)</h3>
+                        <div class="d-flex gap-2">
+                            <a href="https://docs.google.com/spreadsheets/d/1MswJRi_KEwzvgEAlwAJ6uHw-Y7mQEyPiBig3zv09aVw/edit?usp=sharing" target="_blank" class="btn btn-outline-info fw-bold bg-white text-dark border-2 border-info shadow-sm">
+                                <i class="fas fa-external-link-alt me-2 text-info"></i> Buka Spreadsheet
+                            </a>
+                            <!-- Input File Hidden -->
+                            <input type="file" id="importExcelInput" class="d-none" accept=".xlsx, .xls" onchange="uploadExcelToCloud(event)">
+                            <button class="btn btn-outline-secondary fw-bold bg-white text-dark border-2 border-secondary shadow-sm" onclick="document.getElementById('importExcelInput').click()">
+                                <i class="fas fa-upload me-2 text-secondary"></i> Import Data (Upload)
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="card-custom flex-grow-1" style="min-height: 400px;">
+                        <div class="table-responsive" style="height: 100%;">
+                            <table class="table table-hover table-custom align-middle" id="tblMasterData">
+                                <thead>
+                                    <tr>
+                                        <th>NO</th>
+                                        <th>NAMA PESERTA</th>
+                                        <th>NRP</th>
+                                        <th>CABANG / SITE</th>
+                                        <th>PIC</th>
+                                        <th>STATUS MODUL 1</th>
+                                        <th>STATUS MODUL 2</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr><td colspan="7" class="text-center py-5 text-muted fw-bold"><i class="fas fa-spinner fa-spin me-2"></i> Memuat data...</td></tr>
+                                </tbody>
+                            </table>
                         </div>
                     </div>
                 </div>
@@ -374,13 +473,33 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2"></script>
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
+    <!-- SweetAlert2 JS -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
     <script>
         // Registrasi plugin DataLabels untuk Chart.js
         Chart.register(ChartDataLabels);
 
         // --- KONFIGURASI API GOOGLE APPS SCRIPT ---
-        const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxV839HVgAZemQRPKgT4bJJWJsGrI4kYh0HZjLbXwu0vQor_IqMi20ofG3jIgYlMrjIRQ/exec';
+        // PASTIKAN URL INI ADALAH URL DEPLOY BARU SETELAH ANDA MENAMBAHKAN FUNGSI doPost
+        const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxE9bK2ka8_EyoCwzx4I1D1xrucx7JM_cR-U8UYNMEUgPu9hqXdsr6_3nI7pk7ZIJYO-Q/exec';
+
+        // --- NAVIGASI VIEW ---
+        function switchView(viewName, element) {
+            // Sembunyikan semua view
+            document.querySelectorAll('.view-section').forEach(el => el.classList.remove('active'));
+            // Tampilkan view yang dipilih
+            document.getElementById('view-' + viewName).classList.add('active');
+            
+            // Ubah state active pada menu sidebar
+            document.querySelectorAll('.nav-link-custom').forEach(el => el.classList.remove('active'));
+            element.classList.add('active');
+
+            // Render ulang peta jika masuk dashboard agar tidak glitch
+            if(viewName === 'dashboard') {
+                setTimeout(() => { if(map) map.invalidateSize(); }, 200);
+            }
+        }
 
         // --- SIDEBAR & FULLSCREEN CONTROLS ---
         function toggleSidebar() { 
@@ -399,9 +518,11 @@
             }
         }
         document.addEventListener('fullscreenchange', () => { setTimeout(() => { if(map) map.invalidateSize(); }, 300); });
+        document.addEventListener('webkitfullscreenchange', () => { setTimeout(() => { if(map) map.invalidateSize(); }, 300); });
 
         // --- GLOBAL VARIABLES ---
         let rawData = [];
+        let rawDataFromSheet = []; // Menyimpan raw utuh untuk tabel Master Data
         let chartInstances = {};
         let map = null;
         let mapMarkers = [];
@@ -419,7 +540,7 @@
 
         // --- INITIALIZE MAP ---
         function initMap() {
-            map = L.map('mapArea').setView([-2.5, 117.5], 4.5);
+            map = L.map('mapArea', { scrollWheelZoom: false }).setView([-2.5, 117.5], 4.5);
             L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
                 attribution: '&copy; OpenStreetMap & CartoDB'
             }).addTo(map);
@@ -435,6 +556,7 @@
             btnRefresh.disabled = true;
             iconRefresh.classList.add('fa-spin-fast');
             document.querySelector('#tablePeserta tbody').innerHTML = '<tr><td colspan="6" class="text-center py-5 text-muted fw-bold"><i class="fas fa-spinner fa-spin-fast me-2"></i> Sinkronisasi Data Spreadsheet...</td></tr>';
+            document.querySelector('#tblMasterData tbody').innerHTML = '<tr><td colspan="7" class="text-center py-5 text-muted fw-bold"><i class="fas fa-spinner fa-spin-fast me-2"></i> Sinkronisasi Data Spreadsheet...</td></tr>';
 
             try {
                 const response = await fetch(SCRIPT_URL);
@@ -442,6 +564,7 @@
 
                 if (result.status === "success") {
                     rawData = [];
+                    rawDataFromSheet = result.data; // Simpan asli
                     let picSet = new Set();
 
                     result.data.forEach(row => {
@@ -482,20 +605,97 @@
                         }
                     });
 
-                    // Render ulang dashboard setelah data didapat
+                    // Render ulang dashboard dan tabel master data
                     renderDashboard();
+                    renderMasterTable();
                 } else {
-                    alert("Error dari server: " + result.message);
+                    Swal.fire('Error', "Error dari server: " + result.message, 'error');
                 }
             } catch (error) {
                 console.error("Gagal terhubung ke API:", error);
-                alert("Gagal memuat data. Periksa koneksi internet atau script Google Anda.");
+                Swal.fire('Koneksi Gagal', 'Gagal memuat data. Periksa koneksi internet atau script Google Anda.', 'error');
                 document.querySelector('#tablePeserta tbody').innerHTML = '<tr><td colspan="6" class="text-center py-4 text-danger fw-bold">Gagal memuat data.</td></tr>';
             } finally {
-                // Matikan animasi loading
                 btnRefresh.disabled = false;
                 iconRefresh.classList.remove('fa-spin-fast');
             }
+        }
+
+        // --- UPLOAD EXCEL LANGSUNG KE GOOGLE SHEETS (POST REQUEST) ---
+        function uploadExcelToCloud(e) {
+            const file = e.target.files[0];
+            if(!file) return;
+
+            Swal.fire({ 
+                title: 'Membaca dan Mengunggah File...', 
+                html: 'Mohon tunggu, data sedang dikirim ke Google Sheets.',
+                allowOutsideClick: false, 
+                showConfirmButton: false, 
+                didOpen: () => { Swal.showLoading() } 
+            });
+
+            const reader = new FileReader();
+            reader.onload = function(evt) {
+                const data = evt.target.result;
+                const workbook = XLSX.read(data, { type: 'binary' });
+                const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+                
+                // Ambil data dengan Header di Baris ke-2 (range: 1)
+                const jsonRaw = XLSX.utils.sheet_to_json(firstSheet, { range: 1, defval: "" });
+                
+                // Kirim POST Request ke Apps Script
+                fetch(SCRIPT_URL, {
+                    method: 'POST',
+                    body: JSON.stringify({ data: jsonRaw })
+                })
+                .then(res => res.json())
+                .then(result => {
+                    if(result.status === 'success') {
+                        Swal.fire('Berhasil!', 'Data telah berhasil diunggah ke Spreadsheet.', 'success');
+                        // Refresh data setelah berhasil upload
+                        loadDataFromAPI();
+                    } else {
+                        Swal.fire('Gagal!', result.message, 'error');
+                    }
+                })
+                .catch(err => {
+                    console.error('Error Upload:', err);
+                    Swal.fire('Error', 'Gagal terhubung ke server saat mengunggah data.', 'error');
+                });
+                
+                // Reset input file
+                e.target.value = '';
+            };
+            reader.readAsBinaryString(file);
+        }
+
+        // --- RENDER TABEL MASTER DATA (VIEW 2) ---
+        function renderMasterTable() {
+            const tbody = document.querySelector('#tblMasterData tbody');
+            let html = '';
+            
+            if(rawDataFromSheet.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="7" class="text-center py-4 text-muted fw-bold">Tidak ada data di Spreadsheet.</td></tr>';
+                return;
+            }
+
+            rawDataFromSheet.forEach((row, index) => {
+                let name = row['NAME'] || row['NAMA'] || '-';
+                if(name === '-') return; // Skip empty rows
+
+                html += `
+                    <tr>
+                        <td class="text-center fw-bold">${index + 1}</td>
+                        <td class="fw-bold text-dark">${name}</td>
+                        <td>${row['NRP'] || '-'}</td>
+                        <td class="text-center"><span class="badge border border-dark text-dark">${row['Cabang/ Site'] || '-'}</span></td>
+                        <td>${row['PIC'] || '-'}</td>
+                        <td class="text-center">${row['Status Modul 1'] || '-'}</td>
+                        <td class="text-center">${row['Status Modul 2'] || '-'}</td>
+                    </tr>
+                `;
+            });
+            tbody.innerHTML = html;
         }
 
         // Panggil saat halaman pertama kali dibuka
@@ -505,10 +705,12 @@
 
         // --- RESET CHART HELPER ---
         function resetChart(id) {
-            if(chartInstances[id]) chartInstances[id].destroy();
+            if(chartInstances[id]) {
+                chartInstances[id].destroy();
+            }
         }
 
-        // --- RENDER SELURUH DASHBOARD ---
+        // --- RENDER SELURUH DASHBOARD (VIEW 1) ---
         function renderDashboard() {
             if (rawData.length === 0) {
                 document.querySelector('#tablePeserta tbody').innerHTML = '<tr><td colspan="6" class="text-center py-4 text-muted fw-bold">Data kosong. Pastikan spreadsheet telah diisi.</td></tr>';
@@ -650,7 +852,7 @@
                 }
             });
 
-            // 5. Update Tabel Peserta
+            // 5. Update Tabel Peserta Dashboard
             let tbody = document.querySelector('#tablePeserta tbody');
             let htmlTable = "";
             
