@@ -23,7 +23,7 @@
     <!-- SheetJS (Excel) -->
     <script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
     
-    <!-- jsPDF & AutoTable for PDF Export (Fitur Report) -->
+    <!-- jsPDF & AutoTable for PDF Export -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.1/jspdf.plugin.autotable.min.js"></script>
 
@@ -228,7 +228,7 @@
         .chart-wrapper { 
             position: relative; 
             width: 100%;
-            height: 220px; /* Nilai pasti untuk menghindari diagram melar/rusak di awal */
+            height: 220px; 
         }
         canvas { max-height: 100% !important; max-width: 100% !important; }
 
@@ -254,7 +254,7 @@
         /* --- MAP --- */
         #mapArea { flex: 1 1 0; min-height: 250px; width: 100%; border-radius: 6px; border: 1px solid #000; z-index: 1; }
 
-        /* --- REVISI 2: FULLSCREEN (GRID SUPER KETAT TANPA SCROLL) --- */
+        /* --- REVISI 8: FULLSCREEN (GRID SUPER KETAT TANPA SCROLL & TINGGI ABSOLUT) --- */
         :fullscreen .sidebar { display: none !important; }
         :fullscreen .topbar { display: none !important; }
         :fullscreen .main-content { width: 100vw !important; height: 100vh !important; overflow: hidden !important; }
@@ -276,9 +276,10 @@
         :fullscreen .kpi-title { font-size: 0.65rem; }
         :fullscreen .kpi-value { font-size: 1.4rem; margin-top: 2px; }
         
-        :fullscreen .chart-wrapper { height: 100% !important; min-height: 0 !important; }
-        :fullscreen .table-responsive { height: 100% !important; min-height: 0 !important; overflow-y: auto; }
-        :fullscreen #mapArea { height: 100% !important; min-height: 0 !important; }
+        /* FIX Chart JS Hilang di Fullscreen */
+        :fullscreen .chart-wrapper { height: 26vh !important; min-height: 0 !important; }
+        :fullscreen .table-responsive { height: 100% !important; min-height: 0 !important; overflow-y: hidden; display: flex; flex-direction: column; }
+        :fullscreen #mapArea { height: 35vh !important; min-height: 0 !important; }
 
         /* Kompatibilitas Webkit Fullscreen */
         :-webkit-full-screen .sidebar { display: none !important; }
@@ -302,9 +303,9 @@
         :-webkit-full-screen .kpi-title { font-size: 0.65rem; }
         :-webkit-full-screen .kpi-value { font-size: 1.4rem; margin-top: 2px; }
         
-        :-webkit-full-screen .chart-wrapper { height: 100% !important; min-height: 0 !important; }
-        :-webkit-full-screen .table-responsive { height: 100% !important; min-height: 0 !important; overflow-y: auto; }
-        :-webkit-full-screen #mapArea { height: 100% !important; min-height: 0 !important; }
+        :-webkit-full-screen .chart-wrapper { height: 26vh !important; min-height: 0 !important; }
+        :-webkit-full-screen .table-responsive { height: 100% !important; min-height: 0 !important; overflow-y: hidden; display: flex; flex-direction: column; }
+        :-webkit-full-screen #mapArea { height: 35vh !important; min-height: 0 !important; }
 
         /* SPINNER Animasi Load */
         @keyframes spin { 100% { transform: rotate(360deg); } }
@@ -346,6 +347,35 @@
         </div>
     </div>
 
+    <!-- ==========================================
+         MODAL LIHAT SEMUA KARYAWAN (REVISI 7)
+         ========================================== -->
+    <div class="modal fade" id="modalPeserta" tabindex="-1" aria-hidden="true">
+      <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
+        <div class="modal-content border-dark border-2">
+          <div class="modal-header bg-warning">
+            <h5 class="modal-title fw-bold text-dark"><i class="fas fa-users me-2"></i>Detail Seluruh Status Peserta</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <div class="modal-body p-0">
+            <table class="table table-hover table-custom mb-0" id="tablePesertaFull">
+              <thead style="position: sticky; top: 0; z-index: 10;">
+                <tr>
+                  <th>Nama / NRP</th>
+                  <th>Area</th>
+                  <th>PIC</th>
+                  <th>Modul 1</th>
+                  <th>Modul 2</th>
+                  <th>Final Status</th>
+                </tr>
+              </thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <div id="appContainer" class="d-none">
         <!-- SIDEBAR -->
         <div class="sidebar" id="sidebar">
@@ -354,7 +384,6 @@
                 <span class="nav-text">8 DP Portal</span>
             </div>
             <div class="d-flex flex-column mt-3 gap-1">
-                <!-- Navigasi View -->
                 <div class="nav-link-custom active" onclick="switchView('dashboard', this)">
                     <i class="fas fa-home"></i> <span class="nav-text">Dashboard Overview</span>
                 </div>
@@ -364,7 +393,6 @@
                 <div class="nav-link-custom" onclick="switchView('report', this)">
                     <i class="fas fa-file-invoice-dollar"></i> <span class="nav-text">Laporan (Report)</span>
                 </div>
-                
                 <div class="mt-auto mb-3 pt-3 px-2">
                     <div class="nav-link-custom py-2 text-danger" onclick="logout()" style="border-radius: 4px;">
                         <i class="fas fa-sign-out-alt"></i> <span class="nav-text">Keluar</span>
@@ -504,22 +532,27 @@
                         <div class="col-xl-7">
                             <div class="card-custom p-2">
                                 <div class="card-header-title">Detail Status Peserta</div>
-                                <div class="table-responsive">
-                                    <table class="table table-hover table-custom mb-0" id="tablePeserta">
-                                        <thead>
-                                            <tr>
-                                                <th>Nama / NRP</th>
-                                                <th>Area</th>
-                                                <th>PIC</th>
-                                                <th>Modul 1</th>
-                                                <th>Modul 2</th>
-                                                <th>Final Status</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            <tr><td colspan="6" class="text-center py-5 text-muted fw-bold"><i class="fas fa-spinner fa-spin me-2"></i> Sedang memuat data dari Spreadsheet...</td></tr>
-                                        </tbody>
-                                    </table>
+                                <div class="table-responsive" style="overflow: hidden; display: flex; flex-direction: column;">
+                                    <div style="flex: 1; overflow: hidden;">
+                                        <table class="table table-hover table-custom mb-0" id="tablePeserta">
+                                            <thead>
+                                                <tr>
+                                                    <th>Nama / NRP</th>
+                                                    <th>Area</th>
+                                                    <th>PIC</th>
+                                                    <th>Modul 1</th>
+                                                    <th>Modul 2</th>
+                                                    <th>Final Status</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                <tr><td colspan="6" class="text-center py-5 text-muted fw-bold"><i class="fas fa-spinner fa-spin me-2"></i> Sedang memuat data dari Spreadsheet...</td></tr>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                    <button class="btn btn-light w-100 fw-bold border-top border-dark rounded-0 mt-auto" onclick="new bootstrap.Modal(document.getElementById('modalPeserta')).show()">
+                                        Lihat Semua Karyawan (See More) <i class="fas fa-chevron-down ms-1"></i>
+                                    </button>
                                 </div>
                             </div>
                         </div>
@@ -582,7 +615,6 @@
                     <h3 class="mb-4 fw-bold text-dark border-bottom pb-2">Laporan Ringkasan Karyawan (Report)</h3>
                     
                     <div class="card-custom mb-4 bg-light border-2">
-                        <!-- REVISI 4: Menambahkan Filter PIC di Menu Laporan dengan ukuran col-md-2 yang merata -->
                         <div class="row g-3 align-items-end">
                             <div class="col-md-2">
                                 <label class="form-label small fw-bold text-dark">Filter Area</label>
@@ -709,9 +741,7 @@
                 cancelButtonColor: '#3085d6',
                 confirmButtonText: 'Ya, Keluar'
             }).then((result) => {
-                if (result.isConfirmed) {
-                    location.reload(); 
-                }
+                if (result.isConfirmed) location.reload(); 
             });
         }
 
@@ -787,7 +817,18 @@
         }
         initMap();
 
-        // --- FETCH DATA (REVISI 3: PENGABAIAN DATA "NAME" DENGAN KETAT) ---
+        // --- FUNGSI BANTU MENCARI KOLOM (REVISI 3: ANTI SPASI & UNKNOWN PIC) ---
+        function getCol(row, possibleNames) {
+            for (let key in row) {
+                let cleanKey = key.toString().trim().toUpperCase();
+                if (possibleNames.includes(cleanKey)) {
+                    return row[key];
+                }
+            }
+            return '';
+        }
+
+        // --- FETCH DATA DARI API ---
         async function loadDataFromAPI() {
             const btnRefresh = document.getElementById('btnRefresh');
             const iconRefresh = document.getElementById('iconRefresh');
@@ -798,66 +839,72 @@
             document.querySelector('#tblMasterData tbody').innerHTML = '<tr><td colspan="7" class="text-center py-5 text-muted fw-bold"><i class="fas fa-spinner fa-spin-fast me-2"></i> Sinkronisasi Data Spreadsheet...</td></tr>';
 
             try {
-                // Bypass Cache agar tidak membaca data hantu yang sudah terhapus
                 const response = await fetch(SCRIPT_URL + "?nocache=" + new Date().getTime());
                 const result = await response.json();
 
                 if (result.status === "success") {
-                    rawData = [];
                     rawDataFromSheet = result.data || []; 
+                    let uniqueData = {};
                     let picSet = new Set();
 
                     rawDataFromSheet.forEach(row => {
-                        let nameRaw = String(row['NAME'] || row['NAMA'] || '').trim();
-                        // Filter ketat: Lewati baris yang kosong atau hanya bertuliskan header "NAME" / "NAMA"
-                        if (nameRaw === '' || nameRaw.toUpperCase() === 'NAME' || nameRaw.toUpperCase() === 'NAMA') {
-                            return; 
-                        }
+                        let name = getCol(row, ['NAME', 'NAMA']);
+                        let cleanName = String(name).trim().toUpperCase();
                         
-                        let name = nameRaw;
-                        let nrp = row['NRP'] || '';
-                        let area = String(row['Cabang/ Site'] || row['BRANCH/SITE'] || '').toUpperCase().trim();
-                        let pic = row['PIC'] || 'Unknown';
-                        picSet.add(pic);
+                        // Filter super ketat untuk mengabaikan Header duplikat & baris kosong
+                        if (!name || cleanName === '' || cleanName === 'NAME' || cleanName === 'NAMA') return; 
+                        
+                        let nrp = getCol(row, ['NRP']);
+                        let area = getCol(row, ['CABANG/ SITE', 'BRANCH/SITE', 'CABANG/SITE', 'CABANG / SITE']).toUpperCase().trim();
+                        let pic = getCol(row, ['PIC']) || 'Unknown';
+                        
+                        let statM1 = getCol(row, ['STATUS MODUL 1']);
+                        let statM2 = getCol(row, ['STATUS MODUL 2']);
+                        
+                        // REVISI 2 & 3: Ambil Status Langsung dari Kolom Spreadsheet
+                        let partStatusRaw = getCol(row, ['STATUS PARTICIPANT', 'STATUS KELULUSAN']).toUpperCase().trim();
+                        let covStatusRaw = getCol(row, ['STATUS COVERAGE', 'ALL COVERAGE']).toUpperCase().trim();
 
-                        let statM1 = String(row['Status Modul 1'] || '').toUpperCase().trim();
-                        let statM2 = String(row['Status Modul 2'] || '').toUpperCase().trim();
+                        let covStatus = covStatusRaw.includes('TERCOVERAGE') || covStatusRaw.includes('COVERAGE') ? 'Tercoverage' : 'Not Yet';
                         
                         let finalStatus = "NOT YET";
-                        let covStatus = "Not Coverage";
-
-                        if (statM1 === "DONE" && statM2 === "DONE") {
+                        if (partStatusRaw.includes('DONE') || partStatusRaw.includes('FINISHED') || partStatusRaw.includes('LULUS')) {
                             finalStatus = "DONE";
-                            covStatus = "Tercoverage";
-                        } else if (statM1 === "DONE" || statM2 === "DONE" || statM1.includes("PROGRESS") || statM2.includes("PROGRESS")) {
+                        } else if (partStatusRaw.includes('PROGRESS')) {
                             finalStatus = "ON PROGRESS";
-                        } else {
-                            finalStatus = "NOT YET";
                         }
 
-                        rawData.push({ name, nrp, area, pic, statM1, statM2, finalStatus, covStatus });
+                        if(pic !== 'Unknown' && pic.trim() !== '') picSet.add(pic);
+
+                        // REVISI 1: PENGELOMPOKAN BERDASARKAN NRP/NAMA UNTUK MENGHINDARI DOUBLE HITUNG
+                        let key = nrp && nrp.trim() !== '' ? nrp.trim() : cleanName; 
+                        if (!uniqueData[key]) {
+                            uniqueData[key] = { name, nrp, area, pic, statM1, statM2, finalStatus, covStatus };
+                        } else {
+                            // Merge data modul jika baris pertama kosong tapi baris kedua ada
+                            if(statM1 && statM1 !== '-' && (!uniqueData[key].statM1 || uniqueData[key].statM1 === '-')) uniqueData[key].statM1 = statM1;
+                            if(statM2 && statM2 !== '-' && (!uniqueData[key].statM2 || uniqueData[key].statM2 === '-')) uniqueData[key].statM2 = statM2;
+                            
+                            // Jika ada baris yang DONE, pastikan final status tetap DONE
+                            if(finalStatus === 'DONE') uniqueData[key].finalStatus = 'DONE';
+                            else if(finalStatus === 'ON PROGRESS' && uniqueData[key].finalStatus !== 'DONE') uniqueData[key].finalStatus = 'ON PROGRESS';
+                            
+                            if(covStatus === 'Tercoverage') uniqueData[key].covStatus = 'Tercoverage';
+                        }
                     });
 
-                    // Update Dropdown Filter PIC (Dashboard)
+                    rawData = Object.values(uniqueData);
+
                     let picSelect = document.getElementById("filterPIC");
                     if(picSelect) {
                         picSelect.innerHTML = '<option value="ALL">Semua PIC</option>';
-                        picSet.forEach(p => {
-                            if (p !== 'Unknown' && p.trim() !== '') {
-                                picSelect.innerHTML += `<option value="${p}">${p}</option>`;
-                            }
-                        });
+                        picSet.forEach(p => { picSelect.innerHTML += `<option value="${p}">${p}</option>`; });
                     }
 
-                    // Update Dropdown Filter PIC (Report)
                     let reportPicSelect = document.getElementById("reportFilterPIC");
                     if(reportPicSelect) {
                         reportPicSelect.innerHTML = '<option value="ALL">Semua PIC (ALL)</option>';
-                        picSet.forEach(p => {
-                            if (p !== 'Unknown' && p.trim() !== '') {
-                                reportPicSelect.innerHTML += `<option value="${p}">${p}</option>`;
-                            }
-                        });
+                        picSet.forEach(p => { reportPicSelect.innerHTML += `<option value="${p}">${p}</option>`; });
                     }
 
                     renderDashboard();
@@ -916,7 +963,7 @@
                 const jsonRaw = XLSX.utils.sheet_to_json(sheet, { range: headerRowIdx, defval: "" });
                 // Filter ketat sebelum push data
                 const cleanJson = jsonRaw.filter(r => {
-                    let n = String(r['NAME'] || r['NAMA'] || '').trim().toUpperCase();
+                    let n = String(getCol(r, ['NAME','NAMA'])).trim().toUpperCase();
                     return n !== '' && n !== 'NAME' && n !== 'NAMA';
                 });
                 
@@ -927,7 +974,7 @@
                 .then(res => res.json())
                 .then(result => {
                     if(result.status === 'success') {
-                        Swal.fire('Berhasil!', `Total ${cleanJson.length} data karyawan telah diunggah.`, 'success');
+                        Swal.fire('Berhasil!', `Total ${cleanJson.length} data telah diunggah.`, 'success');
                         loadDataFromAPI();
                     } else {
                         Swal.fire('Gagal!', result.message, 'error');
@@ -949,26 +996,37 @@
             const fAreaMaster = document.getElementById('filterAreaMaster').value;
             let html = '';
             
-            if(rawData.length === 0) {
+            // Filter ketat membuang data hantu dari view master
+            let validSheetData = rawDataFromSheet.filter(r => {
+                let n = String(getCol(r, ['NAME','NAMA'])).trim().toUpperCase();
+                return n !== '' && n !== 'NAME' && n !== 'NAMA';
+            });
+
+            if(validSheetData.length === 0) {
                 tbody.innerHTML = '<tr><td colspan="7" class="text-center py-4 text-muted fw-bold">Tidak ada data di Spreadsheet.</td></tr>';
                 return;
             }
 
             let count = 1;
-            rawData.forEach((row) => {
-                let areaStr = String(row.area || '').toUpperCase().trim();
+            validSheetData.forEach((row) => {
+                let name = getCol(row, ['NAME','NAMA']);
+                let nrp = getCol(row, ['NRP']);
+                let areaStr = String(getCol(row, ['CABANG/ SITE','BRANCH/SITE'])).toUpperCase().trim();
+                let pic = getCol(row, ['PIC']);
+                let m1 = getCol(row, ['STATUS MODUL 1']);
+                let m2 = getCol(row, ['STATUS MODUL 2']);
                 
                 if(fAreaMaster !== 'ALL' && areaStr !== fAreaMaster) return;
 
                 html += `
                     <tr>
                         <td class="text-center fw-bold">${count++}</td>
-                        <td class="fw-bold text-dark">${row.name}</td>
-                        <td>${row.nrp || '-'}</td>
+                        <td class="fw-bold text-dark">${name}</td>
+                        <td>${nrp || '-'}</td>
                         <td class="text-center"><span class="badge border border-dark text-dark">${areaStr || '-'}</span></td>
-                        <td>${row.pic || '-'}</td>
-                        <td class="text-center">${row.statM1 || '-'}</td>
-                        <td class="text-center">${row.statM2 || '-'}</td>
+                        <td>${pic || '-'}</td>
+                        <td class="text-center">${m1 || '-'}</td>
+                        <td class="text-center">${m2 || '-'}</td>
                     </tr>
                 `;
             });
@@ -976,19 +1034,14 @@
             tbody.innerHTML = html || '<tr><td colspan="7" class="text-center py-4 text-muted fw-bold">Data tidak ditemukan pada area ini.</td></tr>';
         }
 
-        // --- RENDER DASHBOARD CHARTS ---
-        function resetChart(id) {
-            if(chartInstances[id]) chartInstances[id].destroy();
-        }
-
+        // --- RENDER DASHBOARD CHARTS & TABLES ---
         function renderDashboard() {
             if (rawData.length === 0) {
-                // Reset kpi
                 document.getElementById("kpiTotal").innerText = 0;
                 document.getElementById("kpiCoverage").innerHTML = `0 <span style="font-size: 1.1rem; color: #555;">(0%)</span>`;
-                document.getElementById("kpiProgress").innerText = 0;
-                document.getElementById("kpiNotYet").innerText = 0;
+                document.getElementById("kpiProgress").innerHTML = `<span class="text-warning">0</span> <span style="color:#ccc;">/</span> <span class="text-danger">0</span>`;
                 document.querySelector('#tablePeserta tbody').innerHTML = '<tr><td colspan="6" class="text-center py-4 text-muted fw-bold">Data kosong. Pastikan spreadsheet telah diisi.</td></tr>';
+                document.querySelector('#tablePesertaFull tbody').innerHTML = '<tr><td colspan="6" class="text-center py-4 text-muted fw-bold">Data kosong.</td></tr>';
                 
                 ["pieCoverage", "pieParticipant", "pieArea", "barCoverage", "barParticipant"].forEach(id => resetChart(id));
                 mapMarkers.forEach(m => map.removeLayer(m));
@@ -1007,6 +1060,7 @@
                 return mArea && mStat && mPIC;
             });
 
+            // Hitungan Unik 1 Karyawan
             let totalPeserta = filtered.length;
             let totalCoverage = 0;
             let totalOnProgress = 0;
@@ -1035,9 +1089,9 @@
             let pctCov = totalPeserta === 0 ? 0 : ((totalCoverage / totalPeserta) * 100).toFixed(1);
             document.getElementById("kpiTotal").innerText = totalPeserta;
             document.getElementById("kpiCoverage").innerHTML = `${totalCoverage} <span style="font-size: 1.1rem; color: #555;">(${pctCov}%)</span>`;
-            document.getElementById("kpiProgress").innerText = totalOnProgress;
-            document.getElementById("kpiNotYet").innerText = totalNotYet;
+            document.getElementById("kpiProgress").innerHTML = `<span class="text-warning">${totalOnProgress}</span> <span style="color:#ccc;">/</span> <span class="text-danger">${totalPeserta}</span>`;
 
+            // Opsi Default Chart.js (Responsive Normal)
             const pieOptions = {
                 responsive: true, 
                 maintainAspectRatio: false,
@@ -1108,6 +1162,7 @@
                 options: barOptions
             });
 
+            // Update Peta
             mapMarkers.forEach(m => map.removeLayer(m));
             mapMarkers = [];
             AREA_KEYS.forEach(k => {
@@ -1126,12 +1181,15 @@
                 }
             });
 
-            let tbody = document.querySelector('#tablePeserta tbody');
+            // Update Tabel Peserta (REVISI 7: TAMPILKAN 5 SAJA DI DASHBOARD, SISANYA DI MODAL)
             let htmlTable = "";
-            filtered.forEach(d => {
+            let htmlTableFull = "";
+            
+            filtered.forEach((d, index) => {
                 let badgeClass = d.finalStatus === "DONE" ? 'bg-success' : 
                                  d.finalStatus === "ON PROGRESS" ? 'bg-warning text-dark' : 'bg-danger';
-                htmlTable += `
+                
+                let rowHtml = `
                     <tr>
                         <td><b class="text-dark">${d.name}</b><br><small class="text-muted">${d.nrp}</small></td>
                         <td class="text-center fw-bold">${d.area}</td>
@@ -1141,8 +1199,13 @@
                         <td class="text-center"><span class="badge ${badgeClass} px-3 py-2 shadow-sm">${d.finalStatus}</span></td>
                     </tr>
                 `;
+                
+                if (index < 5) htmlTable += rowHtml; 
+                htmlTableFull += rowHtml; 
             });
-            tbody.innerHTML = htmlTable || '<tr><td colspan="6" class="text-center py-4 text-muted fw-bold">Data tidak ditemukan pada filter yang dipilih.</td></tr>';
+
+            document.querySelector('#tablePeserta tbody').innerHTML = htmlTable || '<tr><td colspan="6" class="text-center py-4 text-muted fw-bold">Data tidak ditemukan.</td></tr>';
+            document.querySelector('#tablePesertaFull tbody').innerHTML = htmlTableFull || '<tr><td colspan="6" class="text-center py-4 text-muted fw-bold">Data tidak ditemukan.</td></tr>';
         }
 
         // --- FITUR REPORT / LAPORAN ---
@@ -1174,7 +1237,7 @@
                 </tr>`;
             });
             
-            document.querySelector('#tblReport tbody').innerHTML = html || '<tr><td colspan="7" class="text-center py-4">Data tidak ditemukan</td></tr>';
+            document.querySelector('#tblReport tbody').innerHTML = html || '<tr><td colspan="7" class="text-center py-4 text-muted fw-bold">Data tidak ditemukan</td></tr>';
         }
 
         function exportReportExcel() {
