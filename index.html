@@ -224,24 +224,13 @@
         .kpi-title { font-size: 0.85rem; color: #555; font-weight: 700; text-transform: uppercase; }
         .kpi-value { font-size: 2rem; font-weight: 800; color: #000; line-height: 1.1; margin-top: 5px; }
 
-        /* --- CHARTS (REVISI STRETCHING & KANVAS) --- */
+        /* --- CHARTS (REVISI 1: PENGEMBALIAN KE STANDAR CHART.JS) --- */
         .chart-wrapper { 
             position: relative; 
-            flex: 1 1 0; 
-            min-height: 0; 
             width: 100%;
-            display: flex;
-            justify-content: center;
-            align-items: center;
+            height: 220px; /* Nilai pasti untuk menghindari diagram melar/rusak di awal */
         }
-        /* REVISI 1 & 2: Posisi Absolute mencegah flexbox stretching tak terhingga */
-        .canvas-container {
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-        }
+        canvas { max-height: 100% !important; max-width: 100% !important; }
 
         /* --- TABLE --- */
         .table-custom th {
@@ -265,46 +254,57 @@
         /* --- MAP --- */
         #mapArea { flex: 1 1 0; min-height: 250px; width: 100%; border-radius: 6px; border: 1px solid #000; z-index: 1; }
 
-        /* --- REVISI 2: FULLSCREEN (TANPA SCROLL & RAPI) --- */
+        /* --- REVISI 2: FULLSCREEN (GRID SUPER KETAT TANPA SCROLL) --- */
         :fullscreen .sidebar { display: none !important; }
         :fullscreen .topbar { display: none !important; }
         :fullscreen .main-content { width: 100vw !important; height: 100vh !important; overflow: hidden !important; }
-        :fullscreen #view-dashboard { display: flex; flex-direction: column; padding: 10px !important; gap: 6px; height: 100vh; overflow: hidden !important; }
+        :fullscreen #view-dashboard { display: flex; flex-direction: column; padding: 8px !important; gap: 8px; height: 100vh; overflow: hidden !important; }
         
-        :fullscreen .filter-container { flex: 0 0 auto; margin-bottom: 0 !important; padding: 6px 10px !important; }
-        :fullscreen .row { flex: 1 1 0; min-height: 0; margin-bottom: 0 !important; gap: 6px; }
-        :fullscreen .row.g-3 > div { padding: 0 4px !important; display: flex; flex-direction: column; }
+        :fullscreen .filter-container { flex: 0 0 auto; margin-bottom: 0 !important; padding: 4px 8px !important; }
+        :fullscreen .row { margin-bottom: 0 !important; flex-wrap: nowrap !important; gap: 8px; }
+        :fullscreen .row > div { padding: 0 !important; display: flex; flex-direction: column; flex: 1; }
         
-        /* Baris KPI tidak butuh flex besar */
-        :fullscreen .row.kpi-row { flex: 0 0 auto !important; }
+        :fullscreen .kpi-row { flex: 0 0 auto !important; }
+        :fullscreen .pie-row { flex: 1; min-height: 0; }
+        :fullscreen .bar-row { flex: 1; min-height: 0; }
+        :fullscreen .map-row { flex: 1.2; min-height: 0; }
+        :fullscreen .map-row > div:nth-child(1) { flex: 0 0 35%; }
+        :fullscreen .map-row > div:nth-child(2) { flex: 0 0 65%; }
+
+        :fullscreen .card-custom { padding: 8px; margin-bottom: 0 !important; height: 100%; }
+        :fullscreen .card-header-title { margin-bottom: 4px; padding: 2px; font-size: 0.75rem; }
+        :fullscreen .kpi-title { font-size: 0.65rem; }
+        :fullscreen .kpi-value { font-size: 1.4rem; margin-top: 2px; }
         
-        :fullscreen .card-custom { padding: 8px; margin-bottom: 0 !important; }
-        :fullscreen .card-header-title { margin-bottom: 4px; padding: 2px; font-size: 0.8rem; }
-        :fullscreen .kpi-title { font-size: 0.7rem; }
-        :fullscreen .kpi-value { font-size: 1.4rem; margin-top: 0; }
-        
-        :fullscreen .table-responsive { max-height: none !important; flex: 1 1 0; min-height: 0; overflow-y: auto; }
-        :fullscreen #mapArea { min-height: 0 !important; }
+        :fullscreen .chart-wrapper { height: 100% !important; min-height: 0 !important; }
+        :fullscreen .table-responsive { height: 100% !important; min-height: 0 !important; overflow-y: auto; }
+        :fullscreen #mapArea { height: 100% !important; min-height: 0 !important; }
 
         /* Kompatibilitas Webkit Fullscreen */
         :-webkit-full-screen .sidebar { display: none !important; }
         :-webkit-full-screen .topbar { display: none !important; }
         :-webkit-full-screen .main-content { width: 100vw !important; height: 100vh !important; overflow: hidden !important; }
-        :-webkit-full-screen #view-dashboard { display: flex; flex-direction: column; padding: 10px !important; gap: 6px; height: 100vh; overflow: hidden !important; }
+        :-webkit-full-screen #view-dashboard { display: flex; flex-direction: column; padding: 8px !important; gap: 8px; height: 100vh; overflow: hidden !important; }
         
-        :-webkit-full-screen .filter-container { flex: 0 0 auto; margin-bottom: 0 !important; padding: 6px 10px !important; }
-        :-webkit-full-screen .row { flex: 1 1 0; min-height: 0; margin-bottom: 0 !important; gap: 6px; }
-        :-webkit-full-screen .row.g-3 > div { padding: 0 4px !important; display: flex; flex-direction: column; }
+        :-webkit-full-screen .filter-container { flex: 0 0 auto; margin-bottom: 0 !important; padding: 4px 8px !important; }
+        :-webkit-full-screen .row { margin-bottom: 0 !important; flex-wrap: nowrap !important; gap: 8px; }
+        :-webkit-full-screen .row > div { padding: 0 !important; display: flex; flex-direction: column; flex: 1; }
         
-        :-webkit-full-screen .row.kpi-row { flex: 0 0 auto !important; }
+        :-webkit-full-screen .kpi-row { flex: 0 0 auto !important; }
+        :-webkit-full-screen .pie-row { flex: 1; min-height: 0; }
+        :-webkit-full-screen .bar-row { flex: 1; min-height: 0; }
+        :-webkit-full-screen .map-row { flex: 1.2; min-height: 0; }
+        :-webkit-full-screen .map-row > div:nth-child(1) { flex: 0 0 35%; }
+        :-webkit-full-screen .map-row > div:nth-child(2) { flex: 0 0 65%; }
+
+        :-webkit-full-screen .card-custom { padding: 8px; margin-bottom: 0 !important; height: 100%; }
+        :-webkit-full-screen .card-header-title { margin-bottom: 4px; padding: 2px; font-size: 0.75rem; }
+        :-webkit-full-screen .kpi-title { font-size: 0.65rem; }
+        :-webkit-full-screen .kpi-value { font-size: 1.4rem; margin-top: 2px; }
         
-        :-webkit-full-screen .card-custom { padding: 8px; margin-bottom: 0 !important; }
-        :-webkit-full-screen .card-header-title { margin-bottom: 4px; padding: 2px; font-size: 0.8rem; }
-        :-webkit-full-screen .kpi-title { font-size: 0.7rem; }
-        :-webkit-full-screen .kpi-value { font-size: 1.4rem; margin-top: 0; }
-        
-        :-webkit-full-screen .table-responsive { max-height: none !important; flex: 1 1 0; min-height: 0; overflow-y: auto; }
-        :-webkit-full-screen #mapArea { min-height: 0 !important; }
+        :-webkit-full-screen .chart-wrapper { height: 100% !important; min-height: 0 !important; }
+        :-webkit-full-screen .table-responsive { height: 100% !important; min-height: 0 !important; overflow-y: auto; }
+        :-webkit-full-screen #mapArea { height: 100% !important; min-height: 0 !important; }
 
         /* SPINNER Animasi Load */
         @keyframes spin { 100% { transform: rotate(360deg); } }
@@ -456,55 +456,45 @@
                     </div>
 
                     <!-- PIE CHARTS ROW -->
-                    <div class="row g-3">
+                    <div class="row g-3 pie-row">
                         <div class="col-md-4">
                             <div class="card-custom">
                                 <div class="card-header-title">Training Coverage</div>
-                                <div class="chart-wrapper">
-                                    <div class="canvas-container"><canvas id="pieCoverage"></canvas></div>
-                                </div>
+                                <div class="chart-wrapper"><canvas id="pieCoverage"></canvas></div>
                             </div>
                         </div>
                         <div class="col-md-4">
                             <div class="card-custom">
                                 <div class="card-header-title">Training Participant</div>
-                                <div class="chart-wrapper">
-                                    <div class="canvas-container"><canvas id="pieParticipant"></canvas></div>
-                                </div>
+                                <div class="chart-wrapper"><canvas id="pieParticipant"></canvas></div>
                             </div>
                         </div>
                         <div class="col-md-4">
                             <div class="card-custom">
                                 <div class="card-header-title">Distribution By Area</div>
-                                <div class="chart-wrapper">
-                                    <div class="canvas-container"><canvas id="pieArea"></canvas></div>
-                                </div>
+                                <div class="chart-wrapper"><canvas id="pieArea"></canvas></div>
                             </div>
                         </div>
                     </div>
 
                     <!-- BAR CHARTS ROW -->
-                    <div class="row g-3">
+                    <div class="row g-3 bar-row">
                         <div class="col-md-6">
                             <div class="card-custom">
                                 <div class="card-header-title">Training Coverage per Area</div>
-                                <div class="chart-wrapper">
-                                    <div class="canvas-container"><canvas id="barCoverage"></canvas></div>
-                                </div>
+                                <div class="chart-wrapper"><canvas id="barCoverage"></canvas></div>
                             </div>
                         </div>
                         <div class="col-md-6">
                             <div class="card-custom">
                                 <div class="card-header-title">Training Participant per Area</div>
-                                <div class="chart-wrapper">
-                                    <div class="canvas-container"><canvas id="barParticipant"></canvas></div>
-                                </div>
+                                <div class="chart-wrapper"><canvas id="barParticipant"></canvas></div>
                             </div>
                         </div>
                     </div>
 
                     <!-- MAP & TABLE ROW -->
-                    <div class="row g-3">
+                    <div class="row g-3 map-row">
                         <div class="col-xl-5">
                             <div class="card-custom p-2">
                                 <div class="card-header-title">Peta Persebaran Lokasi</div>
@@ -592,8 +582,8 @@
                     <h3 class="mb-4 fw-bold text-dark border-bottom pb-2">Laporan Ringkasan Karyawan (Report)</h3>
                     
                     <div class="card-custom mb-4 bg-light border-2">
+                        <!-- REVISI 4: Menambahkan Filter PIC di Menu Laporan dengan ukuran col-md-2 yang merata -->
                         <div class="row g-3 align-items-end">
-                            <!-- REVISI 4: PENGATURAN GRID KOLOM AGAR FITUR PIC BISA MASUK DENGAN RAPI -->
                             <div class="col-md-2">
                                 <label class="form-label small fw-bold text-dark">Filter Area</label>
                                 <select class="form-select shadow-sm border-dark" id="reportFilterArea">
@@ -734,7 +724,10 @@
             element.classList.add('active');
 
             if(viewName === 'dashboard') {
-                setTimeout(() => { if(map) map.invalidateSize(); }, 200);
+                setTimeout(() => { 
+                    if(map) map.invalidateSize(); 
+                    Object.values(chartInstances).forEach(c => c.resize());
+                }, 200);
             }
         }
 
@@ -794,7 +787,7 @@
         }
         initMap();
 
-        // --- FETCH DATA (REVISI 3: ANTI GHOST DATA / BYPASS CACHE) ---
+        // --- FETCH DATA (REVISI 3: PENGABAIAN DATA "NAME" DENGAN KETAT) ---
         async function loadDataFromAPI() {
             const btnRefresh = document.getElementById('btnRefresh');
             const iconRefresh = document.getElementById('iconRefresh');
@@ -805,7 +798,7 @@
             document.querySelector('#tblMasterData tbody').innerHTML = '<tr><td colspan="7" class="text-center py-5 text-muted fw-bold"><i class="fas fa-spinner fa-spin-fast me-2"></i> Sinkronisasi Data Spreadsheet...</td></tr>';
 
             try {
-                // PARAMETER '?nocache=' MENCEGAH DATA LAMA (YANG SUDAH DIHAPUS) MUNCUL LAGI
+                // Bypass Cache agar tidak membaca data hantu yang sudah terhapus
                 const response = await fetch(SCRIPT_URL + "?nocache=" + new Date().getTime());
                 const result = await response.json();
 
@@ -815,9 +808,13 @@
                     let picSet = new Set();
 
                     rawDataFromSheet.forEach(row => {
-                        let name = row['NAME'] || row['NAMA'] || '';
-                        if (!name || name.trim() === '') return; 
+                        let nameRaw = String(row['NAME'] || row['NAMA'] || '').trim();
+                        // Filter ketat: Lewati baris yang kosong atau hanya bertuliskan header "NAME" / "NAMA"
+                        if (nameRaw === '' || nameRaw.toUpperCase() === 'NAME' || nameRaw.toUpperCase() === 'NAMA') {
+                            return; 
+                        }
                         
+                        let name = nameRaw;
                         let nrp = row['NRP'] || '';
                         let area = String(row['Cabang/ Site'] || row['BRANCH/SITE'] || '').toUpperCase().trim();
                         let pic = row['PIC'] || 'Unknown';
@@ -917,7 +914,11 @@
                 }
 
                 const jsonRaw = XLSX.utils.sheet_to_json(sheet, { range: headerRowIdx, defval: "" });
-                const cleanJson = jsonRaw.filter(r => (r['NAME'] || r['NAMA']) && String(r['NAME'] || r['NAMA']).trim() !== '');
+                // Filter ketat sebelum push data
+                const cleanJson = jsonRaw.filter(r => {
+                    let n = String(r['NAME'] || r['NAMA'] || '').trim().toUpperCase();
+                    return n !== '' && n !== 'NAME' && n !== 'NAMA';
+                });
                 
                 fetch(SCRIPT_URL, {
                     method: 'POST',
@@ -948,29 +949,26 @@
             const fAreaMaster = document.getElementById('filterAreaMaster').value;
             let html = '';
             
-            if(rawDataFromSheet.length === 0) {
+            if(rawData.length === 0) {
                 tbody.innerHTML = '<tr><td colspan="7" class="text-center py-4 text-muted fw-bold">Tidak ada data di Spreadsheet.</td></tr>';
                 return;
             }
 
             let count = 1;
-            rawDataFromSheet.forEach((row) => {
-                let name = row['NAME'] || row['NAMA'] || '';
-                if(name.trim() === '') return; 
-
-                let areaStr = String(row['Cabang/ Site'] || row['BRANCH/SITE'] || '').toUpperCase().trim();
+            rawData.forEach((row) => {
+                let areaStr = String(row.area || '').toUpperCase().trim();
                 
                 if(fAreaMaster !== 'ALL' && areaStr !== fAreaMaster) return;
 
                 html += `
                     <tr>
                         <td class="text-center fw-bold">${count++}</td>
-                        <td class="fw-bold text-dark">${name}</td>
-                        <td>${row['NRP'] || '-'}</td>
+                        <td class="fw-bold text-dark">${row.name}</td>
+                        <td>${row.nrp || '-'}</td>
                         <td class="text-center"><span class="badge border border-dark text-dark">${areaStr || '-'}</span></td>
-                        <td>${row['PIC'] || '-'}</td>
-                        <td class="text-center">${row['Status Modul 1'] || '-'}</td>
-                        <td class="text-center">${row['Status Modul 2'] || '-'}</td>
+                        <td>${row.pic || '-'}</td>
+                        <td class="text-center">${row.statM1 || '-'}</td>
+                        <td class="text-center">${row.statM2 || '-'}</td>
                     </tr>
                 `;
             });
@@ -985,16 +983,13 @@
 
         function renderDashboard() {
             if (rawData.length === 0) {
-                // Kosongkan Scorecard
+                // Reset kpi
                 document.getElementById("kpiTotal").innerText = 0;
                 document.getElementById("kpiCoverage").innerHTML = `0 <span style="font-size: 1.1rem; color: #555;">(0%)</span>`;
                 document.getElementById("kpiProgress").innerText = 0;
                 document.getElementById("kpiNotYet").innerText = 0;
-
-                // Tampilkan pesan kosong pada tabel
                 document.querySelector('#tablePeserta tbody').innerHTML = '<tr><td colspan="6" class="text-center py-4 text-muted fw-bold">Data kosong. Pastikan spreadsheet telah diisi.</td></tr>';
                 
-                // Hancurkan diagram agar bersih
                 ["pieCoverage", "pieParticipant", "pieArea", "barCoverage", "barParticipant"].forEach(id => resetChart(id));
                 mapMarkers.forEach(m => map.removeLayer(m));
                 mapMarkers = [];
