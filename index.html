@@ -257,8 +257,8 @@
         /* --- FULLSCREEN --- */
         :fullscreen .sidebar { display: none !important; }
         :fullscreen .topbar { display: none !important; }
-        :fullscreen .main-content { width: 100vw !important; height: 100vh !important; overflow: hidden !important; }
-        :fullscreen #view-dashboard { display: flex; flex-direction: column; padding: 8px !important; gap: 8px; height: 100vh; overflow: hidden !important; }
+        :fullscreen .main-content { width: 100vw !important; height: 100vh !important; overflow-y: auto !important; }
+        :fullscreen #view-dashboard { display: flex; flex-direction: column; padding: 8px !important; gap: 8px; height: auto !important; min-height: 100vh; overflow-y: auto !important; }
         
         :fullscreen .filter-container { flex: 0 0 auto; margin-bottom: 0 !important; padding: 4px 8px !important; }
         :fullscreen .row { margin-bottom: 0 !important; flex-wrap: nowrap !important; gap: 8px; }
@@ -283,8 +283,8 @@
         /* Kompatibilitas Webkit Fullscreen */
         :-webkit-full-screen .sidebar { display: none !important; }
         :-webkit-full-screen .topbar { display: none !important; }
-        :-webkit-full-screen .main-content { width: 100vw !important; height: 100vh !important; overflow: hidden !important; }
-        :-webkit-full-screen #view-dashboard { display: flex; flex-direction: column; padding: 8px !important; gap: 8px; height: 100vh; overflow: hidden !important; }
+        :-webkit-full-screen .main-content { width: 100vw !important; height: 100vh !important; overflow-y: auto !important; }
+        :-webkit-full-screen #view-dashboard { display: flex; flex-direction: column; padding: 8px !important; gap: 8px; height: auto !important; min-height: 100vh; overflow-y: auto !important; }
         
         :-webkit-full-screen .filter-container { flex: 0 0 auto; margin-bottom: 0 !important; padding: 4px 8px !important; }
         :-webkit-full-screen .row { margin-bottom: 0 !important; flex-wrap: nowrap !important; gap: 8px; }
@@ -510,7 +510,7 @@
                     <div class="row g-3 bar-row">
                         <div class="col-md-6">
                             <div class="card-custom">
-                                <div class="card-header-title">Training Coverage per Area</div>
+                                <div class="card-header-title">Training Event per Area</div>
                                 <div class="chart-wrapper"><canvas id="barCoverage"></canvas></div>
                             </div>
                         </div>
@@ -832,7 +832,6 @@
         // --- FUNGSI BANTU MENCARI KOLOM ---
         function getCol(row, possibleNames) {
             for (let key in row) {
-                // Modifikasi REVISI: Membersihkan \n atau spasi tersembunyi dari judul kolom Excel
                 let cleanKey = key.toString().replace(/[\r\n]+/g, ' ').trim().toUpperCase();
                 if (possibleNames.includes(cleanKey)) {
                     return row[key];
@@ -852,7 +851,6 @@
             document.querySelector('#tblMasterData tbody').innerHTML = '<tr><td colspan="7" class="text-center py-5 text-muted fw-bold"><i class="fas fa-spinner fa-spin-fast me-2"></i> Sinkronisasi Data Spreadsheet...</td></tr>';
 
             try {
-                // Modifikasi REVISI: Penambahan Parameter Cache Buster '?t=' untuk paksa ambil data terbaru
                 const response = await fetch(SCRIPT_URL + '?t=' + new Date().getTime());
                 let result;
                 
@@ -873,13 +871,24 @@
                         
                         let name = nameRaw;
                         let nrp = getCol(row, ['NRP']);
-                        let area = getCol(row, ['CABANG/ SITE', 'BRANCH/SITE', 'CABANG/SITE', 'CABANG / SITE']).toUpperCase().trim();
+                        
+                        // Menambahkan UT CORPU sebagai identifier kolom lokasi serta pemetaan kata kunci
+                        let areaRaw = String(getCol(row, ['UT CORPU', 'CABANG/ SITE', 'BRANCH/SITE', 'CABANG/SITE', 'CABANG / SITE'])).toUpperCase().trim();
+                        let area = areaRaw;
+                        if (areaRaw.includes('JAKARTA')) area = 'JKT';
+                        else if (areaRaw.includes('SAMARINDA')) area = 'SMD';
+                        else if (areaRaw.includes('BALIKPAPAN')) area = 'BLP';
+                        else if (areaRaw.includes('PEKANBARU')) area = 'PKB';
+                        else if (areaRaw.includes('BANJARMASIN')) area = 'BJM';
+                        else if (areaRaw.includes('UJUNG PANDANG') || areaRaw.includes('MAKASSAR')) area = 'UPG';
+                        else if (areaRaw.includes('SOROWAKO')) area = 'SOD';
+                        else if (areaRaw.includes('BALANGAN')) area = 'BLG';
+
                         let pic = getCol(row, ['PIC']) || 'Unknown';
                         
                         let statM1 = getCol(row, ['STATUS MODUL 1']);
                         let statM2 = getCol(row, ['STATUS MODUL 2']);
                         
-                        // Modifikasi REVISI: Pembacaan dikuatkan ke String() menghindari data kosong atau angka
                         let partStatusRaw = String(getCol(row, ['STATUS PARTICIPANT', 'STATUS KELULUSAN'])).toUpperCase().trim();
                         let covStatusRaw = String(getCol(row, ['STATUS COVERAGE', 'ALL COVERAGE', 'COVERAGE'])).toUpperCase().trim();
 
@@ -925,7 +934,6 @@
                     renderDashboard();
                     renderMasterTable();
                     
-                    // Modifikasi REVISI: Munculkan popup notifikasi apabila fetch data sukses
                     Swal.fire({
                         title: 'Berhasil!',
                         text: 'Data telah tersinkronisasi dengan Spreadsheet.',
@@ -1034,7 +1042,18 @@
             validSheetData.forEach((row) => {
                 let name = getCol(row, ['NAME','NAMA']);
                 let nrp = getCol(row, ['NRP']);
-                let areaStr = String(getCol(row, ['CABANG/ SITE','BRANCH/SITE'])).toUpperCase().trim();
+                
+                let areaRaw = String(getCol(row, ['UT CORPU', 'CABANG/ SITE', 'BRANCH/SITE', 'CABANG/SITE', 'CABANG / SITE'])).toUpperCase().trim();
+                let areaStr = areaRaw;
+                if (areaRaw.includes('JAKARTA')) areaStr = 'JKT';
+                else if (areaRaw.includes('SAMARINDA')) areaStr = 'SMD';
+                else if (areaRaw.includes('BALIKPAPAN')) areaStr = 'BLP';
+                else if (areaRaw.includes('PEKANBARU')) areaStr = 'PKB';
+                else if (areaRaw.includes('BANJARMASIN')) areaStr = 'BJM';
+                else if (areaRaw.includes('UJUNG PANDANG') || areaRaw.includes('MAKASSAR')) areaStr = 'UPG';
+                else if (areaRaw.includes('SOROWAKO')) areaStr = 'SOD';
+                else if (areaRaw.includes('BALANGAN')) areaStr = 'BLG';
+
                 let pic = getCol(row, ['PIC']);
                 let m1 = getCol(row, ['STATUS MODUL 1']);
                 let m2 = getCol(row, ['STATUS MODUL 2']);
@@ -1062,7 +1081,11 @@
             if (rawData.length === 0) {
                 document.getElementById("kpiTotal").innerText = 0;
                 document.getElementById("kpiCoverage").innerHTML = `0 <span style="font-size: 1.1rem; color: #555;">(0%)</span>`;
-                document.getElementById("kpiProgress").innerHTML = `<span class="text-warning">0</span> <span style="color:#ccc;">/</span> <span class="text-danger">0</span>`;
+                
+                // Reset KPI secara individual agar tidak menimpa format HTML
+                document.getElementById("kpiProgress").innerText = "0";
+                document.getElementById("kpiNotYet").innerText = "0";
+                
                 document.querySelector('#tablePeserta tbody').innerHTML = '<tr><td colspan="6" class="text-center py-4 text-muted fw-bold">Data kosong. Pastikan spreadsheet telah diisi.</td></tr>';
                 document.querySelector('#tablePesertaFull tbody').innerHTML = '<tr><td colspan="6" class="text-center py-4 text-muted fw-bold">Data kosong.</td></tr>';
                 
@@ -1089,7 +1112,8 @@
             let totalNotYet = 0;
 
             let areaCount = {};
-            AREA_KEYS.forEach(k => areaCount[k] = { total: 0, cov: 0, notCov: 0, done: 0, prog: 0, ny: 0 });
+            // Menginisialisasi perhitungan event (eventDone & eventNotYet)
+            AREA_KEYS.forEach(k => areaCount[k] = { total: 0, cov: 0, notCov: 0, done: 0, prog: 0, ny: 0, eventDone: 0, eventNotYet: 0 });
 
             filtered.forEach(d => {
                 if(d.covStatus === "Tercoverage") totalCoverage++;
@@ -1105,13 +1129,23 @@
                     if(d.finalStatus === "DONE") areaCount[k].done++;
                     else if(d.finalStatus === "ON PROGRESS") areaCount[k].prog++;
                     else areaCount[k].ny++;
+                    
+                    // Kalkulasi Event: Setiap Karyawan memiliki 2 Modul (Event)
+                    let m1Done = (d.statM1 && (d.statM1.toUpperCase().includes('FINISH') || d.statM1.toUpperCase().includes('DONE') || d.statM1.toUpperCase().includes('LULUS'))) ? 1 : 0;
+                    let m2Done = (d.statM2 && (d.statM2.toUpperCase().includes('FINISH') || d.statM2.toUpperCase().includes('DONE') || d.statM2.toUpperCase().includes('LULUS'))) ? 1 : 0;
+                    
+                    areaCount[k].eventDone += (m1Done + m2Done);
+                    areaCount[k].eventNotYet += (2 - m1Done - m2Done);
                 }
             });
 
             let pctCov = totalPeserta === 0 ? 0 : ((totalCoverage / totalPeserta) * 100).toFixed(1);
             document.getElementById("kpiTotal").innerText = totalPeserta;
             document.getElementById("kpiCoverage").innerHTML = `${totalCoverage} <span style="font-size: 1.1rem; color: #555;">(${pctCov}%)</span>`;
-            document.getElementById("kpiProgress").innerHTML = `<span class="text-warning">${totalOnProgress}</span> <span style="color:#ccc;">/</span> <span class="text-danger">${totalNotYet}</span>`;
+            
+            // Meng-update teks KPI secara terpisah agar tidak menyebabkan duplikasi " / "
+            document.getElementById("kpiProgress").innerText = totalOnProgress;
+            document.getElementById("kpiNotYet").innerText = totalNotYet;
 
             const pieOptions = {
                 responsive: true, 
@@ -1146,7 +1180,6 @@
             resetChart('pieArea');
             chartInstances['pieArea'] = new Chart(document.getElementById('pieArea'), {
                 type: 'pie',
-                // Modifikasi REVISI: Penambahan warna tambahan di Chart untuk mengakomodasi SOD dan BLG
                 data: { labels: AREA_KEYS, datasets: [{ data: areaVals, backgroundColor: ['#4285f4', '#f97316', '#a855f7', '#ec4899', '#14b8a6', '#64748b', '#eab308', '#22c55e'] }] },
                 options: pieOptions
             });
@@ -1157,14 +1190,15 @@
                 scales: { x: { stacked: true }, y: { stacked: true, beginAtZero: true } } 
             };
 
+            // Mengubah Bar Coverage menjadi Bar Event
             resetChart('barCoverage');
             chartInstances['barCoverage'] = new Chart(document.getElementById('barCoverage'), {
                 type: 'bar',
                 data: {
                     labels: AREA_KEYS,
                     datasets: [
-                        { label: 'Tercoverage', data: AREA_KEYS.map(k=>areaCount[k].cov), backgroundColor: '#34a853' },
-                        { label: 'Not Yet', data: AREA_KEYS.map(k=>areaCount[k].notCov), backgroundColor: '#ea4335' }
+                        { label: 'Done', data: AREA_KEYS.map(k=>areaCount[k].eventDone), backgroundColor: '#34a853' },
+                        { label: 'Not Yet', data: AREA_KEYS.map(k=>areaCount[k].eventNotYet), backgroundColor: '#ea4335' }
                     ]
                 },
                 options: barOptions
