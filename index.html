@@ -435,6 +435,8 @@
                                     <option value="PKB">Pekanbaru (PKB)</option>
                                     <option value="BJM">Banjarmasin (BJM)</option>
                                     <option value="UPG">Ujung Pandang (UPG)</option>
+                                    <option value="SOD">Sorowako (SOD)</option>
+                                    <option value="BLG">Balangan (BLG)</option>
                                 </select>
                             </div>
                             <div class="filter-group">
@@ -573,6 +575,8 @@
                                 <option value="PKB">Pekanbaru (PKB)</option>
                                 <option value="BJM">Banjarmasin (BJM)</option>
                                 <option value="UPG">Ujung Pandang (UPG)</option>
+                                <option value="SOD">Sorowako (SOD)</option>
+                                <option value="BLG">Balangan (BLG)</option>
                             </select>
 
                             <a href="https://docs.google.com/spreadsheets/d/1MswJRi_KEwzvgEAlwAJ6uHw-Y7mQEyPiBig3zv09aVw/edit?usp=sharing" target="_blank" class="btn btn-outline-info fw-bold bg-white text-dark border-2 border-info shadow-sm ms-2">
@@ -623,6 +627,8 @@
                                     <option value="PKB">Pekanbaru (PKB)</option>
                                     <option value="BJM">Banjarmasin (BJM)</option>
                                     <option value="UPG">Ujung Pandang (UPG)</option>
+                                    <option value="SOD">Sorowako (SOD)</option>
+                                    <option value="BLG">Balangan (BLG)</option>
                                 </select>
                             </div>
                             <div class="col-md-2">
@@ -679,6 +685,7 @@
     </div>
 
     <!-- Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2"></script>
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
@@ -807,9 +814,11 @@
             "BLP": { lat: -1.2379, lng: 116.8529, nama: "Balikpapan" },
             "PKB": { lat: 0.5333, lng: 101.4500,  nama: "Pekanbaru" },
             "BJM": { lat: -3.3167, lng: 114.5901, nama: "Banjarmasin" },
-            "UPG": { lat: -5.1476, lng: 119.4327, nama: "Ujung Pandang" }
+            "UPG": { lat: -5.1476, lng: 119.4327, nama: "Ujung Pandang" },
+            "SOD": { lat: -2.5333, lng: 121.3500, nama: "Sorowako" },
+            "BLG": { lat: -2.3333, lng: 115.5000, nama: "Balangan" }
         };
-        const AREA_KEYS = ["JKT", "SMD", "BLP", "PKB", "BJM", "UPG"];
+        const AREA_KEYS = ["JKT", "SMD", "BLP", "PKB", "BJM", "UPG", "SOD", "BLG"];
 
         // --- INITIALIZE MAP ---
         function initMap() {
@@ -823,7 +832,8 @@
         // --- FUNGSI BANTU MENCARI KOLOM ---
         function getCol(row, possibleNames) {
             for (let key in row) {
-                let cleanKey = key.toString().trim().toUpperCase();
+                // Modifikasi REVISI: Membersihkan \n atau spasi tersembunyi dari judul kolom Excel
+                let cleanKey = key.toString().replace(/[\r\n]+/g, ' ').trim().toUpperCase();
                 if (possibleNames.includes(cleanKey)) {
                     return row[key];
                 }
@@ -842,8 +852,8 @@
             document.querySelector('#tblMasterData tbody').innerHTML = '<tr><td colspan="7" class="text-center py-5 text-muted fw-bold"><i class="fas fa-spinner fa-spin-fast me-2"></i> Sinkronisasi Data Spreadsheet...</td></tr>';
 
             try {
-                // Perbaikan fetch tanpa nocache (kembali normal agar tidak ditolak server Google)
-                const response = await fetch(SCRIPT_URL);
+                // Modifikasi REVISI: Penambahan Parameter Cache Buster '?t=' untuk paksa ambil data terbaru
+                const response = await fetch(SCRIPT_URL + '?t=' + new Date().getTime());
                 let result;
                 
                 try {
@@ -869,8 +879,9 @@
                         let statM1 = getCol(row, ['STATUS MODUL 1']);
                         let statM2 = getCol(row, ['STATUS MODUL 2']);
                         
-                        let partStatusRaw = getCol(row, ['STATUS PARTICIPANT', 'STATUS KELULUSAN']).toUpperCase().trim();
-                        let covStatusRaw = getCol(row, ['STATUS COVERAGE', 'ALL COVERAGE']).toUpperCase().trim();
+                        // Modifikasi REVISI: Pembacaan dikuatkan ke String() menghindari data kosong atau angka
+                        let partStatusRaw = String(getCol(row, ['STATUS PARTICIPANT', 'STATUS KELULUSAN'])).toUpperCase().trim();
+                        let covStatusRaw = String(getCol(row, ['STATUS COVERAGE', 'ALL COVERAGE', 'COVERAGE'])).toUpperCase().trim();
 
                         let covStatus = covStatusRaw.includes('TERCOVERAGE') || covStatusRaw.includes('COVERAGE') ? 'Tercoverage' : 'Not Yet';
                         
@@ -913,6 +924,16 @@
 
                     renderDashboard();
                     renderMasterTable();
+                    
+                    // Modifikasi REVISI: Munculkan popup notifikasi apabila fetch data sukses
+                    Swal.fire({
+                        title: 'Berhasil!',
+                        text: 'Data telah tersinkronisasi dengan Spreadsheet.',
+                        icon: 'success',
+                        timer: 2000,
+                        showConfirmButton: false
+                    });
+
                 } else {
                     Swal.fire('Error', "Error dari server: " + result.message, 'error');
                 }
@@ -1125,7 +1146,8 @@
             resetChart('pieArea');
             chartInstances['pieArea'] = new Chart(document.getElementById('pieArea'), {
                 type: 'pie',
-                data: { labels: AREA_KEYS, datasets: [{ data: areaVals, backgroundColor: ['#4285f4', '#f97316', '#a855f7', '#ec4899', '#14b8a6', '#64748b'] }] },
+                // Modifikasi REVISI: Penambahan warna tambahan di Chart untuk mengakomodasi SOD dan BLG
+                data: { labels: AREA_KEYS, datasets: [{ data: areaVals, backgroundColor: ['#4285f4', '#f97316', '#a855f7', '#ec4899', '#14b8a6', '#64748b', '#eab308', '#22c55e'] }] },
                 options: pieOptions
             });
 
