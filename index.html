@@ -23,8 +23,7 @@
     <style>
         :root {
             --primary-bg: #e5e7eb;
-            --sidebar-bg: #1e1e1e;
-            --sidebar-hover: #333333;
+            --sidebar-bg: #1A1A1A;
             --brand-color: #ffc107;
             --brand-hover: #e0a800;
             --text-main: #333;
@@ -94,6 +93,7 @@
             display: flex;
             flex-direction: column;
             width: calc(100% - 250px);
+            transition: all 0.3s ease;
         }
         
         .topbar {
@@ -107,8 +107,6 @@
             top: 0;
             z-index: 999;
         }
-
-        .header-logos img { height: 40px; }
 
         .content-body { padding: 1.5rem; }
 
@@ -155,16 +153,16 @@
         .card-header-title {
             background: var(--brand-color);
             border: 2px solid var(--border-color);
-            padding: 4px;
+            padding: 6px;
             text-align: center;
             font-weight: 800;
             font-style: italic;
             border-radius: 4px;
-            margin-bottom: 10px;
+            margin-bottom: 15px;
             font-size: 0.95rem;
         }
-        .kpi-title { font-size: 0.8rem; color: #555; font-weight: 700; text-transform: uppercase; }
-        .kpi-value { font-size: 1.8rem; font-weight: 800; color: #000; line-height: 1.1; margin-top: 5px; }
+        .kpi-title { font-size: 0.85rem; color: #555; font-weight: 700; text-transform: uppercase; }
+        .kpi-value { font-size: 2rem; font-weight: 800; color: #000; line-height: 1.1; margin-top: 5px; }
 
         /* --- CHARTS --- */
         .chart-wrapper { position: relative; flex: 1; min-height: 220px; width: 100%; }
@@ -191,7 +189,11 @@
         :fullscreen .sidebar { display: none !important; }
         :fullscreen .topbar { display: none !important; }
         :fullscreen .main-content { width: 100% !important; }
-        :fullscreen .content-body { padding: 10px; overflow-y: auto; height: 100vh; }
+        :fullscreen .content-body { padding: 15px; overflow-y: auto; height: 100vh; }
+        :-webkit-full-screen .sidebar { display: none !important; }
+        :-webkit-full-screen .topbar { display: none !important; }
+        :-webkit-full-screen .main-content { width: 100% !important; }
+        :-webkit-full-screen .content-body { padding: 15px; overflow-y: auto; height: 100vh; }
     </style>
 </head>
 <body>
@@ -200,13 +202,12 @@
         <!-- SIDEBAR -->
         <div class="sidebar" id="sidebar">
             <div class="sidebar-brand">
-                <i class="fas fa-chart-line fs-3"></i>
+                <i class="fas fa-chart-line"></i>
                 <span class="nav-text">8 DP Portal</span>
             </div>
             <div class="d-flex flex-column mt-3 gap-1">
                 <a href="#" class="nav-link-custom active"><i class="fas fa-home"></i> <span class="nav-text">Dashboard</span></a>
                 <a href="#" class="nav-link-custom"><i class="fas fa-database"></i> <span class="nav-text">Database</span></a>
-                <a href="#" class="nav-link-custom"><i class="fas fa-cog"></i> <span class="nav-text">Pengaturan</span></a>
             </div>
         </div>
 
@@ -217,13 +218,7 @@
             <div class="topbar">
                 <div class="d-flex align-items-center gap-3">
                     <button class="btn btn-light border border-dark fw-bold" onclick="toggleSidebar()"><i class="fas fa-bars"></i></button>
-                    <div class="header-logos d-none d-md-flex align-items-center gap-2">
-                        <img src="logo ut.png" alt="UT" onerror="this.src='https://via.placeholder.com/80x40?text=Logo+UT'">
-                    </div>
-                </div>
-                <h4 class="mb-0 fw-bold fst-italic d-none d-lg-block" style="letter-spacing: -0.5px;">DASHBOARD MONITORING DEVELOPMENT 8 DP</h4>
-                <div class="header-logos">
-                    <img src="logo corpu.png" alt="Corpu" onerror="this.src='https://via.placeholder.com/80x40?text=Corpu'">
+                    <div class="fw-bold fs-5 fst-italic d-none d-md-block">DASHBOARD MONITORING DEVELOPMENT 8 DP</div>
                 </div>
             </div>
 
@@ -278,8 +273,8 @@
                     </div>
                     <div class="col-md-4">
                         <div class="card-custom text-center justify-content-center">
-                            <div class="kpi-title">Coverage (Tercapai / Target)</div>
-                            <div class="kpi-value text-success" id="kpiCoverage">0 <span style="font-size: 1rem; color: #555;">(0%)</span></div>
+                            <div class="kpi-title">Coverage (Tercapai / Karyawan)</div>
+                            <div class="kpi-value text-success" id="kpiCoverage">0 <span style="font-size: 1.1rem; color: #555;">(0%)</span></div>
                         </div>
                     </div>
                     <div class="col-md-4">
@@ -352,7 +347,7 @@
                                         </tr>
                                     </thead>
                                     <tbody>
-                                        <tr><td colspan="6" class="text-center py-4 text-muted">Silakan upload data Excel terlebih dahulu.</td></tr>
+                                        <tr><td colspan="6" class="text-center py-4 text-muted fw-bold">Silakan unggah (upload) file Excel Master Data terlebih dahulu.</td></tr>
                                     </tbody>
                                 </table>
                             </div>
@@ -372,24 +367,32 @@
     <script>
         Chart.register(ChartDataLabels);
 
-        // Sidebar & Fullscreen
-        function toggleSidebar() { document.getElementById('sidebar').classList.toggle('collapsed'); setTimeout(() => { if(map) map.invalidateSize(); }, 300); }
+        // --- SIDEBAR & FULLSCREEN CONTROLS ---
+        function toggleSidebar() { 
+            document.getElementById('sidebar').classList.toggle('collapsed'); 
+            setTimeout(() => { if(map) map.invalidateSize(); }, 300); 
+        }
+
         function toggleFullscreen() {
-            if (!document.fullscreenElement) {
-                document.documentElement.requestFullscreen();
+            const elem = document.documentElement;
+            if (!document.fullscreenElement && !document.webkitFullscreenElement) {
+                if (elem.requestFullscreen) elem.requestFullscreen();
+                else if (elem.webkitRequestFullscreen) elem.webkitRequestFullscreen();
             } else {
-                document.exitFullscreen();
+                if (document.exitFullscreen) document.exitFullscreen();
+                else if (document.webkitExitFullscreen) document.webkitExitFullscreen();
             }
         }
         document.addEventListener('fullscreenchange', () => { setTimeout(() => { if(map) map.invalidateSize(); }, 300); });
+        document.addEventListener('webkitfullscreenchange', () => { setTimeout(() => { if(map) map.invalidateSize(); }, 300); });
 
-        // Database Global
+        // --- GLOBAL VARIABLES ---
         let rawData = [];
         let chartInstances = {};
         let map = null;
         let mapMarkers = [];
 
-        // Koordinat Kota Fix
+        // Koordinat 6 Kota Sesuai Permintaan
         const COORDS = {
             "JKT": { lat: -6.2088, lng: 106.8456, nama: "Jakarta" },
             "SMD": { lat: -0.5022, lng: 117.1536, nama: "Samarinda" },
@@ -400,7 +403,7 @@
         };
         const AREA_KEYS = ["JKT", "SMD", "BLP", "PKB", "BJM", "UPG"];
 
-        // Init Map
+        // --- INITIALIZE MAP ---
         function initMap() {
             map = L.map('mapArea').setView([-2.5, 117.5], 4.5);
             L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
@@ -409,36 +412,37 @@
         }
         initMap();
 
-        // Process Excel
+        // --- PROSES UPLOAD EXCEL ---
         function processExcel(e) {
             const file = e.target.files[0];
             if(!file) return;
+            
             const reader = new FileReader();
             reader.onload = function(evt) {
                 const data = evt.target.result;
                 const workbook = XLSX.read(data, { type: 'binary' });
                 const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
                 
-                // Gunakan header row 2 jika excel sesuai format foto 3
-                const jsonRaw = XLSX.utils.sheet_to_json(firstSheet, { defval: "" });
+                // MENGGUNAKAN range: 1 UNTUK MEMBACA HEADER DI BARIS KE-2
+                const jsonRaw = XLSX.utils.sheet_to_json(firstSheet, { range: 1, defval: "" });
                 
                 rawData = [];
                 let picSet = new Set();
 
                 jsonRaw.forEach(row => {
                     let name = row['NAME'] || row['NAMA'] || '';
-                    if(!name) return; // Skip baris kosong
+                    if(!name) return; // Lewati baris kosong
                     
                     let nrp = row['NRP'] || '';
                     let area = String(row['Cabang/ Site'] || row['BRANCH/SITE'] || '').toUpperCase().trim();
                     let pic = row['PIC'] || 'Unknown';
                     picSet.add(pic);
 
-                    // Membaca status langsung dari Excel
+                    // Membaca status per modul
                     let statM1 = String(row['Status Modul 1'] || '').toUpperCase().trim();
                     let statM2 = String(row['Status Modul 2'] || '').toUpperCase().trim();
                     
-                    // Kalkulasi Final Status Participant (Done, On Progress, Not Yet)
+                    // Kalkulasi Status
                     let finalStatus = "NOT YET";
                     let covStatus = "Not Coverage";
 
@@ -454,25 +458,27 @@
                     rawData.push({ name, nrp, area, pic, statM1, statM2, finalStatus, covStatus });
                 });
 
-                // Update PIC Filter
+                // Update Dropdown Filter PIC
                 let picSelect = document.getElementById("filterPIC");
                 picSelect.innerHTML = '<option value="ALL">Semua PIC</option>';
                 picSet.forEach(p => {
-                    picSelect.innerHTML += `<option value="${p}">${p}</option>`;
+                    if (p !== 'Unknown' && p.trim() !== '') {
+                        picSelect.innerHTML += `<option value="${p}">${p}</option>`;
+                    }
                 });
 
-                alert(`Berhasil memuat ${rawData.length} data karyawan!`);
+                alert(`Berhasil memuat ${rawData.length} data karyawan dari Excel!`);
                 renderDashboard();
             };
             reader.readAsBinaryString(file);
         }
 
-        // Destroy Chart Helper
+        // --- RESET CHART HELPER ---
         function resetChart(id) {
             if(chartInstances[id]) chartInstances[id].destroy();
         }
 
-        // Render Dashboard & Logic
+        // --- RENDER SELURUH DASHBOARD ---
         function renderDashboard() {
             if(rawData.length === 0) return;
 
@@ -480,7 +486,7 @@
             const fStatus = document.getElementById("filterStatus").value;
             const fPIC = document.getElementById("filterPIC").value;
 
-            // 1. FILTERING DATA
+            // 1. Filter Data Aktif
             let filtered = rawData.filter(d => {
                 let mArea = fArea === "ALL" || d.area === fArea;
                 let mStat = fStatus === "ALL" || d.finalStatus === fStatus;
@@ -488,7 +494,7 @@
                 return mArea && mStat && mPIC;
             });
 
-            // 2. HITUNG KPI
+            // 2. Kalkulasi Data KPI
             let totalPeserta = filtered.length;
             let totalCoverage = 0;
             let totalOnProgress = 0;
@@ -502,10 +508,11 @@
                 if(d.finalStatus === "ON PROGRESS") totalOnProgress++;
                 if(d.finalStatus === "NOT YET") totalNotYet++;
 
-                // Map area to valid keys if exists
+                // Pengelompokan per Area (Jika area valid)
                 let k = AREA_KEYS.includes(d.area) ? d.area : null;
                 if(k) {
                     areaCount[k].total++;
+                    
                     if(d.covStatus === "Tercoverage") areaCount[k].cov++;
                     else areaCount[k].notCov++;
 
@@ -515,19 +522,20 @@
                 }
             });
 
+            // Update Angka Scorecard
             let pctCov = totalPeserta === 0 ? 0 : ((totalCoverage / totalPeserta) * 100).toFixed(1);
             document.getElementById("kpiTotal").innerText = totalPeserta;
-            document.getElementById("kpiCoverage").innerHTML = `${totalCoverage} <span style="font-size: 1rem; color: #555;">(${pctCov}%)</span>`;
+            document.getElementById("kpiCoverage").innerHTML = `${totalCoverage} <span style="font-size: 1.1rem; color: #555;">(${pctCov}%)</span>`;
             document.getElementById("kpiProgress").innerText = totalOnProgress;
             document.getElementById("kpiNotYet").innerText = totalNotYet;
 
-            // 3. GAMBAR CHARTS
+            // 3. Render Grafik (Chart.js)
             const pieOptions = {
                 responsive: true, maintainAspectRatio: false,
                 plugins: {
-                    legend: { position: 'right', labels: { font: {size: 10, weight: 'bold'} } },
+                    legend: { position: 'right', labels: { font: {size: 11, weight: 'bold'}, boxWidth: 12 } },
                     datalabels: {
-                        color: '#fff', font: {weight: 'bold'},
+                        color: '#fff', font: {weight: 'bold', size: 12},
                         formatter: (val, ctx) => {
                             let sum = ctx.chart.data.datasets[0].data.reduce((a,b)=>a+b,0);
                             return sum===0||val===0 ? null : (val*100/sum).toFixed(1)+"%";
@@ -536,95 +544,107 @@
                 }
             };
 
-            // Coverage Pie
+            // Pie 1: Training Coverage
             resetChart('pieCoverage');
             chartInstances['pieCoverage'] = new Chart(document.getElementById('pieCoverage'), {
                 type: 'pie',
-                data: { labels: ['Tercoverage', 'Not Yet'], datasets: [{ data: [totalCoverage, totalPeserta - totalCoverage], backgroundColor: ['#22c55e', '#ef4444'] }] },
+                data: { labels: ['Tercoverage', 'Not Yet'], datasets: [{ data: [totalCoverage, totalPeserta - totalCoverage], backgroundColor: ['#34a853', '#ea4335'] }] },
                 options: pieOptions
             });
 
-            // Participant Pie
+            // Pie 2: Participant Status
             resetChart('pieParticipant');
             chartInstances['pieParticipant'] = new Chart(document.getElementById('pieParticipant'), {
                 type: 'pie',
-                data: { labels: ['Done', 'On Progress', 'Not Yet'], datasets: [{ data: [totalCoverage, totalOnProgress, totalNotYet], backgroundColor: ['#22c55e', '#f59e0b', '#ef4444'] }] },
+                data: { labels: ['Done', 'On Progress', 'Not Yet'], datasets: [{ data: [totalCoverage, totalOnProgress, totalNotYet], backgroundColor: ['#34a853', '#fbbc04', '#ea4335'] }] },
                 options: pieOptions
             });
 
-            // Area Dist Pie
+            // Pie 3: Distribution By Area
             let areaVals = AREA_KEYS.map(k => areaCount[k].total);
             resetChart('pieArea');
             chartInstances['pieArea'] = new Chart(document.getElementById('pieArea'), {
                 type: 'pie',
-                data: { labels: AREA_KEYS, datasets: [{ data: areaVals, backgroundColor: ['#3b82f6', '#f97316', '#8b5cf6', '#ec4899', '#14b8a6', '#64748b'] }] },
+                data: { labels: AREA_KEYS, datasets: [{ data: areaVals, backgroundColor: ['#4285f4', '#f97316', '#a855f7', '#ec4899', '#14b8a6', '#64748b'] }] },
                 options: pieOptions
             });
 
-            // Coverage Bar
+            const barOptions = { 
+                responsive: true, maintainAspectRatio: false, 
+                plugins: { datalabels: { display: false } }, 
+                scales: { x: { stacked: true }, y: { stacked: true, beginAtZero: true } } 
+            };
+
+            // Bar 1: Coverage per Area
             resetChart('barCoverage');
             chartInstances['barCoverage'] = new Chart(document.getElementById('barCoverage'), {
                 type: 'bar',
                 data: {
                     labels: AREA_KEYS,
                     datasets: [
-                        { label: 'Tercoverage', data: AREA_KEYS.map(k=>areaCount[k].cov), backgroundColor: '#22c55e' },
-                        { label: 'Not Yet', data: AREA_KEYS.map(k=>areaCount[k].notCov), backgroundColor: '#ef4444' }
+                        { label: 'Tercoverage', data: AREA_KEYS.map(k=>areaCount[k].cov), backgroundColor: '#34a853' },
+                        { label: 'Not Yet', data: AREA_KEYS.map(k=>areaCount[k].notCov), backgroundColor: '#ea4335' }
                     ]
                 },
-                options: { responsive:true, maintainAspectRatio:false, plugins:{datalabels:{display:false}}, scales:{x:{stacked:true},y:{stacked:true}} }
+                options: barOptions
             });
 
-            // Participant Bar
+            // Bar 2: Participant per Area
             resetChart('barParticipant');
             chartInstances['barParticipant'] = new Chart(document.getElementById('barParticipant'), {
                 type: 'bar',
                 data: {
                     labels: AREA_KEYS,
                     datasets: [
-                        { label: 'Done', data: AREA_KEYS.map(k=>areaCount[k].done), backgroundColor: '#22c55e' },
-                        { label: 'On Progress', data: AREA_KEYS.map(k=>areaCount[k].prog), backgroundColor: '#f59e0b' },
-                        { label: 'Not Yet', data: AREA_KEYS.map(k=>areaCount[k].ny), backgroundColor: '#ef4444' }
+                        { label: 'Done', data: AREA_KEYS.map(k=>areaCount[k].done), backgroundColor: '#34a853' },
+                        { label: 'On Progress', data: AREA_KEYS.map(k=>areaCount[k].prog), backgroundColor: '#fbbc04' },
+                        { label: 'Not Yet', data: AREA_KEYS.map(k=>areaCount[k].ny), backgroundColor: '#ea4335' }
                     ]
                 },
-                options: { responsive:true, maintainAspectRatio:false, plugins:{datalabels:{display:false}} }
+                options: barOptions
             });
 
-            // 4. MAP UPDATE
+            // 4. Update Titik Peta
             mapMarkers.forEach(m => map.removeLayer(m));
             mapMarkers = [];
+            
             AREA_KEYS.forEach(k => {
-                if(areaCount[k].total > 0 && COORDS[k]) {
-                    let m = L.circleMarker([COORDS[k].lat, COORDS[k].lng], {
-                        radius: 12, fillColor: "#ffc107", color: "#000", weight: 2, fillOpacity: 1
+                if (areaCount[k].total > 0 && COORDS[k]) {
+                    let marker = L.circleMarker([COORDS[k].lat, COORDS[k].lng], {
+                        radius: 12, fillColor: "#ffc107", color: "#111", weight: 2, fillOpacity: 0.9
                     }).bindPopup(`
-                        <div class="text-center">
-                            <b class="fs-6">${COORDS[k].nama}</b><br>
-                            Total Peserta: <b>${areaCount[k].total}</b><br>
-                            Coverage: <b class="text-success">${areaCount[k].cov}</b>
+                        <div class="text-center" style="min-width: 120px;">
+                            <b class="fs-6 d-block border-bottom pb-1 mb-2">${COORDS[k].nama}</b>
+                            Total Karyawan: <b>${areaCount[k].total}</b><br>
+                            Coverage: <b class="text-success">${areaCount[k].cov}</b><br>
+                            Not Yet: <b class="text-danger">${areaCount[k].notCov}</b>
                         </div>
                     `).addTo(map);
-                    mapMarkers.push(m);
+                    mapMarkers.push(marker);
                 }
             });
 
-            // 5. TABLE UPDATE
+            // 5. Update Tabel Peserta
             let tbody = document.querySelector('#tablePeserta tbody');
-            let html = "";
+            let htmlTable = "";
+            
             filtered.forEach(d => {
-                let badge = d.finalStatus==="DONE" ? 'bg-success' : d.finalStatus==="ON PROGRESS" ? 'bg-warning text-dark' : 'bg-danger';
-                html += `
+                let badgeClass = d.finalStatus === "DONE" ? 'bg-success' : 
+                                 d.finalStatus === "ON PROGRESS" ? 'bg-warning text-dark' : 'bg-danger';
+                
+                htmlTable += `
                     <tr>
-                        <td><b>${d.name}</b><br><small class="text-muted">${d.nrp}</small></td>
+                        <td><b class="text-dark">${d.name}</b><br><small class="text-muted">${d.nrp}</small></td>
                         <td class="text-center fw-bold">${d.area}</td>
                         <td class="text-center">${d.pic}</td>
-                        <td class="text-center">${d.statM1||'-'}</td>
-                        <td class="text-center">${d.statM2||'-'}</td>
-                        <td class="text-center"><span class="badge ${badge}">${d.finalStatus}</span></td>
+                        <td class="text-center">${d.statM1 || '-'}</td>
+                        <td class="text-center">${d.statM2 || '-'}</td>
+                        <td class="text-center"><span class="badge ${badgeClass} px-3 py-2 shadow-sm">${d.finalStatus}</span></td>
                     </tr>
                 `;
             });
-            tbody.innerHTML = html || '<tr><td colspan="6" class="text-center text-muted">Data tidak ditemukan pada filter ini.</td></tr>';
+            
+            tbody.innerHTML = htmlTable || '<tr><td colspan="6" class="text-center py-4 text-muted fw-bold">Data tidak ditemukan pada filter yang dipilih.</td></tr>';
         }
     </script>
 </body>
