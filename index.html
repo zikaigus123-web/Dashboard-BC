@@ -257,54 +257,60 @@
         /* --- FULLSCREEN --- */
         :fullscreen .sidebar { display: none !important; }
         :fullscreen .topbar { display: none !important; }
-        :fullscreen .main-content { width: 100vw !important; height: 100vh !important; overflow-y: auto !important; }
-        :fullscreen #view-dashboard { display: flex; flex-direction: column; padding: 15px !important; gap: 15px; height: auto !important; min-height: 100vh; overflow-y: auto !important; }
+        :fullscreen .main-content { width: 100vw !important; height: 100vh !important; overflow: hidden !important; }
+        :fullscreen #view-dashboard { display: flex; flex-direction: column; padding: 8px !important; gap: 8px !important; height: 100vh !important; min-height: 100vh !important; overflow: hidden !important; }
         
-        :fullscreen .filter-container { flex: 0 0 auto; margin-bottom: 0 !important; padding: 10px 15px !important; }
-        :fullscreen .row { flex: 0 0 auto !important; margin-bottom: 10px !important; flex-wrap: nowrap !important; gap: 15px; }
-        :fullscreen .row > div { padding: 0 !important; display: flex; flex-direction: column; flex: 1; }
+        :fullscreen .filter-container { flex: 0 0 auto; margin-bottom: 0 !important; padding: 5px 10px !important; min-height: 0 !important; }
+        :fullscreen .row { flex: 1 1 0 !important; margin-bottom: 0 !important; flex-wrap: nowrap !important; gap: 8px !important; min-height: 0 !important; }
+        :fullscreen .row > div { padding: 0 !important; display: flex; flex-direction: column; flex: 1; min-height: 0 !important; }
         
         :fullscreen .kpi-row { flex: 0 0 auto !important; }
-        :fullscreen .pie-row { flex: 0 0 auto !important; min-height: 300px; }
-        :fullscreen .bar-row { flex: 0 0 auto !important; min-height: 300px; }
-        :fullscreen .map-row { flex: 0 0 auto !important; min-height: 400px; }
-        :fullscreen .map-row > div:nth-child(1) { flex: 0 0 35%; }
-        :fullscreen .map-row > div:nth-child(2) { flex: 0 0 65%; }
+        :fullscreen .pie-row { flex: 1 1 0 !important; min-height: 0 !important; }
+        :fullscreen .bar-row { flex: 1 1 0 !important; min-height: 0 !important; }
+        :fullscreen .map-row { flex: 1.2 1 0 !important; min-height: 0 !important; }
+        :fullscreen .map-row > div:nth-child(1) { flex: 0 0 35% !important; }
+        :fullscreen .map-row > div:nth-child(2) { flex: 0 0 65% !important; }
 
-        :fullscreen .card-custom { padding: 12px; margin-bottom: 0 !important; height: 100%; }
-        :fullscreen .card-header-title { margin-bottom: 8px; padding: 4px; font-size: 0.85rem; }
-        :fullscreen .kpi-title { font-size: 0.75rem; }
-        :fullscreen .kpi-value { font-size: 1.6rem; margin-top: 4px; }
+        :fullscreen .card-custom { padding: 8px !important; margin-bottom: 0 !important; height: 100% !important; }
+        :fullscreen .card-header-title { margin-bottom: 4px !important; padding: 2px !important; font-size: 0.75rem !important; }
+        :fullscreen .kpi-title { font-size: 0.7rem !important; }
+        :fullscreen .kpi-value { font-size: 1.4rem !important; margin-top: 2px !important; }
         
-        :fullscreen .chart-wrapper { height: 35vh !important; min-height: 250px !important; }
-        :fullscreen .table-responsive { height: 100% !important; min-height: 300px !important; overflow-y: auto; display: flex; flex-direction: column; }
-        :fullscreen #mapArea { height: 40vh !important; min-height: 300px !important; }
+        :fullscreen .chart-wrapper { flex: 1 1 0 !important; height: 100% !important; min-height: 0 !important; }
+        :fullscreen .table-responsive { flex: 1 1 0 !important; height: 100% !important; min-height: 0 !important; overflow-y: auto !important; display: flex; flex-direction: column; }
+        :fullscreen #mapArea { flex: 1 1 0 !important; height: 100% !important; min-height: 0 !important; }
+        
+        :fullscreen .table-custom th, :fullscreen .table-custom td { padding: 4px !important; font-size: 0.75rem !important; }
+        :fullscreen .table-custom { margin-bottom: 0 !important; }
 
         /* Kompatibilitas Webkit Fullscreen */
         :-webkit-full-screen .sidebar { display: none !important; }
         :-webkit-full-screen .topbar { display: none !important; }
-        :-webkit-full-screen .main-content { width: 100vw !important; height: 100vh !important; overflow-y: auto !important; }
-        :-webkit-full-screen #view-dashboard { display: flex; flex-direction: column; padding: 15px !important; gap: 15px; height: auto !important; min-height: 100vh; overflow-y: auto !important; }
+        :-webkit-full-screen .main-content { width: 100vw !important; height: 100vh !important; overflow: hidden !important; }
+        :-webkit-full-screen #view-dashboard { display: flex; flex-direction: column; padding: 8px !important; gap: 8px !important; height: 100vh !important; min-height: 100vh !important; overflow: hidden !important; }
         
-        :-webkit-full-screen .filter-container { flex: 0 0 auto; margin-bottom: 0 !important; padding: 10px 15px !important; }
-        :-webkit-full-screen .row { flex: 0 0 auto !important; margin-bottom: 10px !important; flex-wrap: nowrap !important; gap: 15px; }
-        :-webkit-full-screen .row > div { padding: 0 !important; display: flex; flex-direction: column; flex: 1; }
+        :-webkit-full-screen .filter-container { flex: 0 0 auto; margin-bottom: 0 !important; padding: 5px 10px !important; min-height: 0 !important; }
+        :-webkit-full-screen .row { flex: 1 1 0 !important; margin-bottom: 0 !important; flex-wrap: nowrap !important; gap: 8px !important; min-height: 0 !important; }
+        :-webkit-full-screen .row > div { padding: 0 !important; display: flex; flex-direction: column; flex: 1; min-height: 0 !important; }
         
         :-webkit-full-screen .kpi-row { flex: 0 0 auto !important; }
-        :-webkit-full-screen .pie-row { flex: 0 0 auto !important; min-height: 300px; }
-        :-webkit-full-screen .bar-row { flex: 0 0 auto !important; min-height: 300px; }
-        :-webkit-full-screen .map-row { flex: 0 0 auto !important; min-height: 400px; }
-        :-webkit-full-screen .map-row > div:nth-child(1) { flex: 0 0 35%; }
-        :-webkit-full-screen .map-row > div:nth-child(2) { flex: 0 0 65%; }
+        :-webkit-full-screen .pie-row { flex: 1 1 0 !important; min-height: 0 !important; }
+        :-webkit-full-screen .bar-row { flex: 1 1 0 !important; min-height: 0 !important; }
+        :-webkit-full-screen .map-row { flex: 1.2 1 0 !important; min-height: 0 !important; }
+        :-webkit-full-screen .map-row > div:nth-child(1) { flex: 0 0 35% !important; }
+        :-webkit-full-screen .map-row > div:nth-child(2) { flex: 0 0 65% !important; }
 
-        :-webkit-full-screen .card-custom { padding: 12px; margin-bottom: 0 !important; height: 100%; }
-        :-webkit-full-screen .card-header-title { margin-bottom: 8px; padding: 4px; font-size: 0.85rem; }
-        :-webkit-full-screen .kpi-title { font-size: 0.75rem; }
-        :-webkit-full-screen .kpi-value { font-size: 1.6rem; margin-top: 4px; }
+        :-webkit-full-screen .card-custom { padding: 8px !important; margin-bottom: 0 !important; height: 100% !important; }
+        :-webkit-full-screen .card-header-title { margin-bottom: 4px !important; padding: 2px !important; font-size: 0.75rem !important; }
+        :-webkit-full-screen .kpi-title { font-size: 0.7rem !important; }
+        :-webkit-full-screen .kpi-value { font-size: 1.4rem !important; margin-top: 2px !important; }
         
-        :-webkit-full-screen .chart-wrapper { height: 35vh !important; min-height: 250px !important; }
-        :-webkit-full-screen .table-responsive { height: 100% !important; min-height: 300px !important; overflow-y: auto; display: flex; flex-direction: column; }
-        :-webkit-full-screen #mapArea { height: 40vh !important; min-height: 300px !important; }
+        :-webkit-full-screen .chart-wrapper { flex: 1 1 0 !important; height: 100% !important; min-height: 0 !important; }
+        :-webkit-full-screen .table-responsive { flex: 1 1 0 !important; height: 100% !important; min-height: 0 !important; overflow-y: auto !important; display: flex; flex-direction: column; }
+        :-webkit-full-screen #mapArea { flex: 1 1 0 !important; height: 100% !important; min-height: 0 !important; }
+        
+        :-webkit-full-screen .table-custom th, :-webkit-full-screen .table-custom td { padding: 4px !important; font-size: 0.75rem !important; }
+        :-webkit-full-screen .table-custom { margin-bottom: 0 !important; }
 
         /* SPINNER Animasi Load */
         @keyframes spin { 100% { transform: rotate(360deg); } }
