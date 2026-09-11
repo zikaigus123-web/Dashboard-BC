@@ -790,8 +790,9 @@
 
         // --- GLOBAL VARIABLES ---
         let rawData = [];
+        let rawDataPerArea = []; // Variabel baru khusus untuk data pie chart Distribution By Area
         let rawDataFromSheet = []; 
-        let rawEventData = []; // Variabel baru khusus untuk mengolah data Event (Tanpa Duplicate Karyawan)
+        let rawEventData = []; 
         let chartInstances = {};
         let map = null;
         let mapMarkers = [];
@@ -857,8 +858,9 @@
                 if (result.status === "success") {
                     rawDataFromSheet = result.data || []; 
                     let uniqueData = {};
+                    let uniqueDataPerArea = {}; // Penampung khusus untuk Pie Chart Distribution By Area
                     let picSet = new Set();
-                    let allEvents = []; // Penampung Data Event untuk Logika Baru
+                    let allEvents = []; 
 
                     rawDataFromSheet.forEach(row => {
                         let nameRaw = String(getCol(row, ['NAME', 'NAMA'])).trim();
@@ -884,7 +886,7 @@
                         // Ekstraksi Logika Khusus Event
                         let modulName = String(getCol(row, ['TRAINING MODUL', 'NAMA MODUL', 'MODUL', 'EVENT'])).trim();
                         let nilaiRaw = String(getCol(row, ['NILAI', 'SCORE'])).trim();
-                        // Jika ada nilainya, artinya event ini sudah dilakukan
+                        
                         let hasNilai = (nilaiRaw !== '' && nilaiRaw !== '-');
                         
                         allEvents.push({
@@ -911,32 +913,43 @@
 
                         if(pic !== 'Unknown' && pic.trim() !== '') picSet.add(pic);
 
-                        // Pengelompokan Data Partisipan Karyawan (Wajib Unique NRP)
+                        // Pengelompokan Data Partisipan Karyawan (Global Unique NRP - Tetap 59)
                         let key = (nrp !== '' ? nrp : name.toUpperCase()); 
                         if (!uniqueData[key]) {
                             uniqueData[key] = { name, nrp, area, pic, statM1, statM2, finalStatus, covStatus };
                         } else {
-                            // Update area jika sebelumnya invalid/kosong agar tidak terlewat dari perhitungan Area
                             if (AREA_KEYS.includes(area) && !AREA_KEYS.includes(uniqueData[key].area)) {
                                 uniqueData[key].area = area;
                             }
-                            // Update PIC jika sebelumnya unknown
                             if (pic !== 'Unknown' && pic.trim() !== '' && uniqueData[key].pic === 'Unknown') {
                                 uniqueData[key].pic = pic;
                             }
-                            
                             if(statM1 && statM1 !== '-' && (!uniqueData[key].statM1 || uniqueData[key].statM1 === '-')) uniqueData[key].statM1 = statM1;
                             if(statM2 && statM2 !== '-' && (!uniqueData[key].statM2 || uniqueData[key].statM2 === '-')) uniqueData[key].statM2 = statM2;
-                            
                             if(finalStatus === 'DONE') uniqueData[key].finalStatus = 'DONE';
                             else if(finalStatus === 'ON PROGRESS' && uniqueData[key].finalStatus !== 'DONE') uniqueData[key].finalStatus = 'ON PROGRESS';
-                            
                             if(covStatus === 'Tercoverage') uniqueData[key].covStatus = 'Tercoverage';
+                        }
+
+                        // Pengelompokan KHUSUS Pie Chart Distribution By Area (Unique NRP + Area)
+                        let keyPerArea = key + "_" + area;
+                        if (!uniqueDataPerArea[keyPerArea]) {
+                            uniqueDataPerArea[keyPerArea] = { name, nrp, area, pic, statM1, statM2, finalStatus, covStatus };
+                        } else {
+                            if (pic !== 'Unknown' && pic.trim() !== '' && uniqueDataPerArea[keyPerArea].pic === 'Unknown') {
+                                uniqueDataPerArea[keyPerArea].pic = pic;
+                            }
+                            if(statM1 && statM1 !== '-' && (!uniqueDataPerArea[keyPerArea].statM1 || uniqueDataPerArea[keyPerArea].statM1 === '-')) uniqueDataPerArea[keyPerArea].statM1 = statM1;
+                            if(statM2 && statM2 !== '-' && (!uniqueDataPerArea[keyPerArea].statM2 || uniqueDataPerArea[keyPerArea].statM2 === '-')) uniqueDataPerArea[keyPerArea].statM2 = statM2;
+                            if(finalStatus === 'DONE') uniqueDataPerArea[keyPerArea].finalStatus = 'DONE';
+                            else if(finalStatus === 'ON PROGRESS' && uniqueDataPerArea[keyPerArea].finalStatus !== 'DONE') uniqueDataPerArea[keyPerArea].finalStatus = 'ON PROGRESS';
+                            if(covStatus === 'Tercoverage') uniqueDataPerArea[keyPerArea].covStatus = 'Tercoverage';
                         }
                     });
 
                     rawData = Object.values(uniqueData);
-                    rawEventData = allEvents; // Menyimpan data murni (termasuk duplikat peserta) ke Event Chart
+                    rawDataPerArea = Object.values(uniqueDataPerArea); // Data khusus Pie Chart
+                    rawEventData = allEvents; 
 
                     let picSelect = document.getElementById("filterPIC");
                     if(picSelect) {
@@ -1120,8 +1133,16 @@
             const fStatus = document.getElementById("filterStatus").value;
             const fPIC = document.getElementById("filterPIC").value;
 
-            // --- FILTER PARTICIPANT (Data Unique) ---
+            // --- FILTER PARTICIPANT (Data Unique 59 Karyawan) ---
             let filtered = rawData.filter(d => {
+                let mArea = fArea === "ALL" || d.area === fArea;
+                let mStat = fStatus === "ALL" || d.finalStatus === fStatus;
+                let mPIC = fPIC === "ALL" || d.pic === fPIC;
+                return mArea && mStat && mPIC;
+            });
+
+            // --- FILTER KHUSUS PIE CHART DISTRIBUTION BY AREA (Unique NRP + Area) ---
+            let filteredPerArea = rawDataPerArea.filter(d => {
                 let mArea = fArea === "ALL" || d.area === fArea;
                 let mStat = fStatus === "ALL" || d.finalStatus === fStatus;
                 let mPIC = fPIC === "ALL" || d.pic === fPIC;
@@ -1143,7 +1164,7 @@
             let areaCount = {};
             AREA_KEYS.forEach(k => areaCount[k] = { total: 0, cov: 0, notCov: 0, done: 0, prog: 0, ny: 0, eventDone: 0, eventNotYet: 0 });
 
-            // KALKULASI PARTICIPANT
+            // KALKULASI PARTICIPANT (Untuk KPI & Peta)
             filtered.forEach(d => {
                 if(d.covStatus === "Tercoverage") totalCoverage++;
                 if(d.finalStatus === "ON PROGRESS") totalOnProgress++;
@@ -1226,7 +1247,14 @@
                 options: pieOptions
             });
 
-            let areaVals = AREA_KEYS.map(k => areaCount[k].total);
+            // LOGIKA KHUSUS DIAGRAM LINGKARAN DISTRIBUTION BY AREA
+            let pieAreaCountData = {};
+            AREA_KEYS.forEach(k => pieAreaCountData[k] = 0);
+            filteredPerArea.forEach(d => {
+                if(AREA_KEYS.includes(d.area)) pieAreaCountData[d.area]++;
+            });
+
+            let areaVals = AREA_KEYS.map(k => pieAreaCountData[k]);
             resetChart('pieArea');
             chartInstances['pieArea'] = new Chart(document.getElementById('pieArea'), {
                 type: 'pie',
