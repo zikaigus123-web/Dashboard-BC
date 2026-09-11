@@ -865,7 +865,9 @@
                         if (nameRaw === '' || nameRaw.toUpperCase() === 'NAME' || nameRaw.toUpperCase() === 'NAMA') return; 
                         
                         let name = nameRaw;
-                        let nrp = getCol(row, ['NRP']);
+                        
+                        let nrpRaw = getCol(row, ['NRP']);
+                        let nrp = (nrpRaw !== undefined && nrpRaw !== null && String(nrpRaw).trim() !== '') ? String(nrpRaw).trim() : '';
                         
                         // Logika Mendeteksi Area SECARA KETAT HANYA via kolom "UT CORPU"
                         let areaRaw = String(getCol(row, ['UT CORPU'])).toUpperCase().trim();
@@ -909,11 +911,20 @@
 
                         if(pic !== 'Unknown' && pic.trim() !== '') picSet.add(pic);
 
-                        // Pengelompokan Data Partisipan Karyawan (Tanpa Dobel Data)
-                        let key = nrp && String(nrp).trim() !== '' ? String(nrp).trim() : name.toUpperCase(); 
+                        // Pengelompokan Data Partisipan Karyawan (Tanpa Dobel Data, Wajib Unique NRP)
+                        let key = nrp !== '' ? nrp : name.toUpperCase(); 
                         if (!uniqueData[key]) {
                             uniqueData[key] = { name, nrp, area, pic, statM1, statM2, finalStatus, covStatus };
                         } else {
+                            // Update area jika sebelumnya invalid/kosong agar tidak terlewat dari perhitungan Area
+                            if (AREA_KEYS.includes(area) && !AREA_KEYS.includes(uniqueData[key].area)) {
+                                uniqueData[key].area = area;
+                            }
+                            // Update PIC jika sebelumnya unknown
+                            if (pic !== 'Unknown' && pic.trim() !== '' && uniqueData[key].pic === 'Unknown') {
+                                uniqueData[key].pic = pic;
+                            }
+                            
                             if(statM1 && statM1 !== '-' && (!uniqueData[key].statM1 || uniqueData[key].statM1 === '-')) uniqueData[key].statM1 = statM1;
                             if(statM2 && statM2 !== '-' && (!uniqueData[key].statM2 || uniqueData[key].statM2 === '-')) uniqueData[key].statM2 = statM2;
                             
