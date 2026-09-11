@@ -1164,12 +1164,15 @@
             let areaCount = {};
             AREA_KEYS.forEach(k => areaCount[k] = { total: 0, cov: 0, notCov: 0, done: 0, prog: 0, ny: 0, eventDone: 0, eventNotYet: 0 });
 
-            // KALKULASI PARTICIPANT (Untuk KPI & Peta)
+            // KALKULASI PARTICIPANT (Untuk KPI global)
             filtered.forEach(d => {
                 if(d.covStatus === "Tercoverage") totalCoverage++;
                 if(d.finalStatus === "ON PROGRESS") totalOnProgress++;
                 if(d.finalStatus === "NOT YET") totalNotYet++;
+            });
 
+            // KALKULASI PARTICIPANT PER AREA (Untuk Peta & Bar Chart Area)
+            filteredPerArea.forEach(d => {
                 let k = AREA_KEYS.includes(d.area) ? d.area : null;
                 if(k) {
                     areaCount[k].total++;
