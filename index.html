@@ -520,8 +520,8 @@
                         </div>
                     </div>
 
-                    <!-- MAP & TABLE ROW -->
-                    <div class="row g-3 map-row">
+                    <!--  & TABLE ROW -->
+                    <div class="row g-3 -row">
                         <div class="col-xl-5">
                             <div class="card-custom p-2">
                                 <div class="card-header-title">Peta Persebaran Lokasi</div>
@@ -593,7 +593,7 @@
                                         <th>NO</th>
                                         <th>NAMA PESERTA</th>
                                         <th>NRP</th>
-                                        <th>CABANG / SITE</th>
+                                        <th>UT CORPU</th>
                                         <th>PIC</th>
                                         <th>STATUS MODUL 1</th>
                                         <th>STATUS MODUL 2</th>
@@ -868,7 +868,7 @@
                         let nrp = getCol(row, ['NRP']);
                         
                         // Logika Mendeteksi Area via UT CORPU secara ketat ke 6 lokasi
-                        let areaRaw = String(getCol(row, ['UT CORPU', 'CABANG/ SITE', 'BRANCH/SITE', 'CABANG/SITE', 'CABANG / SITE'])).toUpperCase().trim();
+                        let areaRaw = String(getCol(row, ['UT CORPU'])).toUpperCase().trim();
                         let area = areaRaw;
                         if (areaRaw.includes('JAKARTA')) area = 'JKT';
                         else if (areaRaw.includes('SAMARINDA')) area = 'SMD';
@@ -989,7 +989,7 @@
                 
                 for(let i=0; i<sheetDataRaw.length; i++) {
                     const rowText = sheetDataRaw[i].join("").toUpperCase();
-                    if(rowText.includes("NAME") || rowText.includes("CABANG/ SITE")) {
+                    if(rowText.includes("NAME") || rowText.includes("UT CORPU")) {
                         headerRowIdx = i; 
                         break;
                     }
@@ -1051,7 +1051,7 @@
                 let name = getCol(row, ['NAME','NAMA']);
                 let nrp = getCol(row, ['NRP']);
                 
-                let areaRaw = String(getCol(row, ['UT CORPU', 'CABANG/ SITE', 'BRANCH/SITE', 'CABANG/SITE', 'CABANG / SITE'])).toUpperCase().trim();
+                let areaRaw = String(getCol(row, ['UT CORPU'])).toUpperCase().trim();
                 let areaStr = areaRaw;
                 if (areaRaw.includes('JAKARTA')) areaStr = 'JKT';
                 else if (areaRaw.includes('SAMARINDA')) areaStr = 'SMD';
