@@ -911,11 +911,15 @@
 
                         if(pic !== 'Unknown' && pic.trim() !== '') picSet.add(pic);
 
-                        // Pengelompokan Data Partisipan Karyawan (Unik berdasarkan NRP + Area agar tidak terlewat jika ada di 2 area)
-                        let key = (nrp !== '' ? nrp : name.toUpperCase()) + "_" + area; 
+                        // Pengelompokan Data Partisipan Karyawan (Wajib Unique NRP)
+                        let key = (nrp !== '' ? nrp : name.toUpperCase()); 
                         if (!uniqueData[key]) {
                             uniqueData[key] = { name, nrp, area, pic, statM1, statM2, finalStatus, covStatus };
                         } else {
+                            // Update area jika sebelumnya invalid/kosong agar tidak terlewat dari perhitungan Area
+                            if (AREA_KEYS.includes(area) && !AREA_KEYS.includes(uniqueData[key].area)) {
+                                uniqueData[key].area = area;
+                            }
                             // Update PIC jika sebelumnya unknown
                             if (pic !== 'Unknown' && pic.trim() !== '' && uniqueData[key].pic === 'Unknown') {
                                 uniqueData[key].pic = pic;
