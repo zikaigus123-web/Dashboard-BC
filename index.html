@@ -696,7 +696,7 @@
         Chart.register(ChartDataLabels);
 
         // --- KONFIGURASI API GOOGLE APPS SCRIPT ---
-        const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxc0Tb-k4pa7hx_X4CUocZ_CDU0bj6nMQfukLT-C3O8pKMvi7OdfOa006yqmCmxKccNkA/exec';
+        const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwVxQNv5EcGLsUo5K95xgTkhAKYUZh2wHIS8ThGhYWqaxOh79qnerz318917ZG8Ew1n1w/exec';
 
         // --- LOGIN SECURITY ---
         function togglePassword() {
@@ -1017,29 +1017,62 @@
                 const targetSheetName = "ATS_PTCP (PLAN)";
                 const sheet = workbook.Sheets[targetSheetName] || workbook.Sheets[workbook.SheetNames[0]];
                 
-                const sheetDataRaw = XLSX.utils.sheet_to_json(sheet, { header: 1 });
-                let headerRowIdx = -1;
+                // Ambil data mentah tanpa header untuk bisa memetakan kolom yang di-merge
+                const sheetDataRaw = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: "" });
                 
+                let lastHeaderIdx = -1;
+                let colMap = {};
+
+                // Cari baris terakhir dari header (baris yang punya kata NAME atau NRP)
                 for(let i=0; i<sheetDataRaw.length; i++) {
                     const rowText = sheetDataRaw[i].join("").toUpperCase();
-                    if(rowText.includes("NAME") || rowText.includes("CABANG/ SITE")) {
-                        headerRowIdx = i; 
-                        break;
+                    if(rowText.includes("NAME") || rowText.includes("CABANG/ SITE") || rowText.includes("NRP")) {
+                        lastHeaderIdx = i;
                     }
                 }
 
-                if(headerRowIdx === -1) {
+                if(lastHeaderIdx === -1) {
                     Swal.fire('Format Salah', 'Tidak menemukan kolom "NAME" pada Excel Anda.', 'error');
                     e.target.value = '';
                     return;
                 }
 
-                const jsonRaw = XLSX.utils.sheet_to_json(sheet, { range: headerRowIdx, defval: "" });
-                const cleanJson = jsonRaw.filter(r => {
-                    let n = String(getCol(r, ['NAME','NAMA'])).trim().toUpperCase();
-                    return n !== '' && n !== 'NAME' && n !== 'NAMA';
-                });
+                // Kumpulkan nama kolom dengan menyatukan header yang terpisah-pisah barisnya
+                for(let i = 0; i <= lastHeaderIdx; i++) {
+                    for(let j = 0; j < sheetDataRaw[i].length; j++) {
+                        let cellVal = String(sheetDataRaw[i][j]).replace(/[\r\n]+/g, ' ').trim().toUpperCase();
+                        if (cellVal && cellVal !== "") {
+                            colMap[cellVal] = j; 
+                        }
+                    }
+                }
+
+                const cleanJson = [];
+                let dataStartIdx = lastHeaderIdx + 1;
+
+                // Ekstrak data berdasarkan pemetaan kolom yang akurat
+                for(let i = dataStartIdx; i < sheetDataRaw.length; i++) {
+                    let rowArr = sheetDataRaw[i];
+                    
+                    let nameIdx = colMap["NAME"] !== undefined ? colMap["NAME"] : colMap["NAMA"];
+                    if (nameIdx === undefined) continue; 
+                    
+                    let nameVal = rowArr[nameIdx];
+                    if (!nameVal || String(nameVal).trim() === '') continue;
+
+                    let rowObj = {};
+                    for (let key in colMap) {
+                        rowObj[key] = rowArr[colMap[key]];
+                    }
+                    cleanJson.push(rowObj);
+                }
                 
+                if (cleanJson.length === 0) {
+                    Swal.fire('Data Kosong', 'Tidak ada data valid yang ditemukan setelah baris header.', 'warning');
+                    e.target.value = '';
+                    return;
+                }
+
                 fetch(SCRIPT_URL, {
                     method: 'POST',
                     body: JSON.stringify({ data: cleanJson })
@@ -1047,7 +1080,7 @@
                 .then(res => res.json())
                 .then(result => {
                     if(result.status === 'success') {
-                        Swal.fire('Berhasil!', `Total ${cleanJson.length} baris data telah diunggah.`, 'success');
+                        Swal.fire('Berhasil!', `Total ${cleanJson.length} baris data telah ditimpa dengan aman.`, 'success');
                         loadDataFromAPI();
                     } else {
                         Swal.fire('Gagal!', result.message, 'error');
