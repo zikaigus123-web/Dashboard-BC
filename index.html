@@ -867,15 +867,15 @@
                         let name = nameRaw;
                         let nrp = getCol(row, ['NRP']);
                         
-                        // Logika Mendeteksi Area via UT CORPU secara ketat ke 6 lokasi
-                        let areaRaw = String(getCol(row, ['UT CORPU', 'CABANG/ SITE', 'BRANCH/SITE', 'CABANG/SITE', 'CABANG / SITE'])).toUpperCase().trim();
+                        // Logika Mendeteksi Area SECARA KETAT HANYA via kolom "UT CORPU"
+                        let areaRaw = String(getCol(row, ['UT CORPU'])).toUpperCase().trim();
                         let area = areaRaw;
-                        if (areaRaw.includes('JAKARTA')) area = 'JKT';
-                        else if (areaRaw.includes('SAMARINDA')) area = 'SMD';
-                        else if (areaRaw.includes('BALIKPAPAN')) area = 'BLP';
-                        else if (areaRaw.includes('PEKANBARU')) area = 'PKB';
-                        else if (areaRaw.includes('BANJARMASIN')) area = 'BJM';
-                        else if (areaRaw.includes('UJUNG PANDANG') || areaRaw.includes('MAKASSAR')) area = 'UPG';
+                        if (areaRaw.includes('JAKARTA') || areaRaw === 'JKT') area = 'JKT';
+                        else if (areaRaw.includes('PEKANBARU') || areaRaw === 'PKB') area = 'PKB';
+                        else if (areaRaw.includes('BALIKPAPAN') || areaRaw === 'BLP') area = 'BLP';
+                        else if (areaRaw.includes('SAMARINDA') || areaRaw === 'SMD') area = 'SMD';
+                        else if (areaRaw.includes('BANJARMASIN') || areaRaw === 'BJM') area = 'BJM';
+                        else if (areaRaw.includes('UJUNG PANDANG') || areaRaw.includes('MAKASSAR') || areaRaw === 'UPG') area = 'UPG';
 
                         let pic = getCol(row, ['PIC']) || 'Unknown';
                         
@@ -952,11 +952,14 @@
 
                 } else {
                     Swal.fire('Error', "Error dari server: " + result.message, 'error');
+                    document.querySelector('#tablePeserta tbody').innerHTML = '<tr><td colspan="6" class="text-center py-4 text-danger fw-bold">Data gagal dimuat dari server.</td></tr>';
+                    document.querySelector('#tblMasterData tbody').innerHTML = '<tr><td colspan="7" class="text-center py-4 text-danger fw-bold">Data gagal dimuat dari server.</td></tr>';
                 }
             } catch (error) {
                 console.error("Gagal terhubung ke API:", error);
-                Swal.fire('Koneksi Gagal', error.message || 'Gagal memuat data. Periksa koneksi internet.', 'error');
+                Swal.fire('Koneksi Gagal', error.message || 'Gagal memuat data. Periksa koneksi atau hak akses Apps Script (Pastikan diset ke "Anyone / Siapa Saja").', 'error');
                 document.querySelector('#tablePeserta tbody').innerHTML = '<tr><td colspan="6" class="text-center py-4 text-danger fw-bold">Gagal memuat data. Periksa Koneksi Internet.</td></tr>';
+                document.querySelector('#tblMasterData tbody').innerHTML = '<tr><td colspan="7" class="text-center py-4 text-danger fw-bold">Gagal memuat data. Periksa Koneksi Internet.</td></tr>';
             } finally {
                 if(btnRefresh) btnRefresh.disabled = false;
                 if(iconRefresh) iconRefresh.classList.remove('fa-spin-fast');
@@ -1051,14 +1054,15 @@
                 let name = getCol(row, ['NAME','NAMA']);
                 let nrp = getCol(row, ['NRP']);
                 
-                let areaRaw = String(getCol(row, ['UT CORPU', 'CABANG/ SITE', 'BRANCH/SITE', 'CABANG/SITE', 'CABANG / SITE'])).toUpperCase().trim();
+                // Logika Mendeteksi Area SECARA KETAT HANYA via kolom "UT CORPU" untuk Master Data
+                let areaRaw = String(getCol(row, ['UT CORPU'])).toUpperCase().trim();
                 let areaStr = areaRaw;
-                if (areaRaw.includes('JAKARTA')) areaStr = 'JKT';
-                else if (areaRaw.includes('SAMARINDA')) areaStr = 'SMD';
-                else if (areaRaw.includes('BALIKPAPAN')) areaStr = 'BLP';
-                else if (areaRaw.includes('PEKANBARU')) areaStr = 'PKB';
-                else if (areaRaw.includes('BANJARMASIN')) areaStr = 'BJM';
-                else if (areaRaw.includes('UJUNG PANDANG') || areaRaw.includes('MAKASSAR')) areaStr = 'UPG';
+                if (areaRaw.includes('JAKARTA') || areaRaw === 'JKT') areaStr = 'JKT';
+                else if (areaRaw.includes('PEKANBARU') || areaRaw === 'PKB') areaStr = 'PKB';
+                else if (areaRaw.includes('BALIKPAPAN') || areaRaw === 'BLP') areaStr = 'BLP';
+                else if (areaRaw.includes('SAMARINDA') || areaRaw === 'SMD') areaStr = 'SMD';
+                else if (areaRaw.includes('BANJARMASIN') || areaRaw === 'BJM') areaStr = 'BJM';
+                else if (areaRaw.includes('UJUNG PANDANG') || areaRaw.includes('MAKASSAR') || areaRaw === 'UPG') areaStr = 'UPG';
 
                 let pic = getCol(row, ['PIC']);
                 let m1 = getCol(row, ['STATUS MODUL 1']);
