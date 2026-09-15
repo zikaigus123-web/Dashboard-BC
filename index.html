@@ -1151,6 +1151,23 @@
             };
             reader.readAsBinaryString(file);
         }
+        
+        // --- DOWNLOAD TEMPLATE EXCEL ---
+        function downloadTemplate() {
+            if (!rawDataFromSheet || rawDataFromSheet.length === 0) {
+                Swal.fire('Data Kosong', 'Harap tunggu hingga data termuat dari server sebelum mengunduh template.', 'warning');
+                return;
+            }
+
+            // Meng-export langsung data terbaru dari memory ke Excel (agar struktur kolom Area, PIC dll tetap utuh)
+            const ws = XLSX.utils.json_to_sheet(rawDataFromSheet);
+            const wb = XLSX.utils.book_new();
+            
+            // Nama sheet wajib disamakan dengan target yang dibaca sistem saat fitur Import
+            XLSX.utils.book_append_sheet(wb, ws, "ATS_PTCP (PLAN)");
+
+            XLSX.writeFile(wb, "Template_Update_Nilai_8DP.xlsx");
+        }
 
         // --- RENDER TABEL MASTER DATA ---
         function renderMasterTable() {
