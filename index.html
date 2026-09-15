@@ -1329,6 +1329,7 @@
 
             let totalPeserta = filtered.length;
             let totalCoverage = 0;
+            let totalDone = 0;       // <-- Dihitung langsung secara eksplisit
             let totalOnProgress = 0;
             let totalNotYet = 0;
 
@@ -1338,6 +1339,7 @@
             // KALKULASI PARTICIPANT (Untuk KPI global)
             filtered.forEach(d => {
                 if(d.covStatus === "Tercoverage") totalCoverage++;
+                if(d.finalStatus === "DONE") totalDone++;             // <-- Hitung jumlah Done langsung
                 if(d.finalStatus === "ON PROGRESS") totalOnProgress++;
                 if(d.finalStatus === "NOT YET") totalNotYet++;
             });
@@ -1408,7 +1410,13 @@
             resetChart('pieParticipant');
             chartInstances['pieParticipant'] = new Chart(document.getElementById('pieParticipant'), {
                 type: 'pie',
-                data: { labels: ['Done', 'On Progress', 'Not Yet'], datasets: [{ data: [totalPeserta - totalOnProgress - totalNotYet, totalOnProgress, totalNotYet], backgroundColor: ['#34a853', '#fbbc04', '#ea4335'] }] },
+                data: { 
+                    labels: ['Done', 'On Progress', 'Not Yet'], 
+                    datasets: [{ 
+                        data: [totalDone, totalOnProgress, totalNotYet], // <-- Menggunakan totalDone langsung agar akurat jadi 12
+                        backgroundColor: ['#34a853', '#fbbc04', '#ea4335'] 
+                    }] 
+                },
                 options: pieOptions
             });
 
