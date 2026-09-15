@@ -334,7 +334,8 @@
             <h3 class="fw-bold mb-1 text-dark">8 DP Portal</h3>
             <p class="fw-bold text-dark mb-4" style="font-size: 0.85rem;">SECURE ENTERPRISE LOGIN</p>
             
-            <form id="loginForm" onsubmit="handleLogin(event)">
+            <!-- Perbaikan onsubmit agar form tidak me-reload page jika password salah -->
+            <form id="loginForm" onsubmit="return handleLogin(event)">
                 <div class="mb-3 text-start">
                     <label class="form-label fw-bold small text-dark">Username</label>
                     <div class="input-group">
@@ -467,8 +468,8 @@
                         </div>
                         
                         <div class="d-flex gap-2">
-                            <!-- Tombol Refresh dengan parameter true untuk memunculkan loading pop up -->
-                            <button class="btn btn-brand btn-sm" id="btnRefresh" onclick="loadDataFromAPI(true)"><i class="fas fa-sync-alt me-1" id="iconRefresh"></i> Refresh Data</button>
+                            <!-- Tombol Refresh dengan parameter true untuk memunculkan loading pop up manual -->
+                            <button class="btn btn-brand btn-sm" id="btnRefresh" onclick="loadDataFromAPI(true, false)"><i class="fas fa-sync-alt me-1" id="iconRefresh"></i> Refresh Data</button>
                             <button class="btn btn-dark btn-sm fw-bold border-2 border-dark" onclick="toggleFullscreen()"><i class="fas fa-tv me-1"></i> Fullscreen</button>
                         </div>
                     </div>
@@ -745,8 +746,9 @@
             }
         }
 
+        // Mencegah form untuk reload setelah di Submit, dan menangani proses autentikasi
         function handleLogin(e) {
-            e.preventDefault();
+            e.preventDefault(); // Mencegah bawaan form submit (reload)
             const u = document.getElementById('username').value.trim();
             const p = document.getElementById('password').value;
             
@@ -763,18 +765,21 @@
                     } catch(err) {
                         console.error("Gagal membaca cache:", err);
                     }
-                }
+                    
+                    Swal.fire({
+                        title: 'Login Berhasil',
+                        text: 'Selamat datang di 8 DP Portal',
+                        icon: 'success',
+                        timer: 1500,
+                        showConfirmButton: false
+                    });
 
-                // Tetap request data terbaru dari Google di background
-                loadDataFromAPI(false);
-                
-                Swal.fire({
-                    title: 'Login Berhasil',
-                    text: 'Selamat datang di 8 DP Portal',
-                    icon: 'success',
-                    timer: 1500,
-                    showConfirmButton: false
-                });
+                    // Tetap request data terbaru dari Google di background (Tanpa popup)
+                    loadDataFromAPI(false, false);
+                } else {
+                    // JIKA TIDAK ADA CACHE SAMA SEKALI (LOGIN PERTAMA KALI) -> MUNCULKAN LOADING KHUSUS
+                    loadDataFromAPI(false, true);
+                }
             } else {
                 // Menambahkan Popup Alert Jika Login Gagal
                 Swal.fire({
@@ -784,6 +789,7 @@
                     confirmButtonColor: '#1A1A1A' 
                 });
             }
+            return false; // Menghentikan eksekusi form lebih lanjut
         }
 
         function logout() {
@@ -988,18 +994,18 @@
         }
 
         // --- FETCH DATA DARI API ---
-        async function loadDataFromAPI(isManualRefresh = false) {
+        async function loadDataFromAPI(isManualRefresh = false, isFirstLoad = false) {
             const btnRefresh = document.getElementById('btnRefresh');
             const iconRefresh = document.getElementById('iconRefresh');
             
             if(btnRefresh) btnRefresh.disabled = true;
             if(iconRefresh) iconRefresh.classList.add('fa-spin-fast');
 
-            // Tampilkan popup loading JIKA user klik tombol Refresh
-            if(isManualRefresh) {
+            // Tampilkan popup loading JIKA user klik tombol Refresh ATAU Login Pertama Kali (tanpa cache)
+            if(isManualRefresh || isFirstLoad) {
                 Swal.fire({
-                    title: 'Menyegarkan Data...',
-                    html: 'Sedang menarik data terbaru dari Spreadsheet.',
+                    title: isFirstLoad ? 'Login Berhasil' : 'Menyegarkan Data...',
+                    html: isFirstLoad ? 'Menarik data dari Spreadsheet untuk pertama kali.<br>Mohon tunggu sebentar...' : 'Sedang menarik data terbaru dari Spreadsheet.',
                     allowOutsideClick: false,
                     didOpen: () => { Swal.showLoading() }
                 });
@@ -1009,9 +1015,9 @@
             }
 
             try {
-                // Gunakan AbortController untuk mencegah sistem ngehang (Timeout 30 detik)
+                // Gunakan AbortController untuk mencegah sistem ngehang (Timeout diperpanjang menjadi 60 detik)
                 const controller = new AbortController();
-                const timeoutId = setTimeout(() => controller.abort(), 30000); 
+                const timeoutId = setTimeout(() => controller.abort(), 60000); 
 
                 const response = await fetch(SCRIPT_URL + '?t=' + new Date().getTime(), { signal: controller.signal });
                 clearTimeout(timeoutId);
@@ -1024,7 +1030,7 @@
                     result = JSON.parse(textResponse);
                 } catch(e) {
                     console.warn("API Gagal Mengembalikan JSON. Respons Server:", textResponse.substring(0, 150) + "...");
-                    throw new Error("Server tidak merespons JSON. Pastikan akses Google Apps Script diset ke 'Siapa Saja (Anyone)'.");
+                    throw new Error("Server tidak merespons format JSON. Pastikan akses Google Apps Script diset ke 'Siapa Saja (Anyone)'.");
                 }
 
                 if (result.status === "success") {
@@ -1042,6 +1048,15 @@
                             timer: 2000,
                             showConfirmButton: false
                         });
+                    } else if (isFirstLoad) {
+                        // Tutup peringatan loading pertama kali setelah selesai
+                        Swal.fire({
+                            title: 'Data Berhasil Dimuat',
+                            text: 'Selamat datang di 8 DP Portal',
+                            icon: 'success',
+                            timer: 1500,
+                            showConfirmButton: false
+                        });
                     }
 
                 } else {
@@ -1051,10 +1066,11 @@
                 // PENANGANAN ERROR YANG RAPI TANPA MENGCRASHKAN SISTEM
                 let errorMsg = error.message;
                 if(error.name === 'AbortError') {
-                    errorMsg = 'Koneksi ke server Google terputus karena terlalu lama (Lebih dari 30 detik).';
+                    errorMsg = 'Koneksi ke server Google terputus karena terlalu lama (Lebih dari 60 detik). Server Google mungkin sedang sibuk, silakan coba beberapa saat lagi.';
                 }
 
-                if (isManualRefresh) {
+                // Tampilkan Error PopUp Jika Terjadi Saat First Load / Refresh Manual
+                if (isManualRefresh || isFirstLoad) {
                     Swal.fire('Koneksi Gagal', errorMsg, 'error');
                 } else {
                     console.warn("Background fetch failed:", errorMsg);
@@ -1151,8 +1167,8 @@
                 .then(res => res.json())
                 .then(result => {
                     if(result.status === 'success') {
-                        // Setelah upload sukses, panggil fungsi load data API dengan notifikasi
-                        loadDataFromAPI(true).then(() => {
+                        // Setelah upload sukses, panggil fungsi load data API dengan notifikasi manual refresh
+                        loadDataFromAPI(true, false).then(() => {
                             Swal.fire('Berhasil!', `Total ${cleanJson.length} baris data telah ditimpa dengan aman.`, 'success');
                         });
                     } else {
