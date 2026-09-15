@@ -5,6 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dashboard Monitoring Development 8 DP</title>
     
+    <!-- FAVICON (Mengatasi tab browser loading terus menerus) -->
+    <link rel="icon" type="image/png" href="logo corpu.png">
+    
     <!-- Google Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     
@@ -336,14 +339,16 @@
                     <label class="form-label fw-bold small text-dark">Username</label>
                     <div class="input-group">
                         <span class="input-group-text bg-light border-end-0"><i class="fas fa-user text-muted"></i></span>
-                        <input type="text" class="form-control border-start-0 ps-0 bg-light" id="username" required placeholder="Gunakan: admin">
+                        <!-- Menghapus Placeholder sesuai permintaan -->
+                        <input type="text" class="form-control border-start-0 ps-0 bg-light" id="username" required>
                     </div>
                 </div>
                 <div class="mb-4 text-start">
                     <label class="form-label fw-bold small text-dark">Password</label>
                     <div class="input-group">
                         <span class="input-group-text bg-light border-end-0"><i class="fas fa-lock text-muted"></i></span>
-                        <input type="password" class="form-control border-start-0 ps-0 bg-light" id="password" required placeholder="Gunakan: utcorp2026">
+                        <!-- Menghapus Placeholder sesuai permintaan -->
+                        <input type="password" class="form-control border-start-0 ps-0 bg-light" id="password" required>
                         <button class="btn btn-light border" type="button" onclick="togglePassword()"><i class="fas fa-eye text-muted" id="eyeIcon"></i></button>
                     </div>
                 </div>
@@ -414,12 +419,13 @@
                 <div class="d-flex align-items-center gap-3">
                     <button class="btn btn-light border border-dark fw-bold" onclick="toggleSidebar()"><i class="fas fa-bars"></i></button>
                     <div class="header-logos d-none d-md-flex align-items-center gap-2">
-                        <img src="logo ut.png.png" alt="UT" onerror="this.src='https://via.placeholder.com/80x40?text=Logo+UT'">
+                        <!-- Memastikan Logo UT Corpu ditonjolkan -->
+                        <img src="logo corpu.png" alt="Corpu" onerror="this.src='https://via.placeholder.com/80x40?text=Corpu'">
                     </div>
                 </div>
                 <h4 class="mb-0 fw-bold fst-italic d-none d-lg-block" style="letter-spacing: -0.5px; color:#000;">DASHBOARD MONITORING DEVELOPMENT 8 DP</h4>
                 <div class="header-logos">
-                    <img src="logo corpu.png.png" alt="Corpu" onerror="this.src='https://via.placeholder.com/80x40?text=Corpu'">
+                    <img src="logo ut.png" alt="UT" onerror="this.src='https://via.placeholder.com/80x40?text=Logo+UT'">
                 </div>
             </div>
 
@@ -461,7 +467,8 @@
                         </div>
                         
                         <div class="d-flex gap-2">
-                            <button class="btn btn-brand btn-sm" id="btnRefresh" onclick="loadDataFromAPI()"><i class="fas fa-sync-alt me-1" id="iconRefresh"></i> Refresh Data</button>
+                            <!-- Tombol Refresh dengan parameter true untuk memunculkan loading pop up -->
+                            <button class="btn btn-brand btn-sm" id="btnRefresh" onclick="loadDataFromAPI(true)"><i class="fas fa-sync-alt me-1" id="iconRefresh"></i> Refresh Data</button>
                             <button class="btn btn-dark btn-sm fw-bold border-2 border-dark" onclick="toggleFullscreen()"><i class="fas fa-tv me-1"></i> Fullscreen</button>
                         </div>
                     </div>
@@ -584,6 +591,12 @@
                             <a href="https://docs.google.com/spreadsheets/d/1MswJRi_KEwzvgEAlwAJ6uHw-Y7mQEyPiBig3zv09aVw/edit?usp=sharing" target="_blank" class="btn btn-outline-info fw-bold bg-white text-dark border-2 border-info shadow-sm ms-2">
                                 <i class="fas fa-external-link-alt me-2 text-info"></i> Buka Spreadsheet
                             </a>
+                            
+                            <!-- TOMBOL DOWNLOAD TEMPLATE -->
+                            <button class="btn btn-outline-success fw-bold bg-white text-dark border-2 border-success shadow-sm" onclick="downloadTemplate()">
+                                <i class="fas fa-download me-2 text-success"></i> Download Template
+                            </button>
+
                             <input type="file" id="importExcelInput" class="d-none" accept=".xlsx, .xls" onchange="uploadExcelToCloud(event)">
                             <button class="btn btn-outline-secondary fw-bold bg-white text-dark border-2 border-secondary shadow-sm" onclick="document.getElementById('importExcelInput').click()">
                                 <i class="fas fa-upload me-2 text-secondary"></i> Import Data (Upload)
@@ -697,6 +710,27 @@
 
         // --- KONFIGURASI API GOOGLE APPS SCRIPT ---
         const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwVxQNv5EcGLsUo5K95xgTkhAKYUZh2wHIS8ThGhYWqaxOh79qnerz318917ZG8Ew1n1w/exec';
+        const CACHE_KEY = 'dashboard8dp_data_cache';
+
+        // --- GLOBAL VARIABLES ---
+        let rawData = [];
+        let rawDataPerArea = []; 
+        let rawDataFromSheet = []; 
+        let rawEventData = []; 
+        let chartInstances = {};
+        let map = null;
+        let mapMarkers = [];
+
+        // Fokus pada 6 Lokasi Spesifik
+        const COORDS = {
+            "JKT": { lat: -6.2088, lng: 106.8456, nama: "Jakarta" },
+            "SMD": { lat: -0.5022, lng: 117.1536, nama: "Samarinda" },
+            "BLP": { lat: -1.2379, lng: 116.8529, nama: "Balikpapan" },
+            "PKB": { lat: 0.5333, lng: 101.4500,  nama: "Pekanbaru" },
+            "BJM": { lat: -3.3167, lng: 114.5901, nama: "Banjarmasin" },
+            "UPG": { lat: -5.1476, lng: 119.4327, nama: "Ujung Pandang" }
+        };
+        const AREA_KEYS = ["JKT", "PKB", "BLP", "SMD", "BJM", "UPG"];
 
         // --- LOGIN SECURITY ---
         function togglePassword() {
@@ -720,7 +754,19 @@
                 document.getElementById('loginScreen').classList.add('d-none');
                 document.getElementById('appContainer').classList.remove('d-none');
                 
-                loadDataFromAPI();
+                // Cek apakah ada data cache, jika ada tampilkan instan
+                const cachedData = localStorage.getItem(CACHE_KEY);
+                if (cachedData) {
+                    try {
+                        let parsedCache = JSON.parse(cachedData);
+                        processRawData(parsedCache);
+                    } catch(err) {
+                        console.error("Gagal membaca cache:", err);
+                    }
+                }
+
+                // Tetap request data terbaru dari Google di background
+                loadDataFromAPI(false);
                 
                 Swal.fire({
                     title: 'Login Berhasil',
@@ -730,7 +776,13 @@
                     showConfirmButton: false
                 });
             } else {
-                Swal.fire({title: 'Akses Ditolak', text: 'Username atau password salah.', icon: 'error', confirmButtonColor: '#1A1A1A' });
+                // Menambahkan Popup Alert Jika Login Gagal
+                Swal.fire({
+                    title: 'Akses Ditolak', 
+                    text: 'Username atau password yang Anda masukkan salah.', 
+                    icon: 'error', 
+                    confirmButtonColor: '#1A1A1A' 
+                });
             }
         }
 
@@ -744,7 +796,9 @@
                 cancelButtonColor: '#3085d6',
                 confirmButtonText: 'Ya, Keluar'
             }).then((result) => {
-                if (result.isConfirmed) location.reload(); 
+                if (result.isConfirmed) {
+                    location.reload(); 
+                }
             });
         }
 
@@ -794,15 +848,6 @@
         document.addEventListener('webkitfullscreenchange', handleResize);
         window.addEventListener('resize', handleResize);
 
-        // --- GLOBAL VARIABLES ---
-        let rawData = [];
-        let rawDataPerArea = []; // Variabel baru khusus untuk data pie chart Distribution By Area
-        let rawDataFromSheet = []; 
-        let rawEventData = []; 
-        let chartInstances = {};
-        let map = null;
-        let mapMarkers = [];
-
         function resetChart(id) {
             if (chartInstances[id]) {
                 chartInstances[id].destroy();
@@ -810,18 +855,6 @@
             }
         }
 
-        // Fokus pada 6 Lokasi Spesifik
-        const COORDS = {
-            "JKT": { lat: -6.2088, lng: 106.8456, nama: "Jakarta" },
-            "SMD": { lat: -0.5022, lng: 117.1536, nama: "Samarinda" },
-            "BLP": { lat: -1.2379, lng: 116.8529, nama: "Balikpapan" },
-            "PKB": { lat: 0.5333, lng: 101.4500,  nama: "Pekanbaru" },
-            "BJM": { lat: -3.3167, lng: 114.5901, nama: "Banjarmasin" },
-            "UPG": { lat: -5.1476, lng: 119.4327, nama: "Ujung Pandang" }
-        };
-        const AREA_KEYS = ["JKT", "PKB", "BLP", "SMD", "BJM", "UPG"];
-
-        // --- INITIALIZE MAP ---
         function initMap() {
             map = L.map('mapArea', { scrollWheelZoom: false }).setView([-2.5, 117.5], 4.5);
             L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
@@ -830,7 +863,6 @@
         }
         initMap();
 
-        // --- FUNGSI BANTU MENCARI KOLOM ---
         function getCol(row, possibleNames) {
             for (let key in row) {
                 let cleanKey = key.toString().replace(/[\r\n]+/g, ' ').trim().toUpperCase();
@@ -841,9 +873,9 @@
             return '';
         }
 
-        // --- CORE LOGIC: PROSES & GROUPING DATA (TERMASUK FIX "ON PROGRESS") ---
-        function processRawData(data) {
-            rawDataFromSheet = data || []; 
+        // --- FUNGSI UTAMA PEMROSESAN DATA (DENGAN LOGIKA ON PROGRESS TERBARU) ---
+        function processRawData(sheetData) {
+            rawDataFromSheet = sheetData || []; 
             let uniqueData = {};
             let uniqueDataPerArea = {}; 
             let picSet = new Set();
@@ -857,7 +889,6 @@
                 let nrpRaw = getCol(row, ['NRP']);
                 let nrp = (nrpRaw !== undefined && nrpRaw !== null && String(nrpRaw).trim() !== '') ? String(nrpRaw).replace(/\.0+$/, '').trim() : '';
                 
-                // Logika Mendeteksi Area SECARA KETAT
                 let areaRaw = String(getCol(row, ['UT CORPU'])).toUpperCase().trim();
                 let area = areaRaw;
                 if (areaRaw.includes('JAKARTA') || areaRaw === 'JKT') area = 'JKT';
@@ -868,10 +899,9 @@
                 else if (areaRaw.includes('UJUNG PANDANG') || areaRaw.includes('MAKASSAR') || areaRaw === 'UPG') area = 'UPG';
 
                 let pic = getCol(row, ['PIC']) || 'Unknown';
-                
-                // Ekstraksi Logika Khusus Event
                 let modulName = String(getCol(row, ['TRAINING MODUL', 'NAMA MODUL', 'MODUL', 'EVENT'])).trim();
                 let nilaiRaw = String(getCol(row, ['NILAI', 'SCORE'])).trim();
+                
                 let hasNilai = (nilaiRaw !== '' && nilaiRaw !== '-');
                 
                 allEvents.push({ area: area, pic: pic, modulName: modulName, hasNilai: hasNilai });
@@ -884,88 +914,80 @@
 
                 let covStatus = covStatusRaw.includes('TERCOVERAGE') || covStatusRaw.includes('COVERAGE') ? 'Tercoverage' : 'Not Yet';
                 
-                let finalStatus = "NOT YET";
+                // Menangkap status baris secara mentah
+                let rowFinalStatus = "NOT YET";
                 if (partStatusRaw.includes('DONE') || partStatusRaw.includes('FINISHED') || partStatusRaw.includes('LULUS')) {
-                    finalStatus = "DONE";
+                    rowFinalStatus = "DONE";
                 } else if (partStatusRaw.includes('PROGRESS')) {
-                    finalStatus = "ON PROGRESS";
+                    rowFinalStatus = "ON PROGRESS";
                 }
 
                 if(pic !== 'Unknown' && pic.trim() !== '') picSet.add(pic);
 
-                // --- PENGELOMPOKAN GLOBAL KARYAWAN ---
+                // Pengelompokan Data Partisipan Karyawan (Mencatat semua status anak)
                 let key = (nrp !== '' ? nrp : name.toUpperCase()); 
                 if (!uniqueData[key]) {
-                    uniqueData[key] = { name, nrp, area, pic, statM1, statM2, finalStatus, covStatus };
+                    uniqueData[key] = { name, nrp, area, pic, statM1, statM2, covStatus, statuses: [rowFinalStatus] };
                 } else {
-                    if (AREA_KEYS.includes(area) && !AREA_KEYS.includes(uniqueData[key].area)) {
-                        uniqueData[key].area = area;
-                    }
-                    if (pic !== 'Unknown' && pic.trim() !== '' && uniqueData[key].pic === 'Unknown') {
-                        uniqueData[key].pic = pic;
-                    }
-                    if(statM1 && statM1 !== '-' && (!uniqueData[key].statM1 || uniqueData[key].statM1 === '-')) uniqueData[key].statM1 = statM1;
-                    if(statM2 && statM2 !== '-' && (!uniqueData[key].statM2 || uniqueData[key].statM2 === '-')) uniqueData[key].statM2 = statM2;
-                    
-                    // [PERBAIKAN] Logika Prioritas Status untuk "ON PROGRESS"
-                    let currentStatus = uniqueData[key].finalStatus;
-                    if (currentStatus === 'ON PROGRESS' || finalStatus === 'ON PROGRESS') {
-                        uniqueData[key].finalStatus = 'ON PROGRESS';
-                    } else if ((currentStatus === 'DONE' && finalStatus === 'NOT YET') || (currentStatus === 'NOT YET' && finalStatus === 'DONE')) {
-                        uniqueData[key].finalStatus = 'ON PROGRESS'; 
-                    } else if (finalStatus === 'DONE') {
-                        uniqueData[key].finalStatus = 'DONE';
-                    }
-
-                    if(covStatus === 'Tercoverage') uniqueData[key].covStatus = 'Tercoverage';
+                    if (AREA_KEYS.includes(area) && !AREA_KEYS.includes(uniqueData[key].area)) uniqueData[key].area = area;
+                    if (pic !== 'Unknown' && pic.trim() !== '' && uniqueData[key].pic === 'Unknown') uniqueData[key].pic = pic;
+                    if (statM1 && statM1 !== '-' && (!uniqueData[key].statM1 || uniqueData[key].statM1 === '-')) uniqueData[key].statM1 = statM1;
+                    if (statM2 && statM2 !== '-' && (!uniqueData[key].statM2 || uniqueData[key].statM2 === '-')) uniqueData[key].statM2 = statM2;
+                    if (covStatus === 'Tercoverage') uniqueData[key].covStatus = 'Tercoverage';
+                    // Tambahkan status ke daftar status karyawan ini
+                    uniqueData[key].statuses.push(rowFinalStatus);
                 }
 
-                // --- PENGELOMPOKAN KHUSUS PIE CHART BY AREA ---
+                // Pengelompokan KHUSUS Pie Chart Distribution By Area
                 let keyPerArea = key + "_" + area;
                 if (!uniqueDataPerArea[keyPerArea]) {
-                    uniqueDataPerArea[keyPerArea] = { name, nrp, area, pic, statM1, statM2, finalStatus, covStatus };
+                    uniqueDataPerArea[keyPerArea] = { name, nrp, area, pic, statM1, statM2, covStatus, statuses: [rowFinalStatus] };
                 } else {
-                    if (pic !== 'Unknown' && pic.trim() !== '' && uniqueDataPerArea[keyPerArea].pic === 'Unknown') {
-                        uniqueDataPerArea[keyPerArea].pic = pic;
-                    }
-                    if(statM1 && statM1 !== '-' && (!uniqueDataPerArea[keyPerArea].statM1 || uniqueDataPerArea[keyPerArea].statM1 === '-')) uniqueDataPerArea[keyPerArea].statM1 = statM1;
-                    if(statM2 && statM2 !== '-' && (!uniqueDataPerArea[keyPerArea].statM2 || uniqueDataPerArea[keyPerArea].statM2 === '-')) uniqueDataPerArea[keyPerArea].statM2 = statM2;
-                    
-                    // [PERBAIKAN] Logika Prioritas Status untuk Pie Chart Area
-                    let currentStatusArea = uniqueDataPerArea[keyPerArea].finalStatus;
-                    if (currentStatusArea === 'ON PROGRESS' || finalStatus === 'ON PROGRESS') {
-                        uniqueDataPerArea[keyPerArea].finalStatus = 'ON PROGRESS';
-                    } else if ((currentStatusArea === 'DONE' && finalStatus === 'NOT YET') || (currentStatusArea === 'NOT YET' && finalStatus === 'DONE')) {
-                        uniqueDataPerArea[keyPerArea].finalStatus = 'ON PROGRESS'; 
-                    } else if (finalStatus === 'DONE') {
-                        uniqueDataPerArea[keyPerArea].finalStatus = 'DONE';
-                    }
-
-                    if(covStatus === 'Tercoverage') uniqueDataPerArea[keyPerArea].covStatus = 'Tercoverage';
+                    if (pic !== 'Unknown' && pic.trim() !== '' && uniqueDataPerArea[keyPerArea].pic === 'Unknown') uniqueDataPerArea[keyPerArea].pic = pic;
+                    if (statM1 && statM1 !== '-' && (!uniqueDataPerArea[keyPerArea].statM1 || uniqueDataPerArea[keyPerArea].statM1 === '-')) uniqueDataPerArea[keyPerArea].statM1 = statM1;
+                    if (statM2 && statM2 !== '-' && (!uniqueDataPerArea[keyPerArea].statM2 || uniqueDataPerArea[keyPerArea].statM2 === '-')) uniqueDataPerArea[keyPerArea].statM2 = statM2;
+                    if (covStatus === 'Tercoverage') uniqueDataPerArea[keyPerArea].covStatus = 'Tercoverage';
+                    uniqueDataPerArea[keyPerArea].statuses.push(rowFinalStatus);
                 }
             });
 
+            // LOGIKA PENENTUAN FINAL STATUS (Sistem Pembacaan On Progress yang Benar)
+            function resolveFinalStatus(statuses) {
+                if (statuses.includes("ON PROGRESS")) return "ON PROGRESS";
+                if (statuses.includes("DONE") && statuses.includes("NOT YET")) return "ON PROGRESS"; // Modul setengah jalan
+                if (statuses.includes("DONE")) return "DONE";
+                return "NOT YET";
+            }
+
+            Object.values(uniqueData).forEach(d => { d.finalStatus = resolveFinalStatus(d.statuses); });
+            Object.values(uniqueDataPerArea).forEach(d => { d.finalStatus = resolveFinalStatus(d.statuses); });
+
             rawData = Object.values(uniqueData);
-            rawDataPerArea = Object.values(uniqueDataPerArea);
+            rawDataPerArea = Object.values(uniqueDataPerArea); 
             rawEventData = allEvents; 
 
+            // Update isi dropdown filter (mengingat pilihan sebelumnya jika ada)
             let picSelect = document.getElementById("filterPIC");
             if(picSelect) {
+                let currentVal = picSelect.value;
                 picSelect.innerHTML = '<option value="ALL">Semua PIC</option>';
                 picSet.forEach(p => { picSelect.innerHTML += `<option value="${p}">${p}</option>`; });
+                if([...picSet].includes(currentVal)) picSelect.value = currentVal;
             }
 
             let reportPicSelect = document.getElementById("reportFilterPIC");
             if(reportPicSelect) {
+                let currentVal = reportPicSelect.value;
                 reportPicSelect.innerHTML = '<option value="ALL">Semua PIC (ALL)</option>';
                 picSet.forEach(p => { reportPicSelect.innerHTML += `<option value="${p}">${p}</option>`; });
+                if([...picSet].includes(currentVal)) reportPicSelect.value = currentVal;
             }
 
             renderDashboard();
             renderMasterTable();
         }
 
-        // --- FETCH DATA DARI API (MENGGUNAKAN SMART CACHING & TIMEOUT) ---
+        // --- FETCH DATA DARI API ---
         async function loadDataFromAPI(isManualRefresh = false) {
             const btnRefresh = document.getElementById('btnRefresh');
             const iconRefresh = document.getElementById('iconRefresh');
@@ -973,78 +995,75 @@
             if(btnRefresh) btnRefresh.disabled = true;
             if(iconRefresh) iconRefresh.classList.add('fa-spin-fast');
 
-            // 1. CEK CACHE LOKAL: Tampilkan data secara instan jika ada cache
-            const cachedData = localStorage.getItem('8dp_dashboard_cache');
-            if (cachedData && rawDataFromSheet.length === 0) {
-                try {
-                    processRawData(JSON.parse(cachedData));
-                    if(!isManualRefresh) {
-                        Swal.fire({
-                            toast: true, position: 'top-end', showConfirmButton: false, timer: 3000,
-                            icon: 'info', title: 'Mode Cepat Aktif', text: 'Mengambil data terbaru di latar belakang...'
-                        });
-                    }
-                } catch(e) {
-                    console.error("Cache corrupted, menghapus cache.", e);
-                    localStorage.removeItem('8dp_dashboard_cache');
-                }
-            } else if (!cachedData) {
-                // Hanya tampilkan loading layar penuh jika user baru pertama kali buka (belum punya cache)
-                document.querySelector('#tablePeserta tbody').innerHTML = '<tr><td colspan="6" class="text-center py-5 text-muted fw-bold"><i class="fas fa-spinner fa-spin-fast me-2"></i> Menghubungkan ke Google Sheets (Tunggu 5-15 detik)...</td></tr>';
-                document.querySelector('#tblMasterData tbody').innerHTML = '<tr><td colspan="7" class="text-center py-5 text-muted fw-bold"><i class="fas fa-spinner fa-spin-fast me-2"></i> Menghubungkan ke Google Sheets (Tunggu 5-15 detik)...</td></tr>';
+            // Tampilkan popup loading JIKA user klik tombol Refresh
+            if(isManualRefresh) {
+                Swal.fire({
+                    title: 'Menyegarkan Data...',
+                    html: 'Sedang menarik data terbaru dari Spreadsheet.',
+                    allowOutsideClick: false,
+                    didOpen: () => { Swal.showLoading() }
+                });
+            } else if (rawData.length === 0) {
+                document.querySelector('#tablePeserta tbody').innerHTML = '<tr><td colspan="6" class="text-center py-5 text-muted fw-bold"><i class="fas fa-spinner fa-spin-fast me-2"></i> Sinkronisasi Data Spreadsheet...</td></tr>';
+                document.querySelector('#tblMasterData tbody').innerHTML = '<tr><td colspan="7" class="text-center py-5 text-muted fw-bold"><i class="fas fa-spinner fa-spin-fast me-2"></i> Sinkronisasi Data Spreadsheet...</td></tr>';
             }
 
-            // 2. FETCH KE SERVER DENGAN TIMEOUT 30 DETIK
-            const controller = new AbortController();
-            const timeoutId = setTimeout(() => controller.abort(), 30000);
-
             try {
+                // Gunakan AbortController untuk mencegah sistem ngehang (Timeout 30 detik)
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), 30000); 
+
                 const response = await fetch(SCRIPT_URL + '?t=' + new Date().getTime(), { signal: controller.signal });
                 clearTimeout(timeoutId);
 
-                const textResponse = await response.text(); 
+                // MEMBACA TEXT TERLEBIH DAHULU UNTUK MENCEGAH CRASH PARSING JSON
+                const textResponse = await response.text();
                 let result;
                 
                 try {
                     result = JSON.parse(textResponse);
                 } catch(e) {
-                    // Deteksi cerdas jika Google mengembalikan halaman HTML (Error Google Redirect / Belum Publik)
-                    if(textResponse.includes("<!DOCTYPE html>") || textResponse.toLowerCase().includes("<html")) {
-                        throw new Error("Akses diblokir oleh Google. Pastikan URL Web App Apps Script sudah di-deploy sebagai 'Anyone' (Siapa Saja).");
-                    } else {
-                        throw new Error("Format data dari server rusak atau tidak valid.");
-                    }
+                    console.warn("API Gagal Mengembalikan JSON. Respons Server:", textResponse.substring(0, 150) + "...");
+                    throw new Error("Server tidak merespons JSON. Pastikan akses Google Apps Script diset ke 'Siapa Saja (Anyone)'.");
                 }
 
                 if (result.status === "success") {
-                    // Update cache dan render ulang dengan data paling segar
-                    localStorage.setItem('8dp_dashboard_cache', JSON.stringify(result.data));
+                    // Simpan data ke cache lokal untuk load instan di masa depan
+                    localStorage.setItem(CACHE_KEY, JSON.stringify(result.data));
+                    
+                    // Proses data ke Chart dan Tabel
                     processRawData(result.data);
                     
-                    if(isManualRefresh || !cachedData) {
-                        Swal.fire({ title: 'Tersinkronisasi!', text: 'Data terbaru dari Spreadsheet berhasil ditarik.', icon: 'success', timer: 1500, showConfirmButton: false });
+                    if(isManualRefresh) {
+                        Swal.fire({
+                            title: 'Berhasil!',
+                            text: 'Data telah diperbarui dari Spreadsheet.',
+                            icon: 'success',
+                            timer: 2000,
+                            showConfirmButton: false
+                        });
                     }
+
                 } else {
-                    throw new Error(result.message || "Terjadi kendala pada Google Apps Script.");
+                    throw new Error("Error dari server: " + (result.message || "Gagal mengambil data."));
                 }
             } catch (error) {
-                console.error("Gagal terhubung ke API:", error);
-                clearTimeout(timeoutId);
-
+                // PENANGANAN ERROR YANG RAPI TANPA MENGCRASHKAN SISTEM
                 let errorMsg = error.message;
-                if (error.name === 'AbortError') {
-                    errorMsg = "Koneksi Timeout (Lebih dari 30 detik). Server Google sedang lambat.";
+                if(error.name === 'AbortError') {
+                    errorMsg = 'Koneksi ke server Google terputus karena terlalu lama (Lebih dari 30 detik).';
                 }
 
-                if (!cachedData) {
+                if (isManualRefresh) {
                     Swal.fire('Koneksi Gagal', errorMsg, 'error');
-                    document.querySelector('#tablePeserta tbody').innerHTML = `<tr><td colspan="6" class="text-center py-4 text-danger fw-bold"><i class="fas fa-exclamation-triangle me-2"></i>${errorMsg}</td></tr>`;
-                    document.querySelector('#tblMasterData tbody').innerHTML = `<tr><td colspan="7" class="text-center py-4 text-danger fw-bold"><i class="fas fa-exclamation-triangle me-2"></i>${errorMsg}</td></tr>`;
                 } else {
-                    Swal.fire({
-                        toast: true, position: 'top-end', showConfirmButton: false, timer: 5000,
-                        icon: 'warning', title: 'Server Sibuk', text: `Google lambat merespons. Tetap menggunakan data offline/cache.`
-                    });
+                    console.warn("Background fetch failed:", errorMsg);
+                }
+                
+                // Jika data benar-benar kosong (Belum ada cache sama sekali), tampilkan peringatan di tabel
+                if (rawData.length === 0) {
+                    document.querySelector('#tablePeserta tbody').innerHTML = `<tr><td colspan="6" class="text-center py-4 text-danger fw-bold"><i class="fas fa-exclamation-triangle me-2"></i> Error: ${errorMsg}</td></tr>`;
+                    document.querySelector('#tblMasterData tbody').innerHTML = `<tr><td colspan="7" class="text-center py-4 text-danger fw-bold"><i class="fas fa-exclamation-triangle me-2"></i> Error: ${errorMsg}</td></tr>`;
                 }
             } finally {
                 if(btnRefresh) btnRefresh.disabled = false;
@@ -1073,13 +1092,11 @@
                 const targetSheetName = "ATS_PTCP (PLAN)";
                 const sheet = workbook.Sheets[targetSheetName] || workbook.Sheets[workbook.SheetNames[0]];
                 
-                // Ambil data mentah tanpa header untuk bisa memetakan kolom yang di-merge
                 const sheetDataRaw = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: "" });
                 
                 let lastHeaderIdx = -1;
                 let colMap = {};
 
-                // Cari baris terakhir dari header (baris yang punya kata NAME atau NRP)
                 for(let i=0; i<sheetDataRaw.length; i++) {
                     const rowText = sheetDataRaw[i].join("").toUpperCase();
                     if(rowText.includes("NAME") || rowText.includes("CABANG/ SITE") || rowText.includes("NRP")) {
@@ -1093,7 +1110,6 @@
                     return;
                 }
 
-                // Kumpulkan nama kolom dengan menyatukan header yang terpisah-pisah barisnya
                 for(let i = 0; i <= lastHeaderIdx; i++) {
                     for(let j = 0; j < sheetDataRaw[i].length; j++) {
                         let cellVal = String(sheetDataRaw[i][j]).replace(/[\r\n]+/g, ' ').trim().toUpperCase();
@@ -1106,7 +1122,6 @@
                 const cleanJson = [];
                 let dataStartIdx = lastHeaderIdx + 1;
 
-                // Ekstrak data berdasarkan pemetaan kolom yang akurat
                 for(let i = dataStartIdx; i < sheetDataRaw.length; i++) {
                     let rowArr = sheetDataRaw[i];
                     
@@ -1136,8 +1151,10 @@
                 .then(res => res.json())
                 .then(result => {
                     if(result.status === 'success') {
-                        Swal.fire('Berhasil!', `Total ${cleanJson.length} baris data telah ditimpa dengan aman.`, 'success');
-                        loadDataFromAPI();
+                        // Setelah upload sukses, panggil fungsi load data API dengan notifikasi
+                        loadDataFromAPI(true).then(() => {
+                            Swal.fire('Berhasil!', `Total ${cleanJson.length} baris data telah ditimpa dengan aman.`, 'success');
+                        });
                     } else {
                         Swal.fire('Gagal!', result.message, 'error');
                     }
@@ -1151,7 +1168,7 @@
             };
             reader.readAsBinaryString(file);
         }
-        
+
         // --- DOWNLOAD TEMPLATE EXCEL ---
         function downloadTemplate() {
             if (!rawDataFromSheet || rawDataFromSheet.length === 0) {
@@ -1190,7 +1207,6 @@
                 let name = getCol(row, ['NAME','NAMA']);
                 let nrp = getCol(row, ['NRP']);
                 
-                // Logika Mendeteksi Area SECARA KETAT HANYA via kolom "UT CORPU" untuk Master Data
                 let areaRaw = String(getCol(row, ['UT CORPU'])).toUpperCase().trim();
                 let areaStr = areaRaw;
                 if (areaRaw.includes('JAKARTA') || areaRaw === 'JKT') areaStr = 'JKT';
@@ -1227,8 +1243,6 @@
             if (rawData.length === 0) {
                 document.getElementById("kpiTotal").innerText = 0;
                 document.getElementById("kpiCoverage").innerHTML = `0 <span style="font-size: 1.1rem; color: #555;">(0%)</span>`;
-                
-                // Mencegah error duplikasi dengan menembak langsung innerText HTML
                 document.getElementById("kpiProgress").innerText = "0";
                 document.getElementById("kpiNotYet").innerText = "0";
                 
@@ -1304,24 +1318,15 @@
             filteredEvents.forEach(d => {
                 let k = d.area;
                 if (AREA_KEYS.includes(k) && d.modulName !== '') {
-                    // Daftarkan modul ke Area 
-                    if (eventMap[k][d.modulName] === undefined) {
-                        eventMap[k][d.modulName] = false;
-                    }
-                    // Jika ada minimal 1 anak yg mendapatkan nilai, event modul itu otomatis True/Done
-                    if (d.hasNilai) {
-                        eventMap[k][d.modulName] = true; 
-                    }
+                    if (eventMap[k][d.modulName] === undefined) eventMap[k][d.modulName] = false;
+                    if (d.hasNilai) eventMap[k][d.modulName] = true; 
                 }
             });
 
             AREA_KEYS.forEach(k => {
                 for (let mod in eventMap[k]) {
-                    if (eventMap[k][mod] === true) {
-                        areaCount[k].eventDone++;
-                    } else {
-                        areaCount[k].eventNotYet++;
-                    }
+                    if (eventMap[k][mod] === true) areaCount[k].eventDone++;
+                    else areaCount[k].eventNotYet++;
                 }
             });
 
@@ -1358,12 +1363,10 @@
             resetChart('pieParticipant');
             chartInstances['pieParticipant'] = new Chart(document.getElementById('pieParticipant'), {
                 type: 'pie',
-                // Logika total untuk pie ini dijamin 100% dari totalPeserta
                 data: { labels: ['Done', 'On Progress', 'Not Yet'], datasets: [{ data: [totalPeserta - totalOnProgress - totalNotYet, totalOnProgress, totalNotYet], backgroundColor: ['#34a853', '#fbbc04', '#ea4335'] }] },
                 options: pieOptions
             });
 
-            // LOGIKA KHUSUS DIAGRAM LINGKARAN DISTRIBUTION BY AREA
             let pieAreaCountData = {};
             AREA_KEYS.forEach(k => pieAreaCountData[k] = 0);
             filteredPerArea.forEach(d => {
@@ -1384,7 +1387,6 @@
                 scales: { x: { stacked: true }, y: { stacked: true, beginAtZero: true } } 
             };
 
-            // RENDER TRAINING EVENT PER AREA (BERDASARKAN STATUS MODULE)
             resetChart('barCoverage');
             chartInstances['barCoverage'] = new Chart(document.getElementById('barCoverage'), {
                 type: 'bar',
@@ -1421,11 +1423,10 @@
                     }).bindPopup(`
                         <div class="text-center" style="min-width: 120px;">
                             <b class="fs-6 d-block border-bottom pb-1 mb-2">${COORDS[k].nama}</b>
-                        <div class="d-flex gap-2">
-                            <button class="btn btn-brand btn-sm" id="btnRefresh" onclick="loadDataFromAPI(true)"><i class="fas fa-sync-alt me-1" id="iconRefresh"></i> Refresh Data</button>
-                            <button class="btn btn-dark btn-sm fw-bold border-2 border-dark" onclick="toggleFullscreen()"><i class="fas fa-tv me-1"></i> Fullscreen</button>
+                            Total Karyawan: <b>${areaCount[k].total}</b><br>
+                            Coverage: <b class="text-success">${areaCount[k].cov}</b><br>
+                            Not Yet: <b class="text-danger">${areaCount[k].notCov}</b>
                         </div>
-                    </div>
                     `).addTo(map);
                     mapMarkers.push(marker);
                 }
