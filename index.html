@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dashboard Monitoring Development 8 DP</title>
-
+    
     <!-- Google Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     
@@ -841,155 +841,211 @@
             return '';
         }
 
-        // --- FETCH DATA DARI API ---
-        async function loadDataFromAPI() {
+        // --- CORE LOGIC: PROSES & GROUPING DATA (TERMASUK FIX "ON PROGRESS") ---
+        function processRawData(data) {
+            rawDataFromSheet = data || []; 
+            let uniqueData = {};
+            let uniqueDataPerArea = {}; 
+            let picSet = new Set();
+            let allEvents = []; 
+
+            rawDataFromSheet.forEach(row => {
+                let nameRaw = String(getCol(row, ['NAME', 'NAMA'])).trim();
+                if (nameRaw === '' || nameRaw.toUpperCase() === 'NAME' || nameRaw.toUpperCase() === 'NAMA') return; 
+                
+                let name = nameRaw;
+                let nrpRaw = getCol(row, ['NRP']);
+                let nrp = (nrpRaw !== undefined && nrpRaw !== null && String(nrpRaw).trim() !== '') ? String(nrpRaw).replace(/\.0+$/, '').trim() : '';
+                
+                // Logika Mendeteksi Area SECARA KETAT
+                let areaRaw = String(getCol(row, ['UT CORPU'])).toUpperCase().trim();
+                let area = areaRaw;
+                if (areaRaw.includes('JAKARTA') || areaRaw === 'JKT') area = 'JKT';
+                else if (areaRaw.includes('PEKANBARU') || areaRaw === 'PKB') area = 'PKB';
+                else if (areaRaw.includes('BALIKPAPAN') || areaRaw === 'BLP') area = 'BLP';
+                else if (areaRaw.includes('SAMARINDA') || areaRaw === 'SMD') area = 'SMD';
+                else if (areaRaw.includes('BANJARMASIN') || areaRaw === 'BJM') area = 'BJM';
+                else if (areaRaw.includes('UJUNG PANDANG') || areaRaw.includes('MAKASSAR') || areaRaw === 'UPG') area = 'UPG';
+
+                let pic = getCol(row, ['PIC']) || 'Unknown';
+                
+                // Ekstraksi Logika Khusus Event
+                let modulName = String(getCol(row, ['TRAINING MODUL', 'NAMA MODUL', 'MODUL', 'EVENT'])).trim();
+                let nilaiRaw = String(getCol(row, ['NILAI', 'SCORE'])).trim();
+                let hasNilai = (nilaiRaw !== '' && nilaiRaw !== '-');
+                
+                allEvents.push({ area: area, pic: pic, modulName: modulName, hasNilai: hasNilai });
+
+                let statM1 = getCol(row, ['STATUS MODUL 1']);
+                let statM2 = getCol(row, ['STATUS MODUL 2']);
+                
+                let partStatusRaw = String(getCol(row, ['STATUS PARTICIPANT', 'STATUS KELULUSAN'])).toUpperCase().trim();
+                let covStatusRaw = String(getCol(row, ['STATUS COVERAGE', 'ALL COVERAGE', 'COVERAGE'])).toUpperCase().trim();
+
+                let covStatus = covStatusRaw.includes('TERCOVERAGE') || covStatusRaw.includes('COVERAGE') ? 'Tercoverage' : 'Not Yet';
+                
+                let finalStatus = "NOT YET";
+                if (partStatusRaw.includes('DONE') || partStatusRaw.includes('FINISHED') || partStatusRaw.includes('LULUS')) {
+                    finalStatus = "DONE";
+                } else if (partStatusRaw.includes('PROGRESS')) {
+                    finalStatus = "ON PROGRESS";
+                }
+
+                if(pic !== 'Unknown' && pic.trim() !== '') picSet.add(pic);
+
+                // --- PENGELOMPOKAN GLOBAL KARYAWAN ---
+                let key = (nrp !== '' ? nrp : name.toUpperCase()); 
+                if (!uniqueData[key]) {
+                    uniqueData[key] = { name, nrp, area, pic, statM1, statM2, finalStatus, covStatus };
+                } else {
+                    if (AREA_KEYS.includes(area) && !AREA_KEYS.includes(uniqueData[key].area)) {
+                        uniqueData[key].area = area;
+                    }
+                    if (pic !== 'Unknown' && pic.trim() !== '' && uniqueData[key].pic === 'Unknown') {
+                        uniqueData[key].pic = pic;
+                    }
+                    if(statM1 && statM1 !== '-' && (!uniqueData[key].statM1 || uniqueData[key].statM1 === '-')) uniqueData[key].statM1 = statM1;
+                    if(statM2 && statM2 !== '-' && (!uniqueData[key].statM2 || uniqueData[key].statM2 === '-')) uniqueData[key].statM2 = statM2;
+                    
+                    // [PERBAIKAN] Logika Prioritas Status untuk "ON PROGRESS"
+                    let currentStatus = uniqueData[key].finalStatus;
+                    if (currentStatus === 'ON PROGRESS' || finalStatus === 'ON PROGRESS') {
+                        uniqueData[key].finalStatus = 'ON PROGRESS';
+                    } else if ((currentStatus === 'DONE' && finalStatus === 'NOT YET') || (currentStatus === 'NOT YET' && finalStatus === 'DONE')) {
+                        uniqueData[key].finalStatus = 'ON PROGRESS'; 
+                    } else if (finalStatus === 'DONE') {
+                        uniqueData[key].finalStatus = 'DONE';
+                    }
+
+                    if(covStatus === 'Tercoverage') uniqueData[key].covStatus = 'Tercoverage';
+                }
+
+                // --- PENGELOMPOKAN KHUSUS PIE CHART BY AREA ---
+                let keyPerArea = key + "_" + area;
+                if (!uniqueDataPerArea[keyPerArea]) {
+                    uniqueDataPerArea[keyPerArea] = { name, nrp, area, pic, statM1, statM2, finalStatus, covStatus };
+                } else {
+                    if (pic !== 'Unknown' && pic.trim() !== '' && uniqueDataPerArea[keyPerArea].pic === 'Unknown') {
+                        uniqueDataPerArea[keyPerArea].pic = pic;
+                    }
+                    if(statM1 && statM1 !== '-' && (!uniqueDataPerArea[keyPerArea].statM1 || uniqueDataPerArea[keyPerArea].statM1 === '-')) uniqueDataPerArea[keyPerArea].statM1 = statM1;
+                    if(statM2 && statM2 !== '-' && (!uniqueDataPerArea[keyPerArea].statM2 || uniqueDataPerArea[keyPerArea].statM2 === '-')) uniqueDataPerArea[keyPerArea].statM2 = statM2;
+                    
+                    // [PERBAIKAN] Logika Prioritas Status untuk Pie Chart Area
+                    let currentStatusArea = uniqueDataPerArea[keyPerArea].finalStatus;
+                    if (currentStatusArea === 'ON PROGRESS' || finalStatus === 'ON PROGRESS') {
+                        uniqueDataPerArea[keyPerArea].finalStatus = 'ON PROGRESS';
+                    } else if ((currentStatusArea === 'DONE' && finalStatus === 'NOT YET') || (currentStatusArea === 'NOT YET' && finalStatus === 'DONE')) {
+                        uniqueDataPerArea[keyPerArea].finalStatus = 'ON PROGRESS'; 
+                    } else if (finalStatus === 'DONE') {
+                        uniqueDataPerArea[keyPerArea].finalStatus = 'DONE';
+                    }
+
+                    if(covStatus === 'Tercoverage') uniqueDataPerArea[keyPerArea].covStatus = 'Tercoverage';
+                }
+            });
+
+            rawData = Object.values(uniqueData);
+            rawDataPerArea = Object.values(uniqueDataPerArea);
+            rawEventData = allEvents; 
+
+            let picSelect = document.getElementById("filterPIC");
+            if(picSelect) {
+                picSelect.innerHTML = '<option value="ALL">Semua PIC</option>';
+                picSet.forEach(p => { picSelect.innerHTML += `<option value="${p}">${p}</option>`; });
+            }
+
+            let reportPicSelect = document.getElementById("reportFilterPIC");
+            if(reportPicSelect) {
+                reportPicSelect.innerHTML = '<option value="ALL">Semua PIC (ALL)</option>';
+                picSet.forEach(p => { reportPicSelect.innerHTML += `<option value="${p}">${p}</option>`; });
+            }
+
+            renderDashboard();
+            renderMasterTable();
+        }
+
+        // --- FETCH DATA DARI API (MENGGUNAKAN SMART CACHING & TIMEOUT) ---
+        async function loadDataFromAPI(isManualRefresh = false) {
             const btnRefresh = document.getElementById('btnRefresh');
             const iconRefresh = document.getElementById('iconRefresh');
             
             if(btnRefresh) btnRefresh.disabled = true;
             if(iconRefresh) iconRefresh.classList.add('fa-spin-fast');
-            document.querySelector('#tablePeserta tbody').innerHTML = '<tr><td colspan="6" class="text-center py-5 text-muted fw-bold"><i class="fas fa-spinner fa-spin-fast me-2"></i> Sinkronisasi Data Spreadsheet...</td></tr>';
-            document.querySelector('#tblMasterData tbody').innerHTML = '<tr><td colspan="7" class="text-center py-5 text-muted fw-bold"><i class="fas fa-spinner fa-spin-fast me-2"></i> Sinkronisasi Data Spreadsheet...</td></tr>';
+
+            // 1. CEK CACHE LOKAL: Tampilkan data secara instan jika ada cache
+            const cachedData = localStorage.getItem('8dp_dashboard_cache');
+            if (cachedData && rawDataFromSheet.length === 0) {
+                try {
+                    processRawData(JSON.parse(cachedData));
+                    if(!isManualRefresh) {
+                        Swal.fire({
+                            toast: true, position: 'top-end', showConfirmButton: false, timer: 3000,
+                            icon: 'info', title: 'Mode Cepat Aktif', text: 'Mengambil data terbaru di latar belakang...'
+                        });
+                    }
+                } catch(e) {
+                    console.error("Cache corrupted, menghapus cache.", e);
+                    localStorage.removeItem('8dp_dashboard_cache');
+                }
+            } else if (!cachedData) {
+                // Hanya tampilkan loading layar penuh jika user baru pertama kali buka (belum punya cache)
+                document.querySelector('#tablePeserta tbody').innerHTML = '<tr><td colspan="6" class="text-center py-5 text-muted fw-bold"><i class="fas fa-spinner fa-spin-fast me-2"></i> Menghubungkan ke Google Sheets (Tunggu 5-15 detik)...</td></tr>';
+                document.querySelector('#tblMasterData tbody').innerHTML = '<tr><td colspan="7" class="text-center py-5 text-muted fw-bold"><i class="fas fa-spinner fa-spin-fast me-2"></i> Menghubungkan ke Google Sheets (Tunggu 5-15 detik)...</td></tr>';
+            }
+
+            // 2. FETCH KE SERVER DENGAN TIMEOUT 30 DETIK
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 30000);
 
             try {
-                const response = await fetch(SCRIPT_URL + '?t=' + new Date().getTime());
+                const response = await fetch(SCRIPT_URL + '?t=' + new Date().getTime(), { signal: controller.signal });
+                clearTimeout(timeoutId);
+
+                const textResponse = await response.text(); 
                 let result;
                 
                 try {
-                    result = await response.json();
+                    result = JSON.parse(textResponse);
                 } catch(e) {
-                    throw new Error("Server tidak merespons JSON (Mungkin Anda belum mengatur hak akses Apps Script ke 'Siapa Saja').");
+                    // Deteksi cerdas jika Google mengembalikan halaman HTML (Error Google Redirect / Belum Publik)
+                    if(textResponse.includes("<!DOCTYPE html>") || textResponse.toLowerCase().includes("<html")) {
+                        throw new Error("Akses diblokir oleh Google. Pastikan URL Web App Apps Script sudah di-deploy sebagai 'Anyone' (Siapa Saja).");
+                    } else {
+                        throw new Error("Format data dari server rusak atau tidak valid.");
+                    }
                 }
 
                 if (result.status === "success") {
-                    rawDataFromSheet = result.data || []; 
-                    let uniqueData = {};
-                    let uniqueDataPerArea = {}; // Penampung khusus untuk Pie Chart Distribution By Area
-                    let picSet = new Set();
-                    let allEvents = []; 
-
-                    rawDataFromSheet.forEach(row => {
-                        let nameRaw = String(getCol(row, ['NAME', 'NAMA'])).trim();
-                        if (nameRaw === '' || nameRaw.toUpperCase() === 'NAME' || nameRaw.toUpperCase() === 'NAMA') return; 
-                        
-                        let name = nameRaw;
-                        
-                        let nrpRaw = getCol(row, ['NRP']);
-                        let nrp = (nrpRaw !== undefined && nrpRaw !== null && String(nrpRaw).trim() !== '') ? String(nrpRaw).replace(/\.0+$/, '').trim() : '';
-                        
-                        // Logika Mendeteksi Area SECARA KETAT HANYA via kolom "UT CORPU"
-                        let areaRaw = String(getCol(row, ['UT CORPU'])).toUpperCase().trim();
-                        let area = areaRaw;
-                        if (areaRaw.includes('JAKARTA') || areaRaw === 'JKT') area = 'JKT';
-                        else if (areaRaw.includes('PEKANBARU') || areaRaw === 'PKB') area = 'PKB';
-                        else if (areaRaw.includes('BALIKPAPAN') || areaRaw === 'BLP') area = 'BLP';
-                        else if (areaRaw.includes('SAMARINDA') || areaRaw === 'SMD') area = 'SMD';
-                        else if (areaRaw.includes('BANJARMASIN') || areaRaw === 'BJM') area = 'BJM';
-                        else if (areaRaw.includes('UJUNG PANDANG') || areaRaw.includes('MAKASSAR') || areaRaw === 'UPG') area = 'UPG';
-
-                        let pic = getCol(row, ['PIC']) || 'Unknown';
-                        
-                        // Ekstraksi Logika Khusus Event
-                        let modulName = String(getCol(row, ['TRAINING MODUL', 'NAMA MODUL', 'MODUL', 'EVENT'])).trim();
-                        let nilaiRaw = String(getCol(row, ['NILAI', 'SCORE'])).trim();
-                        
-                        let hasNilai = (nilaiRaw !== '' && nilaiRaw !== '-');
-                        
-                        allEvents.push({
-                            area: area,
-                            pic: pic,
-                            modulName: modulName,
-                            hasNilai: hasNilai
-                        });
-
-                        let statM1 = getCol(row, ['STATUS MODUL 1']);
-                        let statM2 = getCol(row, ['STATUS MODUL 2']);
-                        
-                        let partStatusRaw = String(getCol(row, ['STATUS PARTICIPANT', 'STATUS KELULUSAN'])).toUpperCase().trim();
-                        let covStatusRaw = String(getCol(row, ['STATUS COVERAGE', 'ALL COVERAGE', 'COVERAGE'])).toUpperCase().trim();
-
-                        let covStatus = covStatusRaw.includes('TERCOVERAGE') || covStatusRaw.includes('COVERAGE') ? 'Tercoverage' : 'Not Yet';
-                        
-                        let finalStatus = "NOT YET";
-                        if (partStatusRaw.includes('DONE') || partStatusRaw.includes('FINISHED') || partStatusRaw.includes('LULUS')) {
-                            finalStatus = "DONE";
-                        } else if (partStatusRaw.includes('PROGRESS')) {
-                            finalStatus = "ON PROGRESS";
-                        }
-
-                        if(pic !== 'Unknown' && pic.trim() !== '') picSet.add(pic);
-
-                        // Pengelompokan Data Partisipan Karyawan (Global Unique NRP - Tetap 59)
-                        let key = (nrp !== '' ? nrp : name.toUpperCase()); 
-                        if (!uniqueData[key]) {
-                            uniqueData[key] = { name, nrp, area, pic, statM1, statM2, finalStatus, covStatus };
-                        } else {
-                            if (AREA_KEYS.includes(area) && !AREA_KEYS.includes(uniqueData[key].area)) {
-                                uniqueData[key].area = area;
-                            }
-                            if (pic !== 'Unknown' && pic.trim() !== '' && uniqueData[key].pic === 'Unknown') {
-                                uniqueData[key].pic = pic;
-                            }
-                            if(statM1 && statM1 !== '-' && (!uniqueData[key].statM1 || uniqueData[key].statM1 === '-')) uniqueData[key].statM1 = statM1;
-                            if(statM2 && statM2 !== '-' && (!uniqueData[key].statM2 || uniqueData[key].statM2 === '-')) uniqueData[key].statM2 = statM2;
-                            if(finalStatus === 'DONE') uniqueData[key].finalStatus = 'DONE';
-                            else if(finalStatus === 'ON PROGRESS' && uniqueData[key].finalStatus !== 'DONE') uniqueData[key].finalStatus = 'ON PROGRESS';
-                            if(covStatus === 'Tercoverage') uniqueData[key].covStatus = 'Tercoverage';
-                        }
-
-                        // Pengelompokan KHUSUS Pie Chart Distribution By Area (Unique NRP + Area)
-                        let keyPerArea = key + "_" + area;
-                        if (!uniqueDataPerArea[keyPerArea]) {
-                            uniqueDataPerArea[keyPerArea] = { name, nrp, area, pic, statM1, statM2, finalStatus, covStatus };
-                        } else {
-                            if (pic !== 'Unknown' && pic.trim() !== '' && uniqueDataPerArea[keyPerArea].pic === 'Unknown') {
-                                uniqueDataPerArea[keyPerArea].pic = pic;
-                            }
-                            if(statM1 && statM1 !== '-' && (!uniqueDataPerArea[keyPerArea].statM1 || uniqueDataPerArea[keyPerArea].statM1 === '-')) uniqueDataPerArea[keyPerArea].statM1 = statM1;
-                            if(statM2 && statM2 !== '-' && (!uniqueDataPerArea[keyPerArea].statM2 || uniqueDataPerArea[keyPerArea].statM2 === '-')) uniqueDataPerArea[keyPerArea].statM2 = statM2;
-                            if(finalStatus === 'DONE') uniqueDataPerArea[keyPerArea].finalStatus = 'DONE';
-                            else if(finalStatus === 'ON PROGRESS' && uniqueDataPerArea[keyPerArea].finalStatus !== 'DONE') uniqueDataPerArea[keyPerArea].finalStatus = 'ON PROGRESS';
-                            if(covStatus === 'Tercoverage') uniqueDataPerArea[keyPerArea].covStatus = 'Tercoverage';
-                        }
-                    });
-
-                    rawData = Object.values(uniqueData);
-                    rawDataPerArea = Object.values(uniqueDataPerArea); // Data khusus Pie Chart
-                    rawEventData = allEvents; 
-
-                    let picSelect = document.getElementById("filterPIC");
-                    if(picSelect) {
-                        picSelect.innerHTML = '<option value="ALL">Semua PIC</option>';
-                        picSet.forEach(p => { picSelect.innerHTML += `<option value="${p}">${p}</option>`; });
-                    }
-
-                    let reportPicSelect = document.getElementById("reportFilterPIC");
-                    if(reportPicSelect) {
-                        reportPicSelect.innerHTML = '<option value="ALL">Semua PIC (ALL)</option>';
-                        picSet.forEach(p => { reportPicSelect.innerHTML += `<option value="${p}">${p}</option>`; });
-                    }
-
-                    renderDashboard();
-                    renderMasterTable();
+                    // Update cache dan render ulang dengan data paling segar
+                    localStorage.setItem('8dp_dashboard_cache', JSON.stringify(result.data));
+                    processRawData(result.data);
                     
-                    Swal.fire({
-                        title: 'Berhasil!',
-                        text: 'Data telah tersinkronisasi dengan Spreadsheet.',
-                        icon: 'success',
-                        timer: 2000,
-                        showConfirmButton: false
-                    });
-
+                    if(isManualRefresh || !cachedData) {
+                        Swal.fire({ title: 'Tersinkronisasi!', text: 'Data terbaru dari Spreadsheet berhasil ditarik.', icon: 'success', timer: 1500, showConfirmButton: false });
+                    }
                 } else {
-                    Swal.fire('Error', "Error dari server: " + result.message, 'error');
-                    document.querySelector('#tablePeserta tbody').innerHTML = '<tr><td colspan="6" class="text-center py-4 text-danger fw-bold">Data gagal dimuat dari server.</td></tr>';
-                    document.querySelector('#tblMasterData tbody').innerHTML = '<tr><td colspan="7" class="text-center py-4 text-danger fw-bold">Data gagal dimuat dari server.</td></tr>';
+                    throw new Error(result.message || "Terjadi kendala pada Google Apps Script.");
                 }
             } catch (error) {
                 console.error("Gagal terhubung ke API:", error);
-                Swal.fire('Koneksi Gagal', error.message || 'Gagal memuat data. Periksa koneksi atau hak akses Apps Script (Pastikan diset ke "Anyone / Siapa Saja").', 'error');
-                document.querySelector('#tablePeserta tbody').innerHTML = '<tr><td colspan="6" class="text-center py-4 text-danger fw-bold">Gagal memuat data. Periksa Koneksi Internet.</td></tr>';
-                document.querySelector('#tblMasterData tbody').innerHTML = '<tr><td colspan="7" class="text-center py-4 text-danger fw-bold">Gagal memuat data. Periksa Koneksi Internet.</td></tr>';
+                clearTimeout(timeoutId);
+
+                let errorMsg = error.message;
+                if (error.name === 'AbortError') {
+                    errorMsg = "Koneksi Timeout (Lebih dari 30 detik). Server Google sedang lambat.";
+                }
+
+                if (!cachedData) {
+                    Swal.fire('Koneksi Gagal', errorMsg, 'error');
+                    document.querySelector('#tablePeserta tbody').innerHTML = `<tr><td colspan="6" class="text-center py-4 text-danger fw-bold"><i class="fas fa-exclamation-triangle me-2"></i>${errorMsg}</td></tr>`;
+                    document.querySelector('#tblMasterData tbody').innerHTML = `<tr><td colspan="7" class="text-center py-4 text-danger fw-bold"><i class="fas fa-exclamation-triangle me-2"></i>${errorMsg}</td></tr>`;
+                } else {
+                    Swal.fire({
+                        toast: true, position: 'top-end', showConfirmButton: false, timer: 5000,
+                        icon: 'warning', title: 'Server Sibuk', text: `Google lambat merespons. Tetap menggunakan data offline/cache.`
+                    });
+                }
             } finally {
                 if(btnRefresh) btnRefresh.disabled = false;
                 if(iconRefresh) iconRefresh.classList.remove('fa-spin-fast');
@@ -1172,7 +1228,7 @@
             const fStatus = document.getElementById("filterStatus").value;
             const fPIC = document.getElementById("filterPIC").value;
 
-            // --- FILTER PARTICIPANT (Data Unique 59 Karyawan) ---
+            // --- FILTER PARTICIPANT (Data Unique Karyawan) ---
             let filtered = rawData.filter(d => {
                 let mArea = fArea === "ALL" || d.area === fArea;
                 let mStat = fStatus === "ALL" || d.finalStatus === fStatus;
@@ -1285,6 +1341,7 @@
             resetChart('pieParticipant');
             chartInstances['pieParticipant'] = new Chart(document.getElementById('pieParticipant'), {
                 type: 'pie',
+                // Logika total untuk pie ini dijamin 100% dari totalPeserta
                 data: { labels: ['Done', 'On Progress', 'Not Yet'], datasets: [{ data: [totalPeserta - totalOnProgress - totalNotYet, totalOnProgress, totalNotYet], backgroundColor: ['#34a853', '#fbbc04', '#ea4335'] }] },
                 options: pieOptions
             });
@@ -1347,10 +1404,11 @@
                     }).bindPopup(`
                         <div class="text-center" style="min-width: 120px;">
                             <b class="fs-6 d-block border-bottom pb-1 mb-2">${COORDS[k].nama}</b>
-                            Total Karyawan: <b>${areaCount[k].total}</b><br>
-                            Coverage: <b class="text-success">${areaCount[k].cov}</b><br>
-                            Not Yet: <b class="text-danger">${areaCount[k].notCov}</b>
+                        <div class="d-flex gap-2">
+                            <button class="btn btn-brand btn-sm" id="btnRefresh" onclick="loadDataFromAPI(true)"><i class="fas fa-sync-alt me-1" id="iconRefresh"></i> Refresh Data</button>
+                            <button class="btn btn-dark btn-sm fw-bold border-2 border-dark" onclick="toggleFullscreen()"><i class="fas fa-tv me-1"></i> Fullscreen</button>
                         </div>
+                    </div>
                     `).addTo(map);
                     mapMarkers.push(marker);
                 }
