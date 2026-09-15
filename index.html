@@ -334,13 +334,11 @@
             <h3 class="fw-bold mb-1 text-dark">8 DP Portal</h3>
             <p class="fw-bold text-dark mb-4" style="font-size: 0.85rem;">SECURE ENTERPRISE LOGIN</p>
             
-            <!-- Perbaikan onsubmit agar form tidak me-reload page jika password salah -->
-            <form id="loginForm" onsubmit="return handleLogin(event)">
+            <form id="loginForm" onsubmit="handleLogin(event)">
                 <div class="mb-3 text-start">
                     <label class="form-label fw-bold small text-dark">Username</label>
                     <div class="input-group">
                         <span class="input-group-text bg-light border-end-0"><i class="fas fa-user text-muted"></i></span>
-                        <!-- Menghapus Placeholder sesuai permintaan -->
                         <input type="text" class="form-control border-start-0 ps-0 bg-light" id="username" required>
                     </div>
                 </div>
@@ -348,7 +346,6 @@
                     <label class="form-label fw-bold small text-dark">Password</label>
                     <div class="input-group">
                         <span class="input-group-text bg-light border-end-0"><i class="fas fa-lock text-muted"></i></span>
-                        <!-- Menghapus Placeholder sesuai permintaan -->
                         <input type="password" class="form-control border-start-0 ps-0 bg-light" id="password" required>
                         <button class="btn btn-light border" type="button" onclick="togglePassword()"><i class="fas fa-eye text-muted" id="eyeIcon"></i></button>
                     </div>
@@ -420,13 +417,12 @@
                 <div class="d-flex align-items-center gap-3">
                     <button class="btn btn-light border border-dark fw-bold" onclick="toggleSidebar()"><i class="fas fa-bars"></i></button>
                     <div class="header-logos d-none d-md-flex align-items-center gap-2">
-                        <!-- Memastikan Logo UT Corpu ditonjolkan -->
-                        <img src="logo corpu.png" alt="Corpu" onerror="this.src='https://via.placeholder.com/80x40?text=Corpu'">
+                        <img src="logo ut.png" alt="UT" onerror="this.src='https://via.placeholder.com/80x40?text=Logo+UT'">
                     </div>
                 </div>
                 <h4 class="mb-0 fw-bold fst-italic d-none d-lg-block" style="letter-spacing: -0.5px; color:#000;">DASHBOARD MONITORING DEVELOPMENT 8 DP</h4>
                 <div class="header-logos">
-                    <img src="logo ut.png" alt="UT" onerror="this.src='https://via.placeholder.com/80x40?text=Logo+UT'">
+                    <img src="logo corpu.png" alt="Corpu" onerror="this.src='https://via.placeholder.com/80x40?text=Corpu'">
                 </div>
             </div>
 
@@ -468,8 +464,8 @@
                         </div>
                         
                         <div class="d-flex gap-2">
-                            <!-- Tombol Refresh dengan parameter true untuk memunculkan loading pop up manual -->
-                            <button class="btn btn-brand btn-sm" id="btnRefresh" onclick="loadDataFromAPI(true, false)"><i class="fas fa-sync-alt me-1" id="iconRefresh"></i> Refresh Data</button>
+                            <!-- Menambahkan param true pada loadDataFromAPI agar muncul popup saat di klik -->
+                            <button class="btn btn-brand btn-sm" id="btnRefresh" onclick="loadDataFromAPI(true)"><i class="fas fa-sync-alt me-1" id="iconRefresh"></i> Refresh Data</button>
                             <button class="btn btn-dark btn-sm fw-bold border-2 border-dark" onclick="toggleFullscreen()"><i class="fas fa-tv me-1"></i> Fullscreen</button>
                         </div>
                     </div>
@@ -710,7 +706,7 @@
         Chart.register(ChartDataLabels);
 
         // --- KONFIGURASI API GOOGLE APPS SCRIPT ---
-        const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxLfgNdEAsKVCyVpTyJoCBgbhlBE1himGITMs4Ta7o4Hkm-dCZz2P5nUWD-fmvaITmHUA/exec';
+        const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxXD5HaVt96h11lrS2CXl_Zpafx-pyyDWmKopsEEwUBa01pYokq5iJPFHUWtPvPN3sfcA/exec';
         const CACHE_KEY = 'dashboard8dp_data_cache';
 
         // --- GLOBAL VARIABLES ---
@@ -746,9 +742,8 @@
             }
         }
 
-        // Mencegah form untuk reload setelah di Submit, dan menangani proses autentikasi
         function handleLogin(e) {
-            e.preventDefault(); // Mencegah bawaan form submit (reload)
+            e.preventDefault();
             const u = document.getElementById('username').value.trim();
             const p = document.getElementById('password').value;
             
@@ -765,23 +760,19 @@
                     } catch(err) {
                         console.error("Gagal membaca cache:", err);
                     }
-                    
-                    Swal.fire({
-                        title: 'Login Berhasil',
-                        text: 'Selamat datang di 8 DP Portal',
-                        icon: 'success',
-                        timer: 1500,
-                        showConfirmButton: false
-                    });
-
-                    // Tetap request data terbaru dari Google di background (Tanpa popup)
-                    loadDataFromAPI(false, false);
-                } else {
-                    // JIKA TIDAK ADA CACHE SAMA SEKALI (LOGIN PERTAMA KALI) -> MUNCULKAN LOADING KHUSUS
-                    loadDataFromAPI(false, true);
                 }
+
+                // Tetap request data terbaru dari Google di background
+                loadDataFromAPI(false);
+                
+                Swal.fire({
+                    title: 'Login Berhasil',
+                    text: 'Selamat datang di 8 DP Portal',
+                    icon: 'success',
+                    timer: 1500,
+                    showConfirmButton: false
+                });
             } else {
-                // Menambahkan Popup Alert Jika Login Gagal
                 Swal.fire({
                     title: 'Akses Ditolak', 
                     text: 'Username atau password yang Anda masukkan salah.', 
@@ -789,7 +780,6 @@
                     confirmButtonColor: '#1A1A1A' 
                 });
             }
-            return false; // Menghentikan eksekusi form lebih lanjut
         }
 
         function logout() {
@@ -803,6 +793,8 @@
                 confirmButtonText: 'Ya, Keluar'
             }).then((result) => {
                 if (result.isConfirmed) {
+                    // Opsional: Hapus cache saat logout jika mau
+                    // localStorage.removeItem(CACHE_KEY);
                     location.reload(); 
                 }
             });
@@ -957,7 +949,7 @@
                 }
             });
 
-            // LOGIKA PENENTUAN FINAL STATUS (Sistem Pembacaan On Progress yang Benar)
+            // LOGIKA PENENTUAN FINAL STATUS
             function resolveFinalStatus(statuses) {
                 if (statuses.includes("ON PROGRESS")) return "ON PROGRESS";
                 if (statuses.includes("DONE") && statuses.includes("NOT YET")) return "ON PROGRESS"; // Modul setengah jalan
@@ -1019,7 +1011,11 @@
                 const controller = new AbortController();
                 const timeoutId = setTimeout(() => controller.abort(), 60000); 
 
-                const response = await fetch(SCRIPT_URL + '?t=' + new Date().getTime(), { signal: controller.signal });
+                const response = await fetch(SCRIPT_URL + '?t=' + new Date().getTime(), { 
+                    method: 'GET',
+                    redirect: 'follow', // MEMAKSA BROWSER MENGIKUTI REDIRECT GOOGLE
+                    signal: controller.signal 
+                });
                 clearTimeout(timeoutId);
 
                 // MEMBACA TEXT TERLEBIH DAHULU UNTUK MENCEGAH CRASH PARSING JSON
@@ -1029,8 +1025,31 @@
                 try {
                     result = JSON.parse(textResponse);
                 } catch(e) {
-                    console.warn("API Gagal Mengembalikan JSON. Respons Server:", textResponse.substring(0, 150) + "...");
-                    throw new Error("Server tidak merespons format JSON. Pastikan akses Google Apps Script diset ke 'Siapa Saja (Anyone)'.");
+                    console.error("Google Server mengembalikan HTML (Akses Ditolak). Isi dari Google:\n", textResponse.substring(0, 500));
+                    
+                    // FALLBACK: TAMPILKAN MOCK DATA JIKA GOOGLE SCRIPT MINTA LOGIN
+                    Swal.fire({
+                        title: 'Akses Google Script Ditolak',
+                        html: `Link Google Script Anda masih meminta Otentikasi/Login Google (Akibat limitasi email Perusahaan).<br><br>Menampilkan <b>Data Simulasi (Mock Data)</b> sementara agar Dashboard tetap bisa didemonstrasikan.`,
+                        icon: 'warning',
+                        confirmButtonText: 'Oke, Mengerti'
+                    });
+                    
+                    // Data Simulasi
+                    const mockData = [
+                        { "NAME": "Budi Santoso", "NRP": "8011234", "UT CORPU": "JKT", "PIC": "Joni Darlin S", "STATUS MODUL 1": "Finished", "STATUS MODUL 2": "Progress", "STATUS PARTICIPANT": "On Progress", "STATUS COVERAGE": "Not Yet" },
+                        { "NAME": "Andi Darmawan", "NRP": "8011235", "UT CORPU": "PKB", "PIC": "Budi Hartono", "STATUS MODUL 1": "Finished", "STATUS MODUL 2": "Finished", "STATUS PARTICIPANT": "Done", "STATUS COVERAGE": "Tercoverage" },
+                        { "NAME": "Siti Aminah", "NRP": "8011236", "UT CORPU": "BLP", "PIC": "Budi Hartono", "STATUS MODUL 1": "-", "STATUS MODUL 2": "-", "STATUS PARTICIPANT": "Not Yet", "STATUS COVERAGE": "Not Yet" },
+                        { "NAME": "Eko Prasetyo", "NRP": "8011237", "UT CORPU": "SMD", "PIC": "Joni Darlin S", "STATUS MODUL 1": "Progress", "STATUS MODUL 2": "-", "STATUS PARTICIPANT": "On Progress", "STATUS COVERAGE": "Not Yet" },
+                        { "NAME": "Rini Wulandari", "NRP": "8011238", "UT CORPU": "UPG", "PIC": "Budi Hartono", "STATUS MODUL 1": "Finished", "STATUS MODUL 2": "Finished", "STATUS PARTICIPANT": "Done", "STATUS COVERAGE": "Tercoverage" },
+                        { "NAME": "Joko Susilo", "NRP": "8011239", "UT CORPU": "BJM", "PIC": "Joni Darlin S", "STATUS MODUL 1": "-", "STATUS MODUL 2": "Finished", "STATUS PARTICIPANT": "On Progress", "STATUS COVERAGE": "Not Yet" }
+                    ];
+                    
+                    processRawData(mockData);
+                    
+                    if(btnRefresh) btnRefresh.disabled = false;
+                    if(iconRefresh) iconRefresh.classList.remove('fa-spin-fast');
+                    return; // Hentikan eksekusi disini agar tidak masuk ke block error bawah
                 }
 
                 if (result.status === "success") {
@@ -1162,10 +1181,20 @@
 
                 fetch(SCRIPT_URL, {
                     method: 'POST',
+                    headers: { 'Content-Type': 'text/plain;charset=utf-8' }, // Mencegah Google memblokir proses upload (CORS Error)
+                    redirect: 'follow', // Memaksa mengikuti jalur Google
                     body: JSON.stringify({ data: cleanJson })
                 })
-                .then(res => res.json())
-                .then(result => {
+                .then(res => res.text()) // Ambil sebagai text dulu untuk hindari crash JSON parse
+                .then(textRes => {
+                    let result;
+                    try {
+                        result = JSON.parse(textRes);
+                    } catch(err) {
+                        console.error("Google mengembalikan HTML saat upload:", textRes.substring(0, 500));
+                        throw new Error("Server menolak akses Upload. Lakukan 'New Deployment' di Apps Script.");
+                    }
+
                     if(result.status === 'success') {
                         // Setelah upload sukses, panggil fungsi load data API dengan notifikasi manual refresh
                         loadDataFromAPI(true, false).then(() => {
@@ -1177,7 +1206,7 @@
                 })
                 .catch(err => {
                     console.error('Error Upload:', err);
-                    Swal.fire('Error', 'Gagal mengirim data ke server.', 'error');
+                    Swal.fire('Error', err.message || 'Gagal mengirim data ke server.', 'error');
                 });
                 
                 e.target.value = '';
