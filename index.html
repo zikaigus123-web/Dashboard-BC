@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dashboard Monitoring Development 8 DP</title>
     
-    <!-- FAVICON (Mengatasi tab browser loading terus menerus) -->
+    <!-- FAVICON -->
     <link rel="icon" type="image/png" href="logo corpu.png">
     
     <!-- Google Fonts -->
@@ -20,13 +20,13 @@
     <!-- Leaflet CSS (Map) -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin=""/>
 
-    <!-- SweetAlert2 (Untuk Popup Loading/Upload) -->
+    <!-- SweetAlert2 -->
     <link href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css" rel="stylesheet">
 
     <!-- SheetJS (Excel) -->
     <script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
     
-    <!-- jsPDF & AutoTable for PDF Export (Fitur Report) -->
+    <!-- jsPDF & AutoTable -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.1/jspdf.plugin.autotable.min.js"></script>
 
@@ -871,13 +871,16 @@
             return '';
         }
 
-        // --- FUNGSI UTAMA PEMROSESAN DATA (DENGAN LOGIKA ON PROGRESS TERBARU) ---
+        // --- FUNGSI UTAMA PEMROSESAN DATA ---
         function processRawData(sheetData) {
             rawDataFromSheet = sheetData || []; 
             let uniqueData = {};
             let uniqueDataPerArea = {}; 
             let picSet = new Set();
             let allEvents = []; 
+
+            // 1. Kumpulkan data mentah dan kelompokkan per Unit/Modul
+            let personModulData = {}; 
 
             rawDataFromSheet.forEach(row => {
                 let nameRaw = String(getCol(row, ['NAME', 'NAMA'])).trim();
@@ -886,7 +889,8 @@
                 let name = nameRaw;
                 let nrpRaw = getCol(row, ['NRP']);
                 let nrp = (nrpRaw !== undefined && nrpRaw !== null && String(nrpRaw).trim() !== '') ? String(nrpRaw).replace(/\.0+$/, '').trim() : '';
-                
+                let key = (nrp !== '' ? nrp : name.toUpperCase()); 
+
                 let areaRaw = String(getCol(row, ['UT CORPU'])).toUpperCase().trim();
                 let area = areaRaw;
                 if (areaRaw.includes('JAKARTA') || areaRaw === 'JKT') area = 'JKT';
@@ -897,83 +901,111 @@
                 else if (areaRaw.includes('UJUNG PANDANG') || areaRaw.includes('MAKASSAR') || areaRaw === 'UPG') area = 'UPG';
 
                 let pic = getCol(row, ['PIC']) || 'Unknown';
-                let modulName = String(getCol(row, ['TRAINING MODUL', 'NAMA MODUL', 'MODUL', 'EVENT'])).trim();
-                let nilaiRaw = String(getCol(row, ['NILAI', 'SCORE'])).trim();
-                
-                let hasNilai = (nilaiRaw !== '' && nilaiRaw !== '-');
-                
-                allEvents.push({ area: area, pic: pic, modulName: modulName, hasNilai: hasNilai });
-
-                let statM1 = getCol(row, ['STATUS MODUL 1']);
-                let statM2 = getCol(row, ['STATUS MODUL 2']);
-                
-                let partStatusRaw = String(getCol(row, ['STATUS PARTICIPANT', 'STATUS KELULUSAN'])).toUpperCase().trim();
-                let covStatusRaw = String(getCol(row, ['STATUS COVERAGE', 'ALL COVERAGE', 'COVERAGE'])).toUpperCase().trim();
-
-                let covStatus = covStatusRaw.includes('TERCOVERAGE') || covStatusRaw.includes('COVERAGE') ? 'Tercoverage' : 'Not Yet';
-                
-                // Menangkap status baris secara mentah
-                let rowFinalStatus = "NOT YET";
-                if (partStatusRaw.includes('DONE') || partStatusRaw.includes('FINISHED') || partStatusRaw.includes('LULUS')) {
-                    rowFinalStatus = "DONE";
-                } else if (partStatusRaw.includes('PROGRESS')) {
-                    rowFinalStatus = "ON PROGRESS";
-                }
-
                 if(pic !== 'Unknown' && pic.trim() !== '') picSet.add(pic);
 
-                // Pengelompokan Data Partisipan Karyawan (Mencatat semua status anak)
-                let key = (nrp !== '' ? nrp : name.toUpperCase()); 
-                if (!uniqueData[key]) {
-                    uniqueData[key] = { name, nrp, area, pic, statM1, statM2, covStatus, statuses: [rowFinalStatus] };
-                } else {
-                    if (AREA_KEYS.includes(area) && !AREA_KEYS.includes(uniqueData[key].area)) uniqueData[key].area = area;
-                    if (pic !== 'Unknown' && pic.trim() !== '' && uniqueData[key].pic === 'Unknown') uniqueData[key].pic = pic;
-                    if (statM1 && statM1 !== '-' && (!uniqueData[key].statM1 || uniqueData[key].statM1 === '-')) uniqueData[key].statM1 = statM1;
-                    if (statM2 && statM2 !== '-' && (!uniqueData[key].statM2 || uniqueData[key].statM2 === '-')) uniqueData[key].statM2 = statM2;
-                    if (covStatus === 'Tercoverage') uniqueData[key].covStatus = 'Tercoverage';
-                    // Tambahkan status ke daftar status karyawan ini
-                    uniqueData[key].statuses.push(rowFinalStatus);
+                let modulFullName = String(getCol(row, ['TRAINING MODUL', 'NAMA MODUL', 'MODUL', 'EVENT'])).trim();
+                
+                // Ekstrak nama unit setelah tanda "-" (Misal: "Komatsu HW70" dari "Product Application - Komatsu HW70")
+                let unitName = modulFullName;
+                if (modulFullName.includes('-')) {
+                    unitName = modulFullName.substring(modulFullName.indexOf('-') + 1).trim();
                 }
 
-                // Pengelompokan KHUSUS Pie Chart Distribution By Area
-                let keyPerArea = key + "_" + area;
-                if (!uniqueDataPerArea[keyPerArea]) {
-                    uniqueDataPerArea[keyPerArea] = { name, nrp, area, pic, statM1, statM2, covStatus, statuses: [rowFinalStatus] };
-                } else {
-                    if (pic !== 'Unknown' && pic.trim() !== '' && uniqueDataPerArea[keyPerArea].pic === 'Unknown') uniqueDataPerArea[keyPerArea].pic = pic;
-                    if (statM1 && statM1 !== '-' && (!uniqueDataPerArea[keyPerArea].statM1 || uniqueDataPerArea[keyPerArea].statM1 === '-')) uniqueDataPerArea[keyPerArea].statM1 = statM1;
-                    if (statM2 && statM2 !== '-' && (!uniqueDataPerArea[keyPerArea].statM2 || uniqueDataPerArea[keyPerArea].statM2 === '-')) uniqueDataPerArea[keyPerArea].statM2 = statM2;
-                    if (covStatus === 'Tercoverage') uniqueDataPerArea[keyPerArea].covStatus = 'Tercoverage';
-                    uniqueDataPerArea[keyPerArea].statuses.push(rowFinalStatus);
+                let statM1 = String(getCol(row, ['STATUS MODUL 1'])).toUpperCase().trim();
+                let statM2 = String(getCol(row, ['STATUS MODUL 2'])).toUpperCase().trim();
+                
+                // Menentukan Status M1 dan M2 berdasarkan kata "FINISHED"
+                let m1Finished = statM1 === 'FINISHED' || statM1 === 'LULUS';
+                let m2Finished = statM2 === 'FINISHED' || statM2 === 'LULUS';
+
+                // Simpan ke struktur per Karyawan -> per Unit
+                if (!personModulData[key]) {
+                    personModulData[key] = {
+                        name: name, nrp: nrp, area: area, pic: pic, units: {}
+                    };
                 }
+                
+                if (!personModulData[key].units[unitName]) {
+                    personModulData[key].units[unitName] = { hasM1Finished: false, hasM2Finished: false };
+                }
+
+                // Jika baris ini adalah Modul 1 dan statusnya Finished
+                if (modulFullName.toUpperCase().includes('PRODUCT APPLICATION') || modulFullName.toUpperCase().includes('MODUL 1')) {
+                    if (m1Finished || m2Finished) personModulData[key].units[unitName].hasM1Finished = true; // Excel kadang naruh di col AE/AF bebas
+                }
+                // Jika baris ini adalah Modul 2
+                if (modulFullName.toUpperCase().includes('PRODUCT KNOWLEDGE') || modulFullName.toUpperCase().includes('MODUL 2')) {
+                    if (m1Finished || m2Finished) personModulData[key].units[unitName].hasM2Finished = true;
+                }
+
+                // Tangkap data event untuk chart bar
+                let hasNilai = String(getCol(row, ['NILAI', 'SCORE'])).trim() !== '' && String(getCol(row, ['NILAI', 'SCORE'])).trim() !== '-';
+                allEvents.push({ area: area, pic: pic, modulName: modulFullName, hasNilai: hasNilai });
             });
 
-            // LOGIKA PENENTUAN FINAL STATUS BARU (SESUAI RUMUS FILTER EXCEL)
-            function resolveFinalStatus(statuses) {
-                // 1. Jika dari semua modul/baris ada minimal 1 yang "DONE", langsung hitung sebagai DONE
-                if (statuses.includes("DONE")) return "DONE";
-                
-                // 2. Jika tidak ada DONE, tapi ada yang sedang berjalan, maka ON PROGRESS
-                if (statuses.includes("ON PROGRESS")) return "ON PROGRESS";
-                
-                // 3. Jika tidak ada DONE dan ON PROGRESS, berarti NOT YET
-                return "NOT YET";
-            }
+            // 2. Evaluasi Final Status berdasarkan Logika Excel
+            Object.keys(personModulData).forEach(key => {
+                let p = personModulData[key];
+                let allUnitStatuses = [];
+                let hasTercoverage = false;
 
-            Object.values(uniqueData).forEach(d => { d.finalStatus = resolveFinalStatus(d.statuses); });
-            Object.values(uniqueDataPerArea).forEach(d => { d.finalStatus = resolveFinalStatus(d.statuses); });
+                // Evaluasi per Unit (HW70, PC75, dll)
+                for (let unit in p.units) {
+                    let u = p.units[unit];
+                    // Excel AND(M1="Finished", M2="Finished") -> Done
+                    if (u.hasM1Finished && u.hasM2Finished) {
+                        allUnitStatuses.push("DONE");
+                        hasTercoverage = true; // Asumsi: jika done, tercoverage
+                    } 
+                    // Excel OR(M1="Finished", M2="Finished") -> On Progress
+                    else if (u.hasM1Finished || u.hasM2Finished) {
+                        allUnitStatuses.push("ON PROGRESS");
+                    } 
+                    else {
+                        allUnitStatuses.push("NOT YET");
+                    }
+                }
+
+                // Logika Menyatukan Status Orang (Jika dia punya > 1 unit)
+                // - Jika ada 1 saja unit yang ON PROGRESS -> Orang tersebut ON PROGRESS
+                // - Jika SEMUA unit DONE -> DONE
+                // - Jika campur DONE dan NOT YET -> ON PROGRESS (Karena dia belum selesai seluruh kewajibannya)
+                // - Jika semua NOT YET -> NOT YET
+                
+                p.finalStatus = "NOT YET";
+                if (allUnitStatuses.includes("ON PROGRESS")) {
+                    p.finalStatus = "ON PROGRESS";
+                } else if (allUnitStatuses.includes("DONE") && allUnitStatuses.includes("NOT YET")) {
+                     // Sesuai logika: Punya HW70 Done, PC75 Not Yet = On Progress secara keseluruhan Karyawan
+                    p.finalStatus = "ON PROGRESS";
+                } else if (allUnitStatuses.includes("DONE")) {
+                    p.finalStatus = "DONE";
+                }
+
+                p.covStatus = hasTercoverage ? 'Tercoverage' : 'Not Yet';
+                
+                // Karena kita mengagregasi, statM1/M2 untuk tabel list ambil representasi (misal status akhir)
+                p.statM1 = '-'; p.statM2 = '-'; 
+
+                uniqueData[key] = p;
+
+                // Pengelompokan KHUSUS Pie Chart Distribution By Area
+                let keyPerArea = key + "_" + p.area;
+                if (!uniqueDataPerArea[keyPerArea]) {
+                    uniqueDataPerArea[keyPerArea] = Object.assign({}, p);
+                }
+            });
 
             rawData = Object.values(uniqueData);
             rawDataPerArea = Object.values(uniqueDataPerArea); 
             rawEventData = allEvents; 
 
-            // Update isi dropdown filter (mengingat pilihan sebelumnya jika ada)
+            // Update isi dropdown filter
             let picSelect = document.getElementById("filterPIC");
             if(picSelect) {
                 let currentVal = picSelect.value;
                 picSelect.innerHTML = '<option value="ALL">Semua PIC</option>';
-                picSet.forEach(p => { picSelect.innerHTML += `<option value="${p}">${p}</option>`; });
+                picSet.forEach(pic => { picSelect.innerHTML += `<option value="${pic}">${pic}</option>`; });
                 if([...picSet].includes(currentVal)) picSelect.value = currentVal;
             }
 
@@ -981,7 +1013,7 @@
             if(reportPicSelect) {
                 let currentVal = reportPicSelect.value;
                 reportPicSelect.innerHTML = '<option value="ALL">Semua PIC (ALL)</option>';
-                picSet.forEach(p => { reportPicSelect.innerHTML += `<option value="${p}">${p}</option>`; });
+                picSet.forEach(pic => { reportPicSelect.innerHTML += `<option value="${pic}">${pic}</option>`; });
                 if([...picSet].includes(currentVal)) reportPicSelect.value = currentVal;
             }
 
@@ -997,7 +1029,7 @@
             if(btnRefresh) btnRefresh.disabled = true;
             if(iconRefresh) iconRefresh.classList.add('fa-spin-fast');
 
-            // Tampilkan popup loading JIKA user klik tombol Refresh ATAU Login Pertama Kali (tanpa cache)
+            // Tampilkan popup loading
             if(isManualRefresh || isFirstLoad) {
                 Swal.fire({
                     title: isFirstLoad ? 'Login Berhasil' : 'Menyegarkan Data...',
@@ -1011,95 +1043,65 @@
             }
 
             try {
-                // Gunakan AbortController untuk mencegah sistem ngehang (Timeout diperpanjang menjadi 60 detik)
                 const controller = new AbortController();
                 const timeoutId = setTimeout(() => controller.abort(), 60000); 
 
                 const response = await fetch(SCRIPT_URL + '?t=' + new Date().getTime(), { 
                     method: 'GET',
-                    redirect: 'follow', // MEMAKSA BROWSER MENGIKUTI REDIRECT GOOGLE
+                    redirect: 'follow', 
                     signal: controller.signal 
                 });
                 clearTimeout(timeoutId);
 
-                // MEMBACA TEXT TERLEBIH DAHULU UNTUK MENCEGAH CRASH PARSING JSON
                 const textResponse = await response.text();
                 let result;
                 
                 try {
                     result = JSON.parse(textResponse);
                 } catch(e) {
-                    console.error("Google Server mengembalikan HTML (Akses Ditolak). Isi dari Google:\n", textResponse.substring(0, 500));
+                    console.error("HTML Returned:", textResponse.substring(0, 500));
                     
-                    // FALLBACK: TAMPILKAN MOCK DATA JIKA GOOGLE SCRIPT MINTA LOGIN
                     Swal.fire({
                         title: 'Akses Google Script Ditolak',
-                        html: `Link Google Script Anda masih meminta Otentikasi/Login Google (Akibat limitasi email Perusahaan).<br><br>Menampilkan <b>Data Simulasi (Mock Data)</b> sementara agar Dashboard tetap bisa didemonstrasikan.`,
+                        html: `Link Google Script Anda masih meminta Otentikasi/Login Google.<br><br>Menampilkan <b>Data Simulasi (Mock Data)</b> sementara.`,
                         icon: 'warning',
                         confirmButtonText: 'Oke, Mengerti'
                     });
                     
-                    // Data Simulasi
+                    // Mock Data
                     const mockData = [
-                        { "NAME": "Budi Santoso", "NRP": "8011234", "UT CORPU": "JKT", "PIC": "Joni Darlin S", "STATUS MODUL 1": "Finished", "STATUS MODUL 2": "Progress", "STATUS PARTICIPANT": "On Progress", "STATUS COVERAGE": "Not Yet" },
-                        { "NAME": "Andi Darmawan", "NRP": "8011235", "UT CORPU": "PKB", "PIC": "Budi Hartono", "STATUS MODUL 1": "Finished", "STATUS MODUL 2": "Finished", "STATUS PARTICIPANT": "Done", "STATUS COVERAGE": "Tercoverage" },
-                        { "NAME": "Siti Aminah", "NRP": "8011236", "UT CORPU": "BLP", "PIC": "Budi Hartono", "STATUS MODUL 1": "-", "STATUS MODUL 2": "-", "STATUS PARTICIPANT": "Not Yet", "STATUS COVERAGE": "Not Yet" },
-                        { "NAME": "Eko Prasetyo", "NRP": "8011237", "UT CORPU": "SMD", "PIC": "Joni Darlin S", "STATUS MODUL 1": "Progress", "STATUS MODUL 2": "-", "STATUS PARTICIPANT": "On Progress", "STATUS COVERAGE": "Not Yet" },
-                        { "NAME": "Rini Wulandari", "NRP": "8011238", "UT CORPU": "UPG", "PIC": "Budi Hartono", "STATUS MODUL 1": "Finished", "STATUS MODUL 2": "Finished", "STATUS PARTICIPANT": "Done", "STATUS COVERAGE": "Tercoverage" },
-                        { "NAME": "Joko Susilo", "NRP": "8011239", "UT CORPU": "BJM", "PIC": "Joni Darlin S", "STATUS MODUL 1": "-", "STATUS MODUL 2": "Finished", "STATUS PARTICIPANT": "On Progress", "STATUS COVERAGE": "Not Yet" }
+                        { "NAME": "Budi Santoso", "NRP": "8011234", "UT CORPU": "JKT", "PIC": "Joni Darlin S", "TRAINING MODUL": "Product Application - HW70", "STATUS MODUL 1": "Finished", "STATUS MODUL 2": "" },
+                        { "NAME": "Budi Santoso", "NRP": "8011234", "UT CORPU": "JKT", "PIC": "Joni Darlin S", "TRAINING MODUL": "Product Knowledge - HW70", "STATUS MODUL 1": "", "STATUS MODUL 2": "Finished" },
+                        { "NAME": "Andi Darmawan", "NRP": "8011235", "UT CORPU": "PKB", "PIC": "Budi Hartono", "TRAINING MODUL": "Product Application - HW70", "STATUS MODUL 1": "Finished", "STATUS MODUL 2": "" }
                     ];
                     
                     processRawData(mockData);
                     
                     if(btnRefresh) btnRefresh.disabled = false;
                     if(iconRefresh) iconRefresh.classList.remove('fa-spin-fast');
-                    return; // Hentikan eksekusi disini agar tidak masuk ke block error bawah
+                    return; 
                 }
 
                 if (result.status === "success") {
-                    // Simpan data ke cache lokal untuk load instan di masa depan
                     localStorage.setItem(CACHE_KEY, JSON.stringify(result.data));
-                    
-                    // Proses data ke Chart dan Tabel
                     processRawData(result.data);
                     
                     if(isManualRefresh) {
-                        Swal.fire({
-                            title: 'Berhasil!',
-                            text: 'Data telah diperbarui dari Spreadsheet.',
-                            icon: 'success',
-                            timer: 2000,
-                            showConfirmButton: false
-                        });
+                        Swal.fire({ title: 'Berhasil!', text: 'Data telah diperbarui dari Spreadsheet.', icon: 'success', timer: 2000, showConfirmButton: false });
                     } else if (isFirstLoad) {
-                        // Tutup peringatan loading pertama kali setelah selesai
-                        Swal.fire({
-                            title: 'Data Berhasil Dimuat',
-                            text: 'Selamat datang di 8 DP Portal',
-                            icon: 'success',
-                            timer: 1500,
-                            showConfirmButton: false
-                        });
+                        Swal.fire({ title: 'Data Berhasil Dimuat', text: 'Selamat datang di 8 DP Portal', icon: 'success', timer: 1500, showConfirmButton: false });
                     }
 
                 } else {
                     throw new Error("Error dari server: " + (result.message || "Gagal mengambil data."));
                 }
             } catch (error) {
-                // PENANGANAN ERROR YANG RAPI TANPA MENGCRASHKAN SISTEM
                 let errorMsg = error.message;
-                if(error.name === 'AbortError') {
-                    errorMsg = 'Koneksi ke server Google terputus karena terlalu lama (Lebih dari 60 detik). Server Google mungkin sedang sibuk, silakan coba beberapa saat lagi.';
-                }
-
-                // Tampilkan Error PopUp Jika Terjadi Saat First Load / Refresh Manual
-                if (isManualRefresh || isFirstLoad) {
-                    Swal.fire('Koneksi Gagal', errorMsg, 'error');
-                } else {
-                    console.warn("Background fetch failed:", errorMsg);
-                }
+                if(error.name === 'AbortError') errorMsg = 'Koneksi ke server Google terputus karena terlalu lama.';
                 
-                // Jika data benar-benar kosong (Belum ada cache sama sekali), tampilkan peringatan di tabel
+                if (isManualRefresh || isFirstLoad) Swal.fire('Koneksi Gagal', errorMsg, 'error');
+                else console.warn("Background fetch failed:", errorMsg);
+                
                 if (rawData.length === 0) {
                     document.querySelector('#tablePeserta tbody').innerHTML = `<tr><td colspan="6" class="text-center py-4 text-danger fw-bold"><i class="fas fa-exclamation-triangle me-2"></i> Error: ${errorMsg}</td></tr>`;
                     document.querySelector('#tblMasterData tbody').innerHTML = `<tr><td colspan="7" class="text-center py-4 text-danger fw-bold"><i class="fas fa-exclamation-triangle me-2"></i> Error: ${errorMsg}</td></tr>`;
@@ -1127,10 +1129,8 @@
             reader.onload = function(evt) {
                 const data = evt.target.result;
                 const workbook = XLSX.read(data, { type: 'binary' });
-                
                 const targetSheetName = "ATS_PTCP (PLAN)";
                 const sheet = workbook.Sheets[targetSheetName] || workbook.Sheets[workbook.SheetNames[0]];
-                
                 const sheetDataRaw = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: "" });
                 
                 let lastHeaderIdx = -1;
@@ -1145,25 +1145,19 @@
 
                 if(lastHeaderIdx === -1) {
                     Swal.fire('Format Salah', 'Tidak menemukan kolom "NAME" pada Excel Anda.', 'error');
-                    e.target.value = '';
-                    return;
+                    e.target.value = ''; return;
                 }
 
                 for(let i = 0; i <= lastHeaderIdx; i++) {
                     for(let j = 0; j < sheetDataRaw[i].length; j++) {
                         let cellVal = String(sheetDataRaw[i][j]).replace(/[\r\n]+/g, ' ').trim().toUpperCase();
-                        if (cellVal && cellVal !== "") {
-                            colMap[cellVal] = j; 
-                        }
+                        if (cellVal && cellVal !== "") colMap[cellVal] = j; 
                     }
                 }
 
                 const cleanJson = [];
-                let dataStartIdx = lastHeaderIdx + 1;
-
-                for(let i = dataStartIdx; i < sheetDataRaw.length; i++) {
+                for(let i = lastHeaderIdx + 1; i < sheetDataRaw.length; i++) {
                     let rowArr = sheetDataRaw[i];
-                    
                     let nameIdx = colMap["NAME"] !== undefined ? colMap["NAME"] : colMap["NAMA"];
                     if (nameIdx === undefined) continue; 
                     
@@ -1171,48 +1165,38 @@
                     if (!nameVal || String(nameVal).trim() === '') continue;
 
                     let rowObj = {};
-                    for (let key in colMap) {
-                        rowObj[key] = rowArr[colMap[key]];
-                    }
+                    for (let key in colMap) rowObj[key] = rowArr[colMap[key]];
                     cleanJson.push(rowObj);
                 }
                 
                 if (cleanJson.length === 0) {
-                    Swal.fire('Data Kosong', 'Tidak ada data valid yang ditemukan setelah baris header.', 'warning');
-                    e.target.value = '';
-                    return;
+                    Swal.fire('Data Kosong', 'Tidak ada data valid yang ditemukan.', 'warning');
+                    e.target.value = ''; return;
                 }
 
                 fetch(SCRIPT_URL, {
                     method: 'POST',
-                    headers: { 'Content-Type': 'text/plain;charset=utf-8' }, // Mencegah Google memblokir proses upload (CORS Error)
-                    redirect: 'follow', // Memaksa mengikuti jalur Google
+                    headers: { 'Content-Type': 'text/plain;charset=utf-8' }, 
+                    redirect: 'follow', 
                     body: JSON.stringify({ data: cleanJson })
                 })
-                .then(res => res.text()) // Ambil sebagai text dulu untuk hindari crash JSON parse
+                .then(res => res.text()) 
                 .then(textRes => {
                     let result;
-                    try {
-                        result = JSON.parse(textRes);
-                    } catch(err) {
-                        console.error("Google mengembalikan HTML saat upload:", textRes.substring(0, 500));
-                        throw new Error("Server menolak akses Upload. Lakukan 'New Deployment' di Apps Script.");
-                    }
+                    try { result = JSON.parse(textRes); } 
+                    catch(err) { throw new Error("Server menolak akses Upload."); }
 
                     if(result.status === 'success') {
-                        // Setelah upload sukses, panggil fungsi load data API dengan notifikasi manual refresh
                         loadDataFromAPI(true, false).then(() => {
-                            Swal.fire('Berhasil!', `Total ${cleanJson.length} baris data telah ditimpa dengan aman.`, 'success');
+                            Swal.fire('Berhasil!', `Data telah ditimpa dengan aman.`, 'success');
                         });
                     } else {
                         Swal.fire('Gagal!', result.message, 'error');
                     }
                 })
                 .catch(err => {
-                    console.error('Error Upload:', err);
-                    Swal.fire('Error', err.message || 'Gagal mengirim data ke server.', 'error');
+                    Swal.fire('Error', err.message || 'Gagal mengirim data.', 'error');
                 });
-                
                 e.target.value = '';
             };
             reader.readAsBinaryString(file);
@@ -1221,17 +1205,12 @@
         // --- DOWNLOAD TEMPLATE EXCEL ---
         function downloadTemplate() {
             if (!rawDataFromSheet || rawDataFromSheet.length === 0) {
-                Swal.fire('Data Kosong', 'Harap tunggu hingga data termuat dari server sebelum mengunduh template.', 'warning');
+                Swal.fire('Data Kosong', 'Harap tunggu hingga data termuat.', 'warning');
                 return;
             }
-
-            // Meng-export langsung data terbaru dari memory ke Excel (agar struktur kolom Area, PIC dll tetap utuh)
             const ws = XLSX.utils.json_to_sheet(rawDataFromSheet);
             const wb = XLSX.utils.book_new();
-            
-            // Nama sheet wajib disamakan dengan target yang dibaca sistem saat fitur Import
             XLSX.utils.book_append_sheet(wb, ws, "ATS_PTCP (PLAN)");
-
             XLSX.writeFile(wb, "Template_Update_Nilai_8DP.xlsx");
         }
 
@@ -1295,7 +1274,7 @@
                 document.getElementById("kpiProgress").innerText = "0";
                 document.getElementById("kpiNotYet").innerText = "0";
                 
-                document.querySelector('#tablePeserta tbody').innerHTML = '<tr><td colspan="6" class="text-center py-4 text-muted fw-bold">Data kosong. Pastikan spreadsheet telah diisi.</td></tr>';
+                document.querySelector('#tablePeserta tbody').innerHTML = '<tr><td colspan="6" class="text-center py-4 text-muted fw-bold">Data kosong.</td></tr>';
                 document.querySelector('#tablePesertaFull tbody').innerHTML = '<tr><td colspan="6" class="text-center py-4 text-muted fw-bold">Data kosong.</td></tr>';
                 
                 ["pieCoverage", "pieParticipant", "pieArea", "barCoverage", "barParticipant"].forEach(id => resetChart(id));
@@ -1333,22 +1312,22 @@
 
             let totalPeserta = filtered.length;
             let totalCoverage = 0;
-            let totalDone = 0;       // <-- Dihitung langsung secara eksplisit
+            let totalDone = 0;
             let totalOnProgress = 0;
             let totalNotYet = 0;
 
             let areaCount = {};
             AREA_KEYS.forEach(k => areaCount[k] = { total: 0, cov: 0, notCov: 0, done: 0, prog: 0, ny: 0, eventDone: 0, eventNotYet: 0 });
 
-            // KALKULASI PARTICIPANT (Untuk KPI global)
+            // KALKULASI PARTICIPANT 
             filtered.forEach(d => {
                 if(d.covStatus === "Tercoverage") totalCoverage++;
-                if(d.finalStatus === "DONE") totalDone++;             // <-- Hitung jumlah Done langsung
+                if(d.finalStatus === "DONE") totalDone++;             
                 if(d.finalStatus === "ON PROGRESS") totalOnProgress++;
                 if(d.finalStatus === "NOT YET") totalNotYet++;
             });
 
-            // KALKULASI PARTICIPANT PER AREA (Untuk Peta & Bar Chart Area)
+            // KALKULASI PARTICIPANT PER AREA
             filteredPerArea.forEach(d => {
                 let k = AREA_KEYS.includes(d.area) ? d.area : null;
                 if(k) {
@@ -1417,7 +1396,7 @@
                 data: { 
                     labels: ['Done', 'On Progress', 'Not Yet'], 
                     datasets: [{ 
-                        data: [totalDone, totalOnProgress, totalNotYet], // <-- Menggunakan totalDone langsung agar akurat jadi 12
+                        data: [totalDone, totalOnProgress, totalNotYet],
                         backgroundColor: ['#34a853', '#fbbc04', '#ea4335'] 
                     }] 
                 },
