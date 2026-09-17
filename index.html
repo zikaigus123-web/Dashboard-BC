@@ -949,11 +949,15 @@
                 }
             });
 
-            // LOGIKA PENENTUAN FINAL STATUS
+            // LOGIKA PENENTUAN FINAL STATUS BARU (SESUAI RUMUS FILTER EXCEL)
             function resolveFinalStatus(statuses) {
-                if (statuses.includes("ON PROGRESS")) return "ON PROGRESS";
-                if (statuses.includes("DONE") && statuses.includes("NOT YET")) return "ON PROGRESS"; // Modul setengah jalan
+                // 1. Jika dari semua modul/baris ada minimal 1 yang "DONE", langsung hitung sebagai DONE
                 if (statuses.includes("DONE")) return "DONE";
+                
+                // 2. Jika tidak ada DONE, tapi ada yang sedang berjalan, maka ON PROGRESS
+                if (statuses.includes("ON PROGRESS")) return "ON PROGRESS";
+                
+                // 3. Jika tidak ada DONE dan ON PROGRESS, berarti NOT YET
                 return "NOT YET";
             }
 
