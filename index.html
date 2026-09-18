@@ -879,9 +879,6 @@
             let picSet = new Set();
             let allEvents = []; 
 
-            // 1. Kumpulkan data mentah dan kelompokkan per Unit/Modul
-            let personModulData = {}; 
-
             rawDataFromSheet.forEach(row => {
                 let nameRaw = String(getCol(row, ['NAME', 'NAMA'])).trim();
                 if (nameRaw === '' || nameRaw.toUpperCase() === 'NAME' || nameRaw.toUpperCase() === 'NAMA') return; 
@@ -905,12 +902,8 @@
 
                 let modulFullName = String(getCol(row, ['TRAINING MODUL', 'NAMA MODUL', 'MODUL', 'EVENT'])).trim();
                 
-                // Ekstrak nama unit setelah tanda "-" (Misal: "Komatsu HW70" dari "Product Application - Komatsu HW70")
-                let unitName = modulFullName;
-                if (modulFullName.includes('-')) {
-                    unitName = modulFullName.substring(modulFullName.indexOf('-') + 1).trim();
-                }
-
+                // MENGAMBIL STATUS DARI KOLOM EXCEL (Mengikuti rumus Excel Anda)
+                // Di Excel Anda menggunakan kolom AE dan AF, di kode ini kita ambil berdasarkan Header-nya
                 let statM1 = String(getCol(row, ['STATUS MODUL 1'])).toUpperCase().trim();
                 let statM2 = String(getCol(row, ['STATUS MODUL 2'])).toUpperCase().trim();
                 
@@ -918,83 +911,69 @@
                 let m1Finished = statM1 === 'FINISHED' || statM1 === 'LULUS';
                 let m2Finished = statM2 === 'FINISHED' || statM2 === 'LULUS';
 
-                // Simpan ke struktur per Karyawan -> per Unit
-                if (!personModulData[key]) {
-                    personModulData[key] = {
-                        name: name, nrp: nrp, area: area, pic: pic, units: {}
+                // Menentukan Status Row Berdasarkan Rumus Excel
+                // IF(AND(M1="Finished", M2="Finished"), "Done", IF(OR(M1="Finished", M2="Finished"), "On Progress", "Not Yet"))
+                let rowFinalStatus = "NOT YET";
+                if (m1Finished && m2Finished) {
+                    rowFinalStatus = "DONE";
+                } else if (m1Finished || m2Finished) {
+                    rowFinalStatus = "ON PROGRESS";
+                }
+
+                // Status Coverage
+                let covStatusRaw = String(getCol(row, ['STATUS COVERAGE', 'ALL COVERAGE', 'COVERAGE'])).toUpperCase().trim();
+                let covStatus = covStatusRaw.includes('TERCOVERAGE') || covStatusRaw.includes('COVERAGE') ? 'Tercoverage' : 'Not Yet';
+                if (rowFinalStatus === "DONE") covStatus = "Tercoverage";
+
+                // Simpan ke array Data Unik per Karyawan
+                if (!uniqueData[key]) {
+                    uniqueData[key] = { 
+                        name: name, nrp: nrp, area: area, pic: pic, 
+                        statM1: statM1, statM2: statM2, covStatus: covStatus,
+                        statuses: [] 
                     };
                 }
                 
-                if (!personModulData[key].units[unitName]) {
-                    personModulData[key].units[unitName] = { hasM1Finished: false, hasM2Finished: false };
-                }
+                // Kumpulkan semua status dari setiap baris milik karyawan ini
+                uniqueData[key].statuses.push(rowFinalStatus);
 
-                // Jika baris ini adalah Modul 1 dan statusnya Finished
-                if (modulFullName.toUpperCase().includes('PRODUCT APPLICATION') || modulFullName.toUpperCase().includes('MODUL 1')) {
-                    if (m1Finished || m2Finished) personModulData[key].units[unitName].hasM1Finished = true; // Excel kadang naruh di col AE/AF bebas
+                // Update info lain jika ada yang lebih valid
+                if (covStatus === 'Tercoverage') uniqueData[key].covStatus = 'Tercoverage';
+                if (AREA_KEYS.includes(area) && !AREA_KEYS.includes(uniqueData[key].area)) uniqueData[key].area = area;
+                if (pic !== 'Unknown' && pic.trim() !== '' && uniqueData[key].pic === 'Unknown') uniqueData[key].pic = pic;
+
+                // Pengelompokan KHUSUS Pie Chart Distribution By Area
+                let keyPerArea = key + "_" + area;
+                if (!uniqueDataPerArea[keyPerArea]) {
+                    uniqueDataPerArea[keyPerArea] = { 
+                        name: name, nrp: nrp, area: area, pic: pic, 
+                        statM1: statM1, statM2: statM2, covStatus: covStatus,
+                        statuses: [] 
+                    };
                 }
-                // Jika baris ini adalah Modul 2
-                if (modulFullName.toUpperCase().includes('PRODUCT KNOWLEDGE') || modulFullName.toUpperCase().includes('MODUL 2')) {
-                    if (m1Finished || m2Finished) personModulData[key].units[unitName].hasM2Finished = true;
-                }
+                uniqueDataPerArea[keyPerArea].statuses.push(rowFinalStatus);
+                if (covStatus === 'Tercoverage') uniqueDataPerArea[keyPerArea].covStatus = 'Tercoverage';
 
                 // Tangkap data event untuk chart bar
                 let hasNilai = String(getCol(row, ['NILAI', 'SCORE'])).trim() !== '' && String(getCol(row, ['NILAI', 'SCORE'])).trim() !== '-';
                 allEvents.push({ area: area, pic: pic, modulName: modulFullName, hasNilai: hasNilai });
             });
 
-            // 2. Evaluasi Final Status berdasarkan Logika Excel
-            Object.keys(personModulData).forEach(key => {
-                let p = personModulData[key];
-                let allUnitStatuses = [];
-                let hasTercoverage = false;
-
-                // Evaluasi per Unit (HW70, PC75, dll)
-                for (let unit in p.units) {
-                    let u = p.units[unit];
-                    // Excel AND(M1="Finished", M2="Finished") -> Done
-                    if (u.hasM1Finished && u.hasM2Finished) {
-                        allUnitStatuses.push("DONE");
-                        hasTercoverage = true; // Asumsi: jika done, tercoverage
-                    } 
-                    // Excel OR(M1="Finished", M2="Finished") -> On Progress
-                    else if (u.hasM1Finished || u.hasM2Finished) {
-                        allUnitStatuses.push("ON PROGRESS");
-                    } 
-                    else {
-                        allUnitStatuses.push("NOT YET");
-                    }
-                }
-
-                // Logika Menyatukan Status Orang (Jika dia punya > 1 unit)
-                // - Jika ada 1 saja unit yang ON PROGRESS -> Orang tersebut ON PROGRESS
-                // - Jika SEMUA unit DONE -> DONE
-                // - Jika campur DONE dan NOT YET -> ON PROGRESS (Karena dia belum selesai seluruh kewajibannya)
-                // - Jika semua NOT YET -> NOT YET
+            // 2. Evaluasi Final Status Karyawan (Sesuai dengan Logika Filter Excel Anda)
+            function resolveFinalStatus(statuses) {
+                // Di Excel, ketika Anda filter, Anda mencari "Apakah orang ini punya unit yang DONE?"
+                // Jika YA, maka dihitungan unik Anda dia masuk "DONE".
+                if (statuses.includes("DONE")) return "DONE";
                 
-                p.finalStatus = "NOT YET";
-                if (allUnitStatuses.includes("ON PROGRESS")) {
-                    p.finalStatus = "ON PROGRESS";
-                } else if (allUnitStatuses.includes("DONE") && allUnitStatuses.includes("NOT YET")) {
-                     // Sesuai logika: Punya HW70 Done, PC75 Not Yet = On Progress secara keseluruhan Karyawan
-                    p.finalStatus = "ON PROGRESS";
-                } else if (allUnitStatuses.includes("DONE")) {
-                    p.finalStatus = "DONE";
-                }
-
-                p.covStatus = hasTercoverage ? 'Tercoverage' : 'Not Yet';
+                // Jika tidak ada yang DONE, apakah ada yang ON PROGRESS?
+                if (statuses.includes("ON PROGRESS")) return "ON PROGRESS";
                 
-                // Karena kita mengagregasi, statM1/M2 untuk tabel list ambil representasi (misal status akhir)
-                p.statM1 = '-'; p.statM2 = '-'; 
+                // Sisanya
+                return "NOT YET";
+            }
 
-                uniqueData[key] = p;
-
-                // Pengelompokan KHUSUS Pie Chart Distribution By Area
-                let keyPerArea = key + "_" + p.area;
-                if (!uniqueDataPerArea[keyPerArea]) {
-                    uniqueDataPerArea[keyPerArea] = Object.assign({}, p);
-                }
-            });
+            Object.values(uniqueData).forEach(d => { d.finalStatus = resolveFinalStatus(d.statuses); });
+            Object.values(uniqueDataPerArea).forEach(d => { d.finalStatus = resolveFinalStatus(d.statuses); });
 
             rawData = Object.values(uniqueData);
             rawDataPerArea = Object.values(uniqueDataPerArea); 
