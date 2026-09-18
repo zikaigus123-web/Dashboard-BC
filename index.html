@@ -372,8 +372,6 @@
                   <th>Nama / NRP</th>
                   <th>Area</th>
                   <th>PIC</th>
-                  <th>Modul 1</th>
-                  <th>Modul 2</th>
                   <th>Final Status</th>
                 </tr>
               </thead>
@@ -549,13 +547,11 @@
                                                     <th>Nama / NRP</th>
                                                     <th>Area</th>
                                                     <th>PIC</th>
-                                                    <th>Modul 1</th>
-                                                    <th>Modul 2</th>
                                                     <th>Final Status</th>
                                                 </tr>
                                             </thead>
                                             <tbody>
-                                                <tr><td colspan="6" class="text-center py-5 text-muted fw-bold"><i class="fas fa-spinner fa-spin me-2"></i> Sedang memuat data dari Spreadsheet...</td></tr>
+                                                <tr><td colspan="4" class="text-center py-5 text-muted fw-bold"><i class="fas fa-spinner fa-spin me-2"></i> Sedang memuat data dari Spreadsheet...</td></tr>
                                             </tbody>
                                         </table>
                                     </div>
@@ -677,13 +673,11 @@
                                         <th>NRP</th>
                                         <th>AREA</th>
                                         <th>PIC</th>
-                                        <th>MODUL 1</th>
-                                        <th>MODUL 2</th>
                                         <th>FINAL STATUS</th>
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    <tr><td colspan="7" class="text-center py-5 text-muted fw-bold"><i class="fas fa-table fs-3 mb-2 text-secondary"></i><br>Klik "Tarik Data" untuk menampilkan Laporan</td></tr>
+                                    <tr><td colspan="5" class="text-center py-5 text-muted fw-bold"><i class="fas fa-table fs-3 mb-2 text-secondary"></i><br>Klik "Tarik Data" untuk menampilkan Laporan</td></tr>
                                 </tbody>
                             </table>
                         </div>
@@ -718,7 +712,6 @@
         let map = null;
         let mapMarkers = [];
 
-        // Fokus pada 6 Lokasi Spesifik
         const COORDS = {
             "JKT": { lat: -6.2088, lng: 106.8456, nama: "Jakarta" },
             "SMD": { lat: -0.5022, lng: 117.1536, nama: "Samarinda" },
@@ -729,100 +722,52 @@
         };
         const AREA_KEYS = ["JKT", "PKB", "BLP", "SMD", "BJM", "UPG"];
 
-        // --- LOGIN SECURITY ---
         function togglePassword() {
             const pass = document.getElementById('password');
             const icon = document.getElementById('eyeIcon');
-            if(pass.type === 'password') { 
-                pass.type = 'text'; 
-                icon.className = 'fas fa-eye-slash text-dark'; 
-            } else { 
-                pass.type = 'password'; 
-                icon.className = 'fas fa-eye text-muted'; 
-            }
+            if(pass.type === 'password') { pass.type = 'text'; icon.className = 'fas fa-eye-slash text-dark'; } 
+            else { pass.type = 'password'; icon.className = 'fas fa-eye text-muted'; }
         }
 
         function handleLogin(e) {
             e.preventDefault();
             const u = document.getElementById('username').value.trim();
             const p = document.getElementById('password').value;
-            
             if(u === 'admin' && p === 'utcorp2026') {
                 document.getElementById('loginScreen').classList.add('d-none');
                 document.getElementById('appContainer').classList.remove('d-none');
-                
-                // Cek apakah ada data cache, jika ada tampilkan instan
                 const cachedData = localStorage.getItem(CACHE_KEY);
                 if (cachedData) {
-                    try {
-                        let parsedCache = JSON.parse(cachedData);
-                        processRawData(parsedCache);
-                    } catch(err) {
-                        console.error("Gagal membaca cache:", err);
-                    }
+                    try { processRawData(JSON.parse(cachedData)); } 
+                    catch(err) { console.error("Gagal membaca cache:", err); }
                 }
-
-                // Tetap request data terbaru dari Google di background
                 loadDataFromAPI(false);
-                
-                Swal.fire({
-                    title: 'Login Berhasil',
-                    text: 'Selamat datang di 8 DP Portal',
-                    icon: 'success',
-                    timer: 1500,
-                    showConfirmButton: false
-                });
+                Swal.fire({ title: 'Login Berhasil', text: 'Selamat datang di 8 DP Portal', icon: 'success', timer: 1500, showConfirmButton: false });
             } else {
-                Swal.fire({
-                    title: 'Akses Ditolak', 
-                    text: 'Username atau password yang Anda masukkan salah.', 
-                    icon: 'error', 
-                    confirmButtonColor: '#1A1A1A' 
-                });
+                Swal.fire({ title: 'Akses Ditolak', text: 'Username atau password yang Anda masukkan salah.', icon: 'error', confirmButtonColor: '#1A1A1A' });
             }
         }
 
         function logout() {
             Swal.fire({
-                title: 'Konfirmasi',
-                text: 'Apakah Anda yakin ingin keluar?',
-                icon: 'question',
-                showCancelButton: true,
-                confirmButtonColor: '#d33',
-                cancelButtonColor: '#3085d6',
-                confirmButtonText: 'Ya, Keluar'
-            }).then((result) => {
-                if (result.isConfirmed) {
-                    // Opsional: Hapus cache saat logout jika mau
-                    // localStorage.removeItem(CACHE_KEY);
-                    location.reload(); 
-                }
-            });
+                title: 'Konfirmasi', text: 'Apakah Anda yakin ingin keluar?', icon: 'question',
+                showCancelButton: true, confirmButtonColor: '#d33', cancelButtonColor: '#3085d6', confirmButtonText: 'Ya, Keluar'
+            }).then((result) => { if (result.isConfirmed) location.reload(); });
         }
 
-        // --- NAVIGASI VIEW ---
         function switchView(viewName, element) {
             document.querySelectorAll('.view-section').forEach(el => el.classList.remove('active'));
             document.getElementById('view-' + viewName).classList.add('active');
-            
             document.querySelectorAll('.nav-link-custom').forEach(el => el.classList.remove('active'));
             element.classList.add('active');
-
             if(viewName === 'dashboard') {
-                setTimeout(() => { 
-                    if(map) map.invalidateSize(); 
-                    Object.values(chartInstances).forEach(c => c.resize());
-                }, 200);
+                setTimeout(() => { if(map) map.invalidateSize(); Object.values(chartInstances).forEach(c => c.resize()); }, 200);
             }
         }
 
-        // --- SIDEBAR & FULLSCREEN CONTROLS ---
         function toggleSidebar() { 
             document.getElementById('sidebar').classList.toggle('collapsed'); 
-            setTimeout(() => { 
-                if(map) map.invalidateSize(); 
-                Object.values(chartInstances).forEach(c => c.resize());
-            }, 300); 
+            setTimeout(() => { if(map) map.invalidateSize(); Object.values(chartInstances).forEach(c => c.resize()); }, 300); 
         }
 
         function toggleFullscreen() {
@@ -836,48 +781,37 @@
             }
         }
         
-        function handleResize() {
-            setTimeout(() => { 
-                if(map) map.invalidateSize(); 
-                Object.values(chartInstances).forEach(c => c.resize());
-            }, 350);
-        }
+        function handleResize() { setTimeout(() => { if(map) map.invalidateSize(); Object.values(chartInstances).forEach(c => c.resize()); }, 350); }
         document.addEventListener('fullscreenchange', handleResize);
         document.addEventListener('webkitfullscreenchange', handleResize);
         window.addEventListener('resize', handleResize);
 
-        function resetChart(id) {
-            if (chartInstances[id]) {
-                chartInstances[id].destroy();
-                delete chartInstances[id];
-            }
-        }
+        function resetChart(id) { if (chartInstances[id]) { chartInstances[id].destroy(); delete chartInstances[id]; } }
 
         function initMap() {
             map = L.map('mapArea', { scrollWheelZoom: false }).setView([-2.5, 117.5], 4.5);
-            L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
-                attribution: '&copy; OpenStreetMap & CartoDB'
-            }).addTo(map);
+            L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', { attribution: '&copy; OpenStreetMap' }).addTo(map);
         }
         initMap();
 
         function getCol(row, possibleNames) {
             for (let key in row) {
                 let cleanKey = key.toString().replace(/[\r\n]+/g, ' ').trim().toUpperCase();
-                if (possibleNames.includes(cleanKey)) {
-                    return row[key];
-                }
+                if (possibleNames.includes(cleanKey)) return row[key];
             }
             return '';
         }
 
-        // --- FUNGSI UTAMA PEMROSESAN DATA ---
+        // --- FUNGSI PEMROSESAN DATA TERBARU (MENYAMAI COUNTIFS EXCEL) ---
         function processRawData(sheetData) {
             rawDataFromSheet = sheetData || []; 
             let uniqueData = {};
             let uniqueDataPerArea = {}; 
             let picSet = new Set();
             let allEvents = []; 
+            
+            // Object untuk mengumpulkan status AE (Modul 1) dan AF (Modul 2) per Karyawan -> per Jenis Unit
+            let personData = {};
 
             rawDataFromSheet.forEach(row => {
                 let nameRaw = String(getCol(row, ['NAME', 'NAMA'])).trim();
@@ -900,86 +834,86 @@
                 let pic = getCol(row, ['PIC']) || 'Unknown';
                 if(pic !== 'Unknown' && pic.trim() !== '') picSet.add(pic);
 
+                // Ekstrak Nama Unit dari Modul (misal: "Komatsu HW70" dari "Product Application - Komatsu HW70")
                 let modulFullName = String(getCol(row, ['TRAINING MODUL', 'NAMA MODUL', 'MODUL', 'EVENT'])).trim();
-                
-                // MENGAMBIL STATUS DARI KOLOM EXCEL (Mengikuti rumus Excel Anda)
-                // Di Excel Anda menggunakan kolom AE dan AF, di kode ini kita ambil berdasarkan Header-nya
-                let statM1 = String(getCol(row, ['STATUS MODUL 1'])).toUpperCase().trim();
-                let statM2 = String(getCol(row, ['STATUS MODUL 2'])).toUpperCase().trim();
-                
-                // Menentukan Status M1 dan M2 berdasarkan kata "FINISHED"
-                let m1Finished = statM1 === 'FINISHED' || statM1 === 'LULUS';
-                let m2Finished = statM2 === 'FINISHED' || statM2 === 'LULUS';
-
-                // Menentukan Status Row Berdasarkan Rumus Excel
-                // IF(AND(M1="Finished", M2="Finished"), "Done", IF(OR(M1="Finished", M2="Finished"), "On Progress", "Not Yet"))
-                let rowFinalStatus = "NOT YET";
-                if (m1Finished && m2Finished) {
-                    rowFinalStatus = "DONE";
-                } else if (m1Finished || m2Finished) {
-                    rowFinalStatus = "ON PROGRESS";
+                let unitName = modulFullName;
+                if (modulFullName.includes('-')) {
+                    unitName = modulFullName.substring(modulFullName.indexOf('-') + 1).trim();
                 }
 
-                // Status Coverage
-                let covStatusRaw = String(getCol(row, ['STATUS COVERAGE', 'ALL COVERAGE', 'COVERAGE'])).toUpperCase().trim();
-                let covStatus = covStatusRaw.includes('TERCOVERAGE') || covStatusRaw.includes('COVERAGE') ? 'Tercoverage' : 'Not Yet';
-                if (rowFinalStatus === "DONE") covStatus = "Tercoverage";
+                // Ambil Status M1 (Kolom AE) dan Status M2 (Kolom AF) PERSIS dari baris ini
+                let statAE = String(getCol(row, ['STATUS MODUL 1', 'STATUS MODUL 1 '])).toUpperCase().trim();
+                let statAF = String(getCol(row, ['STATUS MODUL 2', 'STATUS MODUL 2 '])).toUpperCase().trim();
 
-                // Simpan ke array Data Unik per Karyawan
-                if (!uniqueData[key]) {
-                    uniqueData[key] = { 
-                        name: name, nrp: nrp, area: area, pic: pic, 
-                        statM1: statM1, statM2: statM2, covStatus: covStatus,
-                        statuses: [] 
-                    };
+                // Persiapkan Objek Karyawan
+                if (!personData[key]) {
+                    personData[key] = { name: name, nrp: nrp, area: area, pic: pic, units: {} };
                 }
-                
-                // Kumpulkan semua status dari setiap baris milik karyawan ini
-                uniqueData[key].statuses.push(rowFinalStatus);
-
-                // Update info lain jika ada yang lebih valid
-                if (covStatus === 'Tercoverage') uniqueData[key].covStatus = 'Tercoverage';
-                if (AREA_KEYS.includes(area) && !AREA_KEYS.includes(uniqueData[key].area)) uniqueData[key].area = area;
-                if (pic !== 'Unknown' && pic.trim() !== '' && uniqueData[key].pic === 'Unknown') uniqueData[key].pic = pic;
-
-                // Pengelompokan KHUSUS Pie Chart Distribution By Area
-                let keyPerArea = key + "_" + area;
-                if (!uniqueDataPerArea[keyPerArea]) {
-                    uniqueDataPerArea[keyPerArea] = { 
-                        name: name, nrp: nrp, area: area, pic: pic, 
-                        statM1: statM1, statM2: statM2, covStatus: covStatus,
-                        statuses: [] 
-                    };
+                // Persiapkan Objek Unit di dalam Karyawan tersebut
+                if (!personData[key].units[unitName]) {
+                    personData[key].units[unitName] = { hasAEFinished: false, hasAFFinished: false };
                 }
-                uniqueDataPerArea[keyPerArea].statuses.push(rowFinalStatus);
-                if (covStatus === 'Tercoverage') uniqueDataPerArea[keyPerArea].covStatus = 'Tercoverage';
 
-                // Tangkap data event untuk chart bar
+                // Jika di baris ini AE adalah Finished, tandai Unit tsb memiliki AE yang Finished
+                if (statAE === 'FINISHED' || statAE === 'LULUS') {
+                    personData[key].units[unitName].hasAEFinished = true;
+                }
+                // Jika di baris ini AF adalah Finished, tandai Unit tsb memiliki AF yang Finished
+                if (statAF === 'FINISHED' || statAF === 'LULUS') {
+                    personData[key].units[unitName].hasAFFinished = true;
+                }
+
                 let hasNilai = String(getCol(row, ['NILAI', 'SCORE'])).trim() !== '' && String(getCol(row, ['NILAI', 'SCORE'])).trim() !== '-';
                 allEvents.push({ area: area, pic: pic, modulName: modulFullName, hasNilai: hasNilai });
             });
 
-            // 2. Evaluasi Final Status Karyawan (Sesuai dengan Logika Filter Excel Anda)
-            function resolveFinalStatus(statuses) {
-                // Di Excel, ketika Anda filter, Anda mencari "Apakah orang ini punya unit yang DONE?"
-                // Jika YA, maka dihitungan unik Anda dia masuk "DONE".
-                if (statuses.includes("DONE")) return "DONE";
-                
-                // Jika tidak ada yang DONE, apakah ada yang ON PROGRESS?
-                if (statuses.includes("ON PROGRESS")) return "ON PROGRESS";
-                
-                // Sisanya
-                return "NOT YET";
-            }
+            // 2. Evaluasi Final Status berdasarkan Gabungan Unit (Membentuk nilai Unik/Orang)
+            Object.keys(personData).forEach(key => {
+                let p = personData[key];
+                let unitStatuses = []; // Menyimpan status dari tiap unit pelatihannya
 
-            Object.values(uniqueData).forEach(d => { d.finalStatus = resolveFinalStatus(d.statuses); });
-            Object.values(uniqueDataPerArea).forEach(d => { d.finalStatus = resolveFinalStatus(d.statuses); });
+                // A. Evaluasi setiap unit (meniru COUNTIFS Excel)
+                for (let unit in p.units) {
+                    let u = p.units[unit];
+                    // Jika di unit ini, dia punya baris AE = Finished DAN baris AF = Finished
+                    if (u.hasAEFinished && u.hasAFFinished) {
+                        unitStatuses.push("DONE");
+                    } 
+                    // Jika baru salah satu saja yang Finished
+                    else if (u.hasAEFinished || u.hasAFFinished) {
+                        unitStatuses.push("ON PROGRESS");
+                    } 
+                    else {
+                        unitStatuses.push("NOT YET");
+                    }
+                }
+
+                // B. Aggregasi menjadi 1 Final Status per Karyawan (Sesuai hitungan Unique filter Excel Anda)
+                p.finalStatus = "NOT YET";
+                
+                // Jika orang ini minimal menyelesaikan 1 unit sampai DONE (Sesuai filter Unique "Done" Anda yang isinya 12 orang)
+                if (unitStatuses.includes("DONE")) {
+                    p.finalStatus = "DONE";
+                } 
+                // Jika tidak ada DONE, tapi dia sudah mulai kelas (On Progress) di salah satu unit
+                else if (unitStatuses.includes("ON PROGRESS")) {
+                    p.finalStatus = "ON PROGRESS";
+                }
+
+                p.covStatus = (p.finalStatus === "DONE") ? "Tercoverage" : "Not Yet";
+
+                uniqueData[key] = p;
+
+                let keyPerArea = key + "_" + p.area;
+                if (!uniqueDataPerArea[keyPerArea]) {
+                    uniqueDataPerArea[keyPerArea] = Object.assign({}, p);
+                }
+            });
 
             rawData = Object.values(uniqueData);
             rawDataPerArea = Object.values(uniqueDataPerArea); 
             rawEventData = allEvents; 
 
-            // Update isi dropdown filter
             let picSelect = document.getElementById("filterPIC");
             if(picSelect) {
                 let currentVal = picSelect.value;
@@ -1004,20 +938,17 @@
         async function loadDataFromAPI(isManualRefresh = false, isFirstLoad = false) {
             const btnRefresh = document.getElementById('btnRefresh');
             const iconRefresh = document.getElementById('iconRefresh');
-            
             if(btnRefresh) btnRefresh.disabled = true;
             if(iconRefresh) iconRefresh.classList.add('fa-spin-fast');
 
-            // Tampilkan popup loading
             if(isManualRefresh || isFirstLoad) {
                 Swal.fire({
                     title: isFirstLoad ? 'Login Berhasil' : 'Menyegarkan Data...',
                     html: isFirstLoad ? 'Menarik data dari Spreadsheet untuk pertama kali.<br>Mohon tunggu sebentar...' : 'Sedang menarik data terbaru dari Spreadsheet.',
-                    allowOutsideClick: false,
-                    didOpen: () => { Swal.showLoading() }
+                    allowOutsideClick: false, didOpen: () => { Swal.showLoading() }
                 });
             } else if (rawData.length === 0) {
-                document.querySelector('#tablePeserta tbody').innerHTML = '<tr><td colspan="6" class="text-center py-5 text-muted fw-bold"><i class="fas fa-spinner fa-spin-fast me-2"></i> Sinkronisasi Data Spreadsheet...</td></tr>';
+                document.querySelector('#tablePeserta tbody').innerHTML = '<tr><td colspan="4" class="text-center py-5 text-muted fw-bold"><i class="fas fa-spinner fa-spin-fast me-2"></i> Sinkronisasi Data Spreadsheet...</td></tr>';
                 document.querySelector('#tblMasterData tbody').innerHTML = '<tr><td colspan="7" class="text-center py-5 text-muted fw-bold"><i class="fas fa-spinner fa-spin-fast me-2"></i> Sinkronisasi Data Spreadsheet...</td></tr>';
             }
 
@@ -1026,36 +957,28 @@
                 const timeoutId = setTimeout(() => controller.abort(), 60000); 
 
                 const response = await fetch(SCRIPT_URL + '?t=' + new Date().getTime(), { 
-                    method: 'GET',
-                    redirect: 'follow', 
-                    signal: controller.signal 
+                    method: 'GET', redirect: 'follow', signal: controller.signal 
                 });
                 clearTimeout(timeoutId);
 
                 const textResponse = await response.text();
                 let result;
-                
                 try {
                     result = JSON.parse(textResponse);
                 } catch(e) {
-                    console.error("HTML Returned:", textResponse.substring(0, 500));
-                    
                     Swal.fire({
                         title: 'Akses Google Script Ditolak',
                         html: `Link Google Script Anda masih meminta Otentikasi/Login Google.<br><br>Menampilkan <b>Data Simulasi (Mock Data)</b> sementara.`,
-                        icon: 'warning',
-                        confirmButtonText: 'Oke, Mengerti'
+                        icon: 'warning', confirmButtonText: 'Oke, Mengerti'
                     });
                     
-                    // Mock Data
                     const mockData = [
-                        { "NAME": "Budi Santoso", "NRP": "8011234", "UT CORPU": "JKT", "PIC": "Joni Darlin S", "TRAINING MODUL": "Product Application - HW70", "STATUS MODUL 1": "Finished", "STATUS MODUL 2": "" },
-                        { "NAME": "Budi Santoso", "NRP": "8011234", "UT CORPU": "JKT", "PIC": "Joni Darlin S", "TRAINING MODUL": "Product Knowledge - HW70", "STATUS MODUL 1": "", "STATUS MODUL 2": "Finished" },
-                        { "NAME": "Andi Darmawan", "NRP": "8011235", "UT CORPU": "PKB", "PIC": "Budi Hartono", "TRAINING MODUL": "Product Application - HW70", "STATUS MODUL 1": "Finished", "STATUS MODUL 2": "" }
+                        { "NAME": "M HERJUNO", "NRP": "80113042", "UT CORPU": "JKT", "PIC": "Joni", "TRAINING MODUL": "Product Application - HW70", "STATUS MODUL 1": "", "STATUS MODUL 2": "Finished" },
+                        { "NAME": "M HERJUNO", "NRP": "80113042", "UT CORPU": "JKT", "PIC": "Joni", "TRAINING MODUL": "Product Knowledge - HW70", "STATUS MODUL 1": "Finished", "STATUS MODUL 2": "" },
+                        { "NAME": "M HERJUNO", "NRP": "80113042", "UT CORPU": "JKT", "PIC": "Joni", "TRAINING MODUL": "Product Application - PC75", "STATUS MODUL 1": "", "STATUS MODUL 2": "Unfinished" }
                     ];
                     
                     processRawData(mockData);
-                    
                     if(btnRefresh) btnRefresh.disabled = false;
                     if(iconRefresh) iconRefresh.classList.remove('fa-spin-fast');
                     return; 
@@ -1064,13 +987,8 @@
                 if (result.status === "success") {
                     localStorage.setItem(CACHE_KEY, JSON.stringify(result.data));
                     processRawData(result.data);
-                    
-                    if(isManualRefresh) {
-                        Swal.fire({ title: 'Berhasil!', text: 'Data telah diperbarui dari Spreadsheet.', icon: 'success', timer: 2000, showConfirmButton: false });
-                    } else if (isFirstLoad) {
-                        Swal.fire({ title: 'Data Berhasil Dimuat', text: 'Selamat datang di 8 DP Portal', icon: 'success', timer: 1500, showConfirmButton: false });
-                    }
-
+                    if(isManualRefresh) Swal.fire({ title: 'Berhasil!', text: 'Data telah diperbarui.', icon: 'success', timer: 2000, showConfirmButton: false });
+                    else if (isFirstLoad) Swal.fire({ title: 'Data Berhasil Dimuat', text: 'Selamat datang di 8 DP Portal', icon: 'success', timer: 1500, showConfirmButton: false });
                 } else {
                     throw new Error("Error dari server: " + (result.message || "Gagal mengambil data."));
                 }
@@ -1082,7 +1000,7 @@
                 else console.warn("Background fetch failed:", errorMsg);
                 
                 if (rawData.length === 0) {
-                    document.querySelector('#tablePeserta tbody').innerHTML = `<tr><td colspan="6" class="text-center py-4 text-danger fw-bold"><i class="fas fa-exclamation-triangle me-2"></i> Error: ${errorMsg}</td></tr>`;
+                    document.querySelector('#tablePeserta tbody').innerHTML = `<tr><td colspan="4" class="text-center py-4 text-danger fw-bold"><i class="fas fa-exclamation-triangle me-2"></i> Error: ${errorMsg}</td></tr>`;
                     document.querySelector('#tblMasterData tbody').innerHTML = `<tr><td colspan="7" class="text-center py-4 text-danger fw-bold"><i class="fas fa-exclamation-triangle me-2"></i> Error: ${errorMsg}</td></tr>`;
                 }
             } finally {
@@ -1091,17 +1009,13 @@
             }
         }
 
-        // --- UPLOAD EXCEL ---
         function uploadExcelToCloud(e) {
             const file = e.target.files[0];
             if(!file) return;
 
             Swal.fire({ 
-                title: 'Membaca dan Mengunggah File...', 
-                html: 'Mohon tunggu, memproses Excel dan mengirim ke Google Sheets.',
-                allowOutsideClick: false, 
-                showConfirmButton: false, 
-                didOpen: () => { Swal.showLoading() } 
+                title: 'Membaca dan Mengunggah File...', html: 'Mohon tunggu, memproses Excel dan mengirim ke Google Sheets.',
+                allowOutsideClick: false, showConfirmButton: false, didOpen: () => { Swal.showLoading() } 
             });
 
             const reader = new FileReader();
@@ -1154,10 +1068,7 @@
                 }
 
                 fetch(SCRIPT_URL, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'text/plain;charset=utf-8' }, 
-                    redirect: 'follow', 
-                    body: JSON.stringify({ data: cleanJson })
+                    method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, redirect: 'follow', body: JSON.stringify({ data: cleanJson })
                 })
                 .then(res => res.text()) 
                 .then(textRes => {
@@ -1166,22 +1077,17 @@
                     catch(err) { throw new Error("Server menolak akses Upload."); }
 
                     if(result.status === 'success') {
-                        loadDataFromAPI(true, false).then(() => {
-                            Swal.fire('Berhasil!', `Data telah ditimpa dengan aman.`, 'success');
-                        });
+                        loadDataFromAPI(true, false).then(() => { Swal.fire('Berhasil!', `Data telah ditimpa dengan aman.`, 'success'); });
                     } else {
                         Swal.fire('Gagal!', result.message, 'error');
                     }
                 })
-                .catch(err => {
-                    Swal.fire('Error', err.message || 'Gagal mengirim data.', 'error');
-                });
+                .catch(err => { Swal.fire('Error', err.message || 'Gagal mengirim data.', 'error'); });
                 e.target.value = '';
             };
             reader.readAsBinaryString(file);
         }
 
-        // --- DOWNLOAD TEMPLATE EXCEL ---
         function downloadTemplate() {
             if (!rawDataFromSheet || rawDataFromSheet.length === 0) {
                 Swal.fire('Data Kosong', 'Harap tunggu hingga data termuat.', 'warning');
@@ -1193,7 +1099,6 @@
             XLSX.writeFile(wb, "Template_Update_Nilai_8DP.xlsx");
         }
 
-        // --- RENDER TABEL MASTER DATA ---
         function renderMasterTable() {
             const tbody = document.querySelector('#tblMasterData tbody');
             const fAreaMaster = document.getElementById('filterAreaMaster').value;
@@ -1245,7 +1150,6 @@
             tbody.innerHTML = html || '<tr><td colspan="7" class="text-center py-4 text-muted fw-bold">Data tidak ditemukan pada area ini.</td></tr>';
         }
 
-        // --- RENDER DASHBOARD CHARTS & TABLES ---
         function renderDashboard() {
             if (rawData.length === 0) {
                 document.getElementById("kpiTotal").innerText = 0;
@@ -1253,8 +1157,8 @@
                 document.getElementById("kpiProgress").innerText = "0";
                 document.getElementById("kpiNotYet").innerText = "0";
                 
-                document.querySelector('#tablePeserta tbody').innerHTML = '<tr><td colspan="6" class="text-center py-4 text-muted fw-bold">Data kosong.</td></tr>';
-                document.querySelector('#tablePesertaFull tbody').innerHTML = '<tr><td colspan="6" class="text-center py-4 text-muted fw-bold">Data kosong.</td></tr>';
+                document.querySelector('#tablePeserta tbody').innerHTML = '<tr><td colspan="4" class="text-center py-4 text-muted fw-bold">Data kosong.</td></tr>';
+                document.querySelector('#tablePesertaFull tbody').innerHTML = '<tr><td colspan="4" class="text-center py-4 text-muted fw-bold">Data kosong.</td></tr>';
                 
                 ["pieCoverage", "pieParticipant", "pieArea", "barCoverage", "barParticipant"].forEach(id => resetChart(id));
                 mapMarkers.forEach(m => map.removeLayer(m));
@@ -1266,7 +1170,6 @@
             const fStatus = document.getElementById("filterStatus").value;
             const fPIC = document.getElementById("filterPIC").value;
 
-            // --- FILTER PARTICIPANT (Data Unique Karyawan) ---
             let filtered = rawData.filter(d => {
                 let mArea = fArea === "ALL" || d.area === fArea;
                 let mStat = fStatus === "ALL" || d.finalStatus === fStatus;
@@ -1274,7 +1177,6 @@
                 return mArea && mStat && mPIC;
             });
 
-            // --- FILTER KHUSUS PIE CHART DISTRIBUTION BY AREA (Unique NRP + Area) ---
             let filteredPerArea = rawDataPerArea.filter(d => {
                 let mArea = fArea === "ALL" || d.area === fArea;
                 let mStat = fStatus === "ALL" || d.finalStatus === fStatus;
@@ -1282,7 +1184,6 @@
                 return mArea && mStat && mPIC;
             });
 
-            // --- FILTER EVENT (Data Keseluruhan modul spesifik) ---
             let filteredEvents = rawEventData.filter(d => {
                 let mArea = fArea === "ALL" || d.area === fArea;
                 let mPIC = fPIC === "ALL" || d.pic === fPIC;
@@ -1298,7 +1199,6 @@
             let areaCount = {};
             AREA_KEYS.forEach(k => areaCount[k] = { total: 0, cov: 0, notCov: 0, done: 0, prog: 0, ny: 0, eventDone: 0, eventNotYet: 0 });
 
-            // KALKULASI PARTICIPANT 
             filtered.forEach(d => {
                 if(d.covStatus === "Tercoverage") totalCoverage++;
                 if(d.finalStatus === "DONE") totalDone++;             
@@ -1306,7 +1206,6 @@
                 if(d.finalStatus === "NOT YET") totalNotYet++;
             });
 
-            // KALKULASI PARTICIPANT PER AREA
             filteredPerArea.forEach(d => {
                 let k = AREA_KEYS.includes(d.area) ? d.area : null;
                 if(k) {
@@ -1320,7 +1219,6 @@
                 }
             });
 
-            // KALKULASI EVENT BERDASARKAN SYARAT
             let eventMap = {};
             AREA_KEYS.forEach(k => eventMap[k] = {});
 
@@ -1339,7 +1237,6 @@
                 }
             });
 
-            // UPDATE KPI DASHBOARD TEXT SCORE
             let pctCov = totalPeserta === 0 ? 0 : ((totalCoverage / totalPeserta) * 100).toFixed(1);
             document.getElementById("kpiTotal").innerText = totalPeserta;
             document.getElementById("kpiCoverage").innerHTML = `${totalCoverage} <span style="font-size: 1.1rem; color: #555;">(${pctCov}%)</span>`;
@@ -1348,8 +1245,7 @@
             document.getElementById("kpiNotYet").innerText = totalNotYet;
 
             const pieOptions = {
-                responsive: true, 
-                maintainAspectRatio: false,
+                responsive: true, maintainAspectRatio: false,
                 plugins: {
                     legend: { position: 'right', labels: { font: {size: 10, weight: 'bold'}, boxWidth: 12 } },
                     datalabels: {
@@ -1459,8 +1355,6 @@
                         <td><b class="text-dark">${d.name}</b><br><small class="text-muted">${d.nrp}</small></td>
                         <td class="text-center fw-bold">${d.area}</td>
                         <td class="text-center">${d.pic}</td>
-                        <td class="text-center">${d.statM1 || '-'}</td>
-                        <td class="text-center">${d.statM2 || '-'}</td>
                         <td class="text-center"><span class="badge ${badgeClass} px-3 py-2 shadow-sm">${d.finalStatus}</span></td>
                     </tr>
                 `;
@@ -1469,11 +1363,10 @@
                 htmlTableFull += rowHtml; 
             });
 
-            document.querySelector('#tablePeserta tbody').innerHTML = htmlTable || '<tr><td colspan="6" class="text-center py-4 text-muted fw-bold">Data tidak ditemukan.</td></tr>';
-            document.querySelector('#tablePesertaFull tbody').innerHTML = htmlTableFull || '<tr><td colspan="6" class="text-center py-4 text-muted fw-bold">Data tidak ditemukan.</td></tr>';
+            document.querySelector('#tablePeserta tbody').innerHTML = htmlTable || '<tr><td colspan="4" class="text-center py-4 text-muted fw-bold">Data tidak ditemukan.</td></tr>';
+            document.querySelector('#tablePesertaFull tbody').innerHTML = htmlTableFull || '<tr><td colspan="4" class="text-center py-4 text-muted fw-bold">Data tidak ditemukan.</td></tr>';
         }
 
-        // --- FITUR REPORT / LAPORAN ---
         function generateReport() {
             const statFilter = document.getElementById('reportFilterStatus').value; 
             const areaFilter = document.getElementById('reportFilterArea').value; 
@@ -1496,13 +1389,11 @@
                     <td>${e.nrp}</td>
                     <td class="text-center"><span class="badge border border-dark text-dark">${e.area}</span></td>
                     <td>${e.pic}</td>
-                    <td class="text-center">${e.statM1 || '-'}</td>
-                    <td class="text-center">${e.statM2 || '-'}</td>
                     <td class="text-center"><span class="badge ${badgeClass}">${e.finalStatus}</span></td>
                 </tr>`;
             });
             
-            document.querySelector('#tblReport tbody').innerHTML = html || '<tr><td colspan="7" class="text-center py-4">Data tidak ditemukan</td></tr>';
+            document.querySelector('#tblReport tbody').innerHTML = html || '<tr><td colspan="5" class="text-center py-4">Data tidak ditemukan</td></tr>';
         }
 
         function exportReportExcel() {
