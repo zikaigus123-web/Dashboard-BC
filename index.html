@@ -806,6 +806,7 @@
         }
 
         // --- FUNGSI PEMROSESAN DATA TERBARU ---
+// --- FUNGSI PEMROSESAN DATA TERBARU ---
         function processRawData(sheetData) {
             rawDataFromSheet = sheetData || []; 
             let uniqueData = {};
@@ -848,8 +849,24 @@
                 if (!personData[key]) {
                     personData[key] = { name: name, nrp: nrp, area: area, pic: pic, units: {} };
                 }
+                
+                // Merekam nama Knowledge dan Application secara terpisah
                 if (!personData[key].units[unitName]) {
-                    personData[key].units[unitName] = { hasAEFinished: false, hasAFFinished: false, fullName: modulFullName };
+                    personData[key].units[unitName] = { 
+                        hasAEFinished: false, 
+                        hasAFFinished: false, 
+                        modKnowledge: null,
+                        modApplication: null 
+                    };
+                }
+
+                if (modulFullName.toUpperCase().includes('KNOWLEDGE')) {
+                    personData[key].units[unitName].modKnowledge = modulFullName;
+                } else if (modulFullName.toUpperCase().includes('APPLICATION')) {
+                    personData[key].units[unitName].modApplication = modulFullName;
+                } else {
+                    if (!personData[key].units[unitName].modKnowledge) personData[key].units[unitName].modKnowledge = modulFullName;
+                    if (!personData[key].units[unitName].modApplication) personData[key].units[unitName].modApplication = modulFullName;
                 }
 
                 if (statAE === 'FINISHED' || statAE === 'LULUS') personData[key].units[unitName].hasAEFinished = true;
@@ -869,16 +886,28 @@
                     let u = p.units[unit];
                     if (u.hasAEFinished && u.hasAFFinished) {
                         unitStatuses.push("DONE");
-                    } else if (u.hasAEFinished || u.hasAFFinished) {
-                        unitStatuses.push("ON PROGRESS");
-                        unfinishedModules.push(u.fullName + " (On Progress)"); 
                     } else {
-                        unitStatuses.push("NOT YET");
-                        unfinishedModules.push(u.fullName + " (Not Yet)");
+                        if (u.hasAEFinished || u.hasAFFinished) {
+                            unitStatuses.push("ON PROGRESS");
+                        } else {
+                            unitStatuses.push("NOT YET");
+                        }
+                        
+                        // Menambahkan modul yang spesifik belum selesai dengan nama lengkapnya
+                        let toAdd = [];
+                        if (!u.hasAEFinished) {
+                            toAdd.push(u.modKnowledge || ("Product Knowledge - " + unit));
+                        }
+                        if (!u.hasAFFinished) {
+                            let appName = u.modApplication || ("Product Application - " + unit);
+                            if (!toAdd.includes(appName)) {
+                                toAdd.push(appName);
+                            }
+                        }
+                        unfinishedModules.push(...toAdd);
                     }
                 }
                 
-                // Menyimpan list mentah (array) ke object untuk formatting List di HTML/Excel
                 p.unfinishedModules = unfinishedModules; 
 
                 p.finalStatus = "NOT YET";
