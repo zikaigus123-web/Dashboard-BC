@@ -377,6 +377,7 @@
                   <th>Area</th>
                   <th>PIC</th>
                   <th>Final Status</th>
+                  <th style="width: 35%;">Modul Belum Selesai</th> <!-- NEW COLUMN ADDED -->
                 </tr>
               </thead>
               <tbody></tbody>
@@ -466,7 +467,6 @@
                         </div>
                         
                         <div class="d-flex gap-2">
-                            <!-- Menambahkan param true pada loadDataFromAPI agar muncul popup saat di klik -->
                             <button class="btn btn-brand btn-sm" id="btnRefresh" onclick="loadDataFromAPI(true)"><i class="fas fa-sync-alt me-1" id="iconRefresh"></i> Refresh Data</button>
                             <button class="btn btn-dark btn-sm fw-bold border-2 border-dark" onclick="toggleFullscreen()"><i class="fas fa-tv me-1"></i> Fullscreen</button>
                         </div>
@@ -589,7 +589,6 @@
                                 <i class="fas fa-external-link-alt me-2 text-info"></i> Buka Spreadsheet
                             </a>
                             
-                            <!-- TOMBOL DOWNLOAD TEMPLATE -->
                             <button class="btn btn-outline-success fw-bold bg-white text-dark border-2 border-success shadow-sm" onclick="downloadTemplate()">
                                 <i class="fas fa-download me-2 text-success"></i> Download Template
                             </button>
@@ -806,7 +805,7 @@
             return '';
         }
 
-        // --- FUNGSI PEMROSESAN DATA TERBARU (MENYAMAI COUNTIFS EXCEL) ---
+        // --- FUNGSI PEMROSESAN DATA TERBARU ---
         function processRawData(sheetData) {
             rawDataFromSheet = sheetData || []; 
             let uniqueData = {};
@@ -814,7 +813,6 @@
             let picSet = new Set();
             let allEvents = []; 
             
-            // Object untuk mengumpulkan status AE (Modul 1) dan AF (Modul 2) per Karyawan -> per Jenis Unit
             let personData = {};
 
             rawDataFromSheet.forEach(row => {
@@ -838,78 +836,59 @@
                 let pic = getCol(row, ['PIC']) || 'Unknown';
                 if(pic !== 'Unknown' && pic.trim() !== '') picSet.add(pic);
 
-                // Ekstrak Nama Unit dari Modul (misal: "Komatsu HW70" dari "Product Application - Komatsu HW70")
                 let modulFullName = String(getCol(row, ['TRAINING MODUL', 'NAMA MODUL', 'MODUL', 'EVENT'])).trim();
                 let unitName = modulFullName;
                 if (modulFullName.includes('-')) {
                     unitName = modulFullName.substring(modulFullName.indexOf('-') + 1).trim();
                 }
 
-                // Ambil Status M1 (Kolom AE) dan Status M2 (Kolom AF) PERSIS dari baris ini
                 let statAE = String(getCol(row, ['STATUS MODUL 1', 'STATUS MODUL 1 '])).toUpperCase().trim();
                 let statAF = String(getCol(row, ['STATUS MODUL 2', 'STATUS MODUL 2 '])).toUpperCase().trim();
 
-                // Persiapkan Objek Karyawan
                 if (!personData[key]) {
                     personData[key] = { name: name, nrp: nrp, area: area, pic: pic, units: {} };
                 }
-                // Persiapkan Objek Unit di dalam Karyawan tersebut
                 if (!personData[key].units[unitName]) {
-                    personData[key].units[unitName] = { hasAEFinished: false, hasAFFinished: false };
+                    personData[key].units[unitName] = { hasAEFinished: false, hasAFFinished: false, fullName: modulFullName };
                 }
 
-                // Jika di baris ini AE adalah Finished, tandai Unit tsb memiliki AE yang Finished
-                if (statAE === 'FINISHED' || statAE === 'LULUS') {
-                    personData[key].units[unitName].hasAEFinished = true;
-                }
-                // Jika di baris ini AF adalah Finished, tandai Unit tsb memiliki AF yang Finished
-                if (statAF === 'FINISHED' || statAF === 'LULUS') {
-                    personData[key].units[unitName].hasAFFinished = true;
-                }
+                if (statAE === 'FINISHED' || statAE === 'LULUS') personData[key].units[unitName].hasAEFinished = true;
+                if (statAF === 'FINISHED' || statAF === 'LULUS') personData[key].units[unitName].hasAFFinished = true;
 
                 let hasNilai = String(getCol(row, ['NILAI', 'SCORE'])).trim() !== '' && String(getCol(row, ['NILAI', 'SCORE'])).trim() !== '-';
                 allEvents.push({ area: area, pic: pic, modulName: modulFullName, hasNilai: hasNilai });
             });
 
-            // 2. Evaluasi Final Status berdasarkan Gabungan Unit (Membentuk nilai Unik/Orang)
+            // 2. Evaluasi Final Status dan Simpan Array Modul
             Object.keys(personData).forEach(key => {
                 let p = personData[key];
-                let unitStatuses = []; // Menyimpan status dari tiap unit pelatihannya
+                let unitStatuses = []; 
+                let unfinishedModules = []; 
 
-                // A. Evaluasi setiap unit (meniru COUNTIFS Excel)
-                let unfinishedModules = []; // NEW
                 for (let unit in p.units) {
                     let u = p.units[unit];
-                    // Jika di unit ini, dia punya baris AE = Finished DAN baris AF = Finished
                     if (u.hasAEFinished && u.hasAFFinished) {
                         unitStatuses.push("DONE");
-                    } 
-                    // Jika baru salah satu saja yang Finished
-                    else if (u.hasAEFinished || u.hasAFFinished) {
+                    } else if (u.hasAEFinished || u.hasAFFinished) {
                         unitStatuses.push("ON PROGRESS");
-                        unfinishedModules.push(unit + " (On Progress)"); // NEW
-                    } 
-                    else {
+                        unfinishedModules.push(u.fullName + " (On Progress)"); 
+                    } else {
                         unitStatuses.push("NOT YET");
-                        unfinishedModules.push(unit + " (Not Yet)"); // NEW
+                        unfinishedModules.push(u.fullName + " (Not Yet)");
                     }
                 }
-                p.unfinishedModulesList = unfinishedModules.join(", "); // NEW
-
-                // B. Aggregasi menjadi 1 Final Status per Karyawan (Sesuai hitungan Unique filter Excel Anda)
-                p.finalStatus = "NOT YET";
                 
-                // Jika orang ini minimal menyelesaikan 1 unit sampai DONE (Sesuai filter Unique "Done" Anda yang isinya 12 orang)
+                // Menyimpan list mentah (array) ke object untuk formatting List di HTML/Excel
+                p.unfinishedModules = unfinishedModules; 
+
+                p.finalStatus = "NOT YET";
                 if (unitStatuses.includes("DONE")) {
                     p.finalStatus = "DONE";
-                } 
-                // Jika tidak ada DONE, tapi dia sudah mulai kelas (On Progress) di salah satu unit
-                else if (unitStatuses.includes("ON PROGRESS")) {
+                } else if (unitStatuses.includes("ON PROGRESS")) {
                     p.finalStatus = "ON PROGRESS";
                 }
 
                 p.covStatus = (p.finalStatus === "DONE") ? "Tercoverage" : "Not Yet";
-
                 uniqueData[key] = p;
 
                 let keyPerArea = key + "_" + p.area;
@@ -957,7 +936,7 @@
                 });
             } else if (rawData.length === 0) {
                 document.querySelector('#tablePeserta tbody').innerHTML = '<tr><td colspan="4" class="text-center py-5 text-muted fw-bold"><i class="fas fa-spinner fa-spin-fast me-2"></i> Sinkronisasi Data Spreadsheet...</td></tr>';
-                document.querySelector('#tblMasterData tbody').innerHTML = '<tr><td colspan="7" class="text-center py-5 text-muted fw-bold"><i class="fas fa-spinner fa-spin-fast me-2"></i> Sinkronisasi Data Spreadsheet...</td></tr>';
+                document.querySelector('#tablePesertaFull tbody').innerHTML = '<tr><td colspan="5" class="text-center py-5 text-muted fw-bold"><i class="fas fa-spinner fa-spin-fast me-2"></i> Sinkronisasi Data Spreadsheet...</td></tr>';
             }
 
             try {
@@ -1009,7 +988,7 @@
                 
                 if (rawData.length === 0) {
                     document.querySelector('#tablePeserta tbody').innerHTML = `<tr><td colspan="4" class="text-center py-4 text-danger fw-bold"><i class="fas fa-exclamation-triangle me-2"></i> Error: ${errorMsg}</td></tr>`;
-                    document.querySelector('#tblMasterData tbody').innerHTML = `<tr><td colspan="7" class="text-center py-4 text-danger fw-bold"><i class="fas fa-exclamation-triangle me-2"></i> Error: ${errorMsg}</td></tr>`;
+                    document.querySelector('#tablePesertaFull tbody').innerHTML = `<tr><td colspan="5" class="text-center py-4 text-danger fw-bold"><i class="fas fa-exclamation-triangle me-2"></i> Error: ${errorMsg}</td></tr>`;
                 }
             } finally {
                 if(btnRefresh) btnRefresh.disabled = false;
@@ -1166,7 +1145,7 @@
                 document.getElementById("kpiNotYet").innerText = "0";
                 
                 document.querySelector('#tablePeserta tbody').innerHTML = '<tr><td colspan="4" class="text-center py-4 text-muted fw-bold">Data kosong.</td></tr>';
-                document.querySelector('#tablePesertaFull tbody').innerHTML = '<tr><td colspan="4" class="text-center py-4 text-muted fw-bold">Data kosong.</td></tr>';
+                document.querySelector('#tablePesertaFull tbody').innerHTML = '<tr><td colspan="5" class="text-center py-4 text-muted fw-bold">Data kosong.</td></tr>';
                 
                 ["pieCoverage", "pieParticipant", "pieArea", "barCoverage", "barParticipant"].forEach(id => resetChart(id));
                 mapMarkers.forEach(m => map.removeLayer(m));
@@ -1185,6 +1164,7 @@
                 return mArea && mStat && mPIC;
             });
 
+            // ... (Kalkulasi Chart dan KPI lainnya tetap sama)
             let filteredPerArea = rawDataPerArea.filter(d => {
                 let mArea = fArea === "ALL" || d.area === fArea;
                 let mStat = fStatus === "ALL" || d.finalStatus === fStatus;
@@ -1351,6 +1331,7 @@
                 }
             });
 
+            // Update untuk Table UI Dashboard & Modal (Pisahkan Konfigurasi Barisnya)
             let htmlTable = "";
             let htmlTableFull = "";
             
@@ -1358,23 +1339,42 @@
                 let badgeClass = d.finalStatus === "DONE" ? 'bg-success' : 
                                  d.finalStatus === "ON PROGRESS" ? 'bg-warning text-dark' : 'bg-danger';
                 
+                // 1. Baris untuk Dashboard Utama (Ringkas - 4 Kolom)
                 let rowHtml = `
                     <tr>
-                        <td><b class="text-dark">${d.name}</b><br><small class="text-muted">${d.nrp}</small></td>
-                        <td class="text-center fw-bold">${d.area}</td>
-                        <td class="text-center">${d.pic}</td>
-                        <td class="text-center"><span class="badge ${badgeClass} px-3 py-2 shadow-sm">${d.finalStatus}</span></td>
+                        <td class="align-middle"><b class="text-dark">${d.name}</b><br><small class="text-muted">${d.nrp}</small></td>
+                        <td class="align-middle text-center fw-bold">${d.area}</td>
+                        <td class="align-middle text-center">${d.pic}</td>
+                        <td class="align-middle text-center"><span class="badge ${badgeClass} px-3 py-2 shadow-sm">${d.finalStatus}</span></td>
                     </tr>
                 `;
                 
                 if (index < 5) htmlTable += rowHtml; 
-                htmlTableFull += rowHtml; 
+
+                // 2. Baris untuk Modal Full (Detail 5 Kolom, dengan list modul bulleted)
+                let listModul = '<span class="text-muted fst-italic">-</span>';
+                if (d.unfinishedModules && d.unfinishedModules.length > 0) {
+                    listModul = `<ul class="mb-0 text-start" style="padding-left: 1.2rem; font-size: 0.8rem; line-height: 1.4;"><li>${d.unfinishedModules.join('</li><li>')}</li></ul>`;
+                }
+
+                let rowHtmlFull = `
+                    <tr>
+                        <td class="align-middle"><b class="text-dark">${d.name}</b><br><small class="text-muted">${d.nrp}</small></td>
+                        <td class="align-middle text-center fw-bold">${d.area}</td>
+                        <td class="align-middle text-center">${d.pic}</td>
+                        <td class="align-middle text-center"><span class="badge ${badgeClass} px-3 py-2 shadow-sm">${d.finalStatus}</span></td>
+                        <td class="align-middle">${listModul}</td>
+                    </tr>
+                `;
+                
+                htmlTableFull += rowHtmlFull; 
             });
 
             document.querySelector('#tablePeserta tbody').innerHTML = htmlTable || '<tr><td colspan="4" class="text-center py-4 text-muted fw-bold">Data tidak ditemukan.</td></tr>';
-            document.querySelector('#tablePesertaFull tbody').innerHTML = htmlTableFull || '<tr><td colspan="4" class="text-center py-4 text-muted fw-bold">Data tidak ditemukan.</td></tr>';
+            document.querySelector('#tablePesertaFull tbody').innerHTML = htmlTableFull || '<tr><td colspan="5" class="text-center py-4 text-muted fw-bold">Data tidak ditemukan.</td></tr>';
         }
 
+        // --- EXPORT & REPORTING FUNCTIONS ---
         function generateReport() {
             const statFilter = document.getElementById('reportFilterStatus').value; 
             const areaFilter = document.getElementById('reportFilterArea').value; 
@@ -1433,7 +1433,6 @@
             doc.save('Laporan_Karyawan_8DP.pdf'); 
         }
 
-        // Fungsi untuk mengambil data yang sesuai dengan filter dashboard saat ini
         function getFilteredDataForModal() {
             const fArea = document.getElementById("filterArea").value;
             const fStatus = document.getElementById("filterStatus").value;
@@ -1447,19 +1446,24 @@
             });
         }
 
-        // Export Modal ke Excel
+        // Export Modal ke Excel dengan Format Bullet (NewLine \n)
         function exportModalExcel() {
             let data = getFilteredDataForModal();
             if(data.length === 0) return Swal.fire('Kosong', 'Tidak ada data untuk diekspor.', 'warning');
             
-            let exportData = data.map(d => ({
-                "Nama Peserta": d.name,
-                "NRP": d.nrp,
-                "Area": d.area,
-                "PIC": d.pic,
-                "Final Status": d.finalStatus,
-                "Modul Belum Selesai (Outstanding)": d.unfinishedModulesList || "-"
-            }));
+            let exportData = data.map(d => {
+                let modulText = (d.unfinishedModules && d.unfinishedModules.length > 0) 
+                                ? "• " + d.unfinishedModules.join("\n• ") 
+                                : "-";
+                return {
+                    "Nama Peserta": d.name,
+                    "NRP": d.nrp,
+                    "Area": d.area,
+                    "PIC": d.pic,
+                    "Final Status": d.finalStatus,
+                    "Modul Belum Selesai": modulText
+                };
+            });
             
             let ws = XLSX.utils.json_to_sheet(exportData);
             let wb = XLSX.utils.book_new();
@@ -1467,7 +1471,7 @@
             XLSX.writeFile(wb, "Follow_Up_Modul_Peserta.xlsx");
         }
 
-        // Export Modal ke PDF
+        // Export Modal ke PDF dengan Format Bullet (NewLine \n)
         function exportModalPDF() {
             let data = getFilteredDataForModal();
             if(data.length === 0) return Swal.fire('Kosong', 'Tidak ada data untuk diekspor.', 'warning');
@@ -1478,7 +1482,12 @@
             doc.setFontSize(10);
             doc.text("Waktu cetak: " + new Date().toLocaleString('id-ID'), 14, 28);
             
-            let bodyData = data.map(d => [d.name, d.nrp, d.area, d.pic, d.finalStatus, d.unfinishedModulesList || "-"]);
+            let bodyData = data.map(d => {
+                let modulText = (d.unfinishedModules && d.unfinishedModules.length > 0) 
+                                ? "• " + d.unfinishedModules.join("\n• ") 
+                                : "-";
+                return [d.name, d.nrp, d.area, d.pic, d.finalStatus, modulText];
+            });
             
             doc.autoTable({
                 head: [["Nama Peserta", "NRP", "Area", "PIC", "Final Status", "Modul Belum Selesai"]],
@@ -1486,7 +1495,8 @@
                 startY: 34,
                 theme: 'grid',
                 headStyles: { fillColor: [255, 193, 7], textColor: [0, 0, 0] },
-                columnStyles: { 5: { cellWidth: 80 } } // Memberikan ruang lebih untuk list modul
+                columnStyles: { 5: { cellWidth: 80 } }, 
+                styles: { valign: 'middle' } 
             });
             doc.save('Follow_Up_Modul_Peserta.pdf');
         }
