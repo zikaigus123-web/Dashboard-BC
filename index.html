@@ -12,7 +12,9 @@
 <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2"></script>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
-<!-- TODO(stage4): SheetJS (xlsx) + jsPDF/autoTable (import/export) -->
+<script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.1/jspdf.plugin.autotable.min.js"></script>
 <style>
 * { box-sizing: border-box; margin: 0; padding: 0; }
 body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #1e1e1e; color: #333; overflow: hidden; }
@@ -234,6 +236,8 @@ body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; border-bottom: 2px solid #f1f5f9; padding-bottom: 10px;">
             <h2 class="brand-title" style="font-size: 20px; margin:0; text-align: left; color:#111;" id="modalTableTitle">Detail Status Peserta</h2>
             <div style="display: flex; gap: 10px;">
+                <button class="btn-action" style="background:#10b981; color:#fff; border-color:#047857;" onclick="exportModal('xlsx')"><i class="fas fa-file-excel"></i> Excel</button>
+                <button class="btn-action" style="background:#ea4335; color:#fff; border-color:#991b1b;" onclick="exportModal('pdf')"><i class="fas fa-file-pdf"></i> PDF</button>
                 <button class="btn-action" style="background:#e53e3e; color:#fff; border-color:#b91c1c;" onclick="closeTableModal()">
                     <i class="fas fa-times"></i> Tutup
                 </button>
@@ -320,7 +324,7 @@ body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-
                 <div class="v2-card v2-table">
                     <div class="v2-h" style="display:flex;justify-content:space-between"><span>Detail Status Peserta<span class="v2-attnote" id="tableNote"></span></span><button onclick="openTableModal()" style="background:none;border:none;cursor:pointer" title="Perbesar Tabel"><i class="fas fa-expand"></i></button></div>
                     <div class="table-wrapper"><table class="jabatan-table"><thead><tr><th>Nama / NRP</th><th style="text-align:center">Area</th><th>PIC</th><th style="text-align:center">Final Status</th></tr></thead><tbody id="pesertaBody"></tbody></table></div>
-                    <!-- TODO(stage4): export Excel/PDF -->
+                    
                 </div>
             </div>
         </div>
@@ -328,13 +332,31 @@ body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-
         <!-- VIEW 2: MASTER DATA -->
         <div id="view-database" class="view-section">
             <div class="master-header"><h2>Database Master Data (Spreadsheet)</h2></div>
-            <div class="v2-card"><!-- TODO(stage4): filter area, Buka Spreadsheet, Download Template, Import Data (replaceAll/upsert + token), tabel master #tblMasterData --></div>
+            <div class="filter-container"><div class="filter-left"><label>Area:</label><select id="fAreaM" class="filter-select" onchange="renderMasterTable()"><option value="ALL">-- Semua Area --</option><option value="JKT">Jakarta (JKT)</option><option value="PKB">Pekanbaru (PKB)</option><option value="BLP">Balikpapan (BLP)</option><option value="SMD">Samarinda (SMD)</option><option value="BJM">Banjarmasin (BJM)</option><option value="UPG">Ujung Pandang (UPG)</option></select></div>
+                <div class="filter-right">
+                    <a class="btn-action" style="background:#fff" target="_blank" href="https://docs.google.com/spreadsheets/d/1aq8n8EWhcZq-rtPn4szUsM7eIJmxidYGF_A_T60GTjU/edit?usp=sharing"><i class="fas fa-external-link-alt"></i> Buka Spreadsheet</a>
+                    <button class="btn-action" style="background:#fff" onclick="downloadTemplate()"><i class="fas fa-download"></i> Download Template</button>
+                    <input type="file" id="impFile" accept=".xlsx,.xls" style="display:none" onchange="importExcel(event)">
+                    <button class="btn-action btn-upload" onclick="document.getElementById('impFile').click()"><i class="fas fa-upload"></i> Import Data</button>
+                </div></div>
+            <div class="master-table-wrapper"><table class="master-table" id="tblMasterData"><thead><tr><th>NO</th><th>NAMA</th><th>NRP</th><th>AREA</th><th>PIC</th><th>STATUS MODUL 1</th><th>STATUS MODUL 2</th></tr></thead>
+                <tbody><tr><td colspan="7" style="text-align:center;padding:20px">Memuat data...</td></tr></tbody></table></div>
         </div>
 
         <!-- VIEW 3: REPORT -->
         <div id="view-report" class="view-section">
             <div class="master-header"><h2>Laporan Ringkasan Karyawan (Report)</h2></div>
-            <div class="v2-card"><!-- TODO(stage4): filter Area/Status/PIC, Tarik Data, tabel #tblReport, export Excel/PDF --></div>
+            <div class="filter-container"><div class="filter-left">
+                <label>Area:</label><select id="rArea" class="filter-select"><option value="ALL">-- Semua Area --</option><option value="JKT">Jakarta (JKT)</option><option value="PKB">Pekanbaru (PKB)</option><option value="BLP">Balikpapan (BLP)</option><option value="SMD">Samarinda (SMD)</option><option value="BJM">Banjarmasin (BJM)</option><option value="UPG">Ujung Pandang (UPG)</option></select>
+                <label>Status Akhir:</label><select id="rStatus" class="filter-select"><option value="ALL">-- Semua Status --</option><option value="DONE">Done</option><option value="ON PROGRESS">On Progress</option><option value="NOT YET">Not Yet</option></select>
+                <label>PIC:</label><select id="rPic" class="filter-select"><option value="ALL">-- Semua PIC --</option></select></div>
+                <div class="filter-right">
+                    <button class="btn-action" onclick="generateReport()"><i class="fas fa-bolt"></i> Tarik Data</button>
+                    <button class="btn-action" style="background:#10b981;color:#fff;border-color:#047857" onclick="exportReport('xlsx')"><i class="fas fa-file-excel"></i> Excel</button>
+                    <button class="btn-action" style="background:#ea4335;color:#fff;border-color:#991b1b" onclick="exportReport('pdf')"><i class="fas fa-file-pdf"></i> PDF</button>
+                </div></div>
+            <div class="master-table-wrapper"><table class="master-table" id="tblReport"><thead><tr><th>NAMA PESERTA</th><th>NRP</th><th>AREA</th><th>PIC</th><th>FINAL STATUS</th></tr></thead>
+                <tbody><tr><td colspan="5" style="text-align:center;padding:20px">Klik "Tarik Data" untuk menampilkan laporan.</td></tr></tbody></table></div>
         </div>
     </div>
 </div>
@@ -457,7 +479,9 @@ function processRawData(sheetData) {
     const sel = $("filterPIC"), cur = sel.value;
     sel.innerHTML = '<option value="ALL">-- Semua PIC --</option>' + [...picSet].sort().map(x => `<option value="${esc(x)}">${esc(x)}</option>`).join("");
     if (picSet.has(cur)) sel.value = cur;
-    // TODO(stage4): isi #reportFilterPIC dan panggil renderMasterTable()
+    rawSheet = sheetData || [];
+    const rp = $("rPic"), rc = rp.value; rp.innerHTML = sel.innerHTML; if (picSet.has(rc)) rp.value = rc;
+    renderMasterTable();
     renderDashboard();
 }
 
@@ -691,6 +715,91 @@ function renderDashboard() {
 
     renderMap(data); renderHeat(data, evList); renderAttn();
     renderGain(data); renderTable(data);
+}
+
+// ==========================================
+// STAGE 4: MASTER DATA, IMPORT, REPORT, EXPORT
+// ==========================================
+let rawSheet = [], reportRows = [];
+const SHEET_TAB = "ATS_PTCP (PLAN)";
+const isBlankName = r => { const n = String(getCol(r, ["NAME", "NAMA"])).trim().toUpperCase(); return !n || n === "NAME" || n === "NAMA"; };
+const noData = (c, m) => `<tr><td colspan="${c}" style="text-align:center;padding:14px">${m}</td></tr>`;
+
+function renderMasterTable() {
+    const f = $("fAreaM").value; let i = 0;
+    const html = rawSheet.filter(r => !isBlankName(r)).map(r => {
+        const a = normArea(getCol(r, ["UT CORPU"])); if (f !== "ALL" && a !== f) return "";
+        return `<tr><td style="text-align:center">${++i}</td><td><b>${esc(getCol(r, ["NAME", "NAMA"]))}</b></td><td>${esc(getCol(r, ["NRP"])) || "-"}</td><td style="text-align:center">${esc(a) || "-"}</td><td>${esc(getCol(r, ["PIC"])) || "-"}</td><td style="text-align:center">${esc(getCol(r, ["STATUS MODUL 1"])) || "-"}</td><td style="text-align:center">${esc(getCol(r, ["STATUS MODUL 2"])) || "-"}</td></tr>`;
+    }).join("");
+    $("tblMasterData").querySelector("tbody").innerHTML = html || noData(7, "Tidak ada data.");
+}
+function downloadTemplate() {
+    if (!rawSheet.length) return Swal.fire("Data Kosong", "Tunggu hingga data termuat.", "warning");
+    const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(rawSheet), SHEET_TAB);
+    XLSX.writeFile(wb, "Template_Update_BC.xlsx");
+}
+async function importExcel(ev) {
+    const file = ev.target.files[0]; ev.target.value = ""; if (!file) return;
+    let rows;
+    try {
+        const wb = XLSX.read(await file.arrayBuffer(), { type: "array" });
+        const aoa = XLSX.utils.sheet_to_json(wb.Sheets[SHEET_TAB] || wb.Sheets[wb.SheetNames[0]], { header: 1, defval: "" });
+        let h = -1;
+        for (let i = 0; i < Math.min(aoa.length, 10) && h < 0; i++) { const t = aoa[i].join("").toUpperCase(); if (t.includes("NAME") || t.includes("CABANG/ SITE")) h = i; }
+        if (h < 0) return Swal.fire("Format Salah", 'Kolom "NAME" tidak ditemukan di 10 baris pertama.', "error");
+        const cm = {};
+        for (let i = 0; i <= h; i++) aoa[i].forEach((c, j) => { const k = String(c).replace(/[\r\n]+/g, " ").trim().toUpperCase(); if (k) cm[k] = j; });
+        const ni = cm.NAME ?? cm.NAMA;
+        if (ni === undefined) return Swal.fire("Format Salah", 'Kolom "NAME" tidak ditemukan.', "error");
+        rows = aoa.slice(h + 1).filter(r => String(r[ni] ?? "").trim()).map(r => { const o = {}; for (const k in cm) o[k] = r[cm[k]]; return o; });
+    } catch (e) { return Swal.fire("Gagal Membaca File", "Format Excel tidak terbaca atau rusak.", "error"); }
+    if (!rows.length) return Swal.fire("Data Kosong", "Tidak ada baris valid di file.", "warning");
+    const r = await Swal.fire({ title: "Konfirmasi Import", width: 540, showCancelButton: true, confirmButtonText: "Kirim", confirmButtonColor: "#34a853",
+        html: `<div style="text-align:left;font-size:14px"><p><b>${esc(file.name)}</b> · <b>${rows.length}</b> baris valid.</p>
+            <label style="display:block;margin-top:10px"><input type="radio" name="impMode" value="upsert" checked> <b>Update (upsert)</b>: perbarui baris yang cocok (NRP + modul), tambah yang baru.</label>
+            <label style="display:block;margin-top:6px"><input type="radio" name="impMode" value="replaceAll"> <b style="color:#dc2626">Ganti semua (replaceAll)</b>: hapus data lama, backup dibuat otomatis.</label>
+            <input id="impToken" type="password" class="swal2-input" placeholder="Admin token" style="width:100%;margin:14px 0 0"></div>`,
+        preConfirm: () => { const t = $("impToken").value.trim(); if (!t) { Swal.showValidationMessage("Admin token wajib diisi"); return false; } return { t, m: document.querySelector("input[name=impMode]:checked").value }; } });
+    if (r.isConfirmed) sendImport(r.value.m, r.value.t, rows, false);
+}
+async function sendImport(action, token, data, confirm) {
+    Swal.fire({ title: "Mengirim ke Sheet...", allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+    try {
+        const res = await fetch(SCRIPT_URL, { method: "POST", headers: { "Content-Type": "text/plain;charset=utf-8" }, redirect: "follow", body: JSON.stringify({ action, token, by: "admin", confirm, data }) });
+        let r; try { r = JSON.parse(await res.text()); } catch (e) { throw new Error("Server menolak akses upload. Periksa deployment Apps Script."); }
+        if (r.status === "success") { await loadDataFromAPI(false); return Swal.fire({ title: "Berhasil!", text: r.message, icon: "success" }); }
+        if (r.code === "CONFIRM_REQUIRED") {
+            const c = await Swal.fire({ title: "Data jauh lebih sedikit", text: r.message, icon: "warning", showCancelButton: true, confirmButtonText: "Tetap lanjutkan", confirmButtonColor: "#dc2626" });
+            if (c.isConfirmed) return sendImport(action, token, data, true);
+            return;
+        }
+        throw new Error(r.message || "Gagal menyimpan ke Spreadsheet.");
+    } catch (e) { Swal.fire("Gagal", e.message, "error"); }
+}
+
+function generateReport() {
+    const a = $("rArea").value, s = $("rStatus").value, p = $("rPic").value;
+    reportRows = rawData.filter(d => (a === "ALL" || d.area === a) && (s === "ALL" || d.finalStatus === s) && (p === "ALL" || d.pic === p));
+    $("tblReport").querySelector("tbody").innerHTML = reportRows.map(d => `<tr><td><b>${esc(d.name)}</b></td><td>${esc(d.nrp) || "-"}</td><td style="text-align:center">${esc(d.area)}</td><td>${esc(d.pic)}</td><td style="text-align:center;font-weight:bold;color:${stColor(d.finalStatus)}">${d.finalStatus}</td></tr>`).join("") || noData(5, "Data tidak ditemukan.");
+}
+function saveXLSX(rows, sheet, file) { const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(rows), sheet); XLSX.writeFile(wb, file); }
+function savePDF(title, head, body, file, cs) {
+    const doc = new window.jspdf.jsPDF("landscape"); doc.setFontSize(16); doc.text(title, 14, 22); doc.setFontSize(10); doc.text("Waktu cetak: " + new Date().toLocaleString("id-ID"), 14, 28);
+    doc.autoTable({ head: [head], body, startY: 34, theme: "grid", headStyles: { fillColor: [255, 193, 7], textColor: [0, 0, 0] }, columnStyles: cs || {}, styles: { valign: "middle" } }); doc.save(file);
+}
+const REP_HEAD = ["Nama Peserta", "NRP", "Area", "PIC", "Final Status"], repRow = d => [d.name, d.nrp, d.area, d.pic, d.finalStatus];
+const MOD_HEAD = [...REP_HEAD, "Modul Belum Selesai"], modRow = d => [...repRow(d), d.unfinishedModules.length ? "• " + d.unfinishedModules.join("\n• ") : "-"];
+const toObjs = (head, rowFn, data) => data.map(d => Object.fromEntries(rowFn(d).map((v, i) => [head[i], v])));
+function exportReport(kind) {
+    if (!reportRows.length) return Swal.fire("Kosong", 'Klik "Tarik Data" terlebih dahulu.', "warning");
+    if (kind === "xlsx") saveXLSX(toObjs(REP_HEAD, repRow, reportRows), "Laporan BC", "Laporan_Karyawan_BC.xlsx");
+    else savePDF("Laporan Ringkasan Karyawan BC", REP_HEAD, reportRows.map(repRow), "Laporan_Karyawan_BC.pdf");
+}
+function exportModal(kind) {
+    const data = lastCtx ? lastCtx.data : [];
+    if (!data.length) return Swal.fire("Kosong", "Tidak ada data untuk diekspor.", "warning");
+    if (kind === "xlsx") saveXLSX(toObjs(MOD_HEAD, modRow, data), "Detail Peserta", "Follow_Up_Modul_Peserta.xlsx");
+    else savePDF("Daftar Follow Up Modul Peserta", MOD_HEAD, data.map(modRow), "Follow_Up_Modul_Peserta.pdf", { 5: { cellWidth: 80 } });
 }
 </script>
 </body>
