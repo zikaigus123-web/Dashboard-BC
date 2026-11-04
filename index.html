@@ -228,6 +228,26 @@ body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-
     </div>
 </div>
 
+<!-- MODAL TABLE FULLSCREEN (POP UP TABEL BESAR) -->
+<div id="tableModal" class="login-overlay" style="display: none; z-index: 10000; padding: 30px;">
+    <div class="login-card" style="max-width: 1000px; width: 100%; height: 90%; display: flex; flex-direction: column; padding: 20px; box-shadow: 0 10px 40px rgba(0,0,0,0.6);">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; border-bottom: 2px solid #f1f5f9; padding-bottom: 10px;">
+            <h2 class="brand-title" style="font-size: 20px; margin:0; text-align: left; color:#111;" id="modalTableTitle">Detail Status Peserta</h2>
+            <div style="display: flex; gap: 10px;">
+                <button class="btn-action" style="background:#e53e3e; color:#fff; border-color:#b91c1c;" onclick="closeTableModal()">
+                    <i class="fas fa-times"></i> Tutup
+                </button>
+            </div>
+        </div>
+        <div style="overflow-y: auto; flex: 1; border: 1px solid #ccc; border-radius: 4px; text-align: left;">
+            <table class="jabatan-table" style="width: 100%; font-size: 13px;">
+                <thead id="modalTableHead"></thead>
+                <tbody id="modalTableBody"></tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
 <!-- APP WRAPPER -->
 <div id="appContainer">
     <!-- SIDEBAR -->
@@ -293,11 +313,15 @@ body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-
                 <div class="v2-card v2-click" onclick="showInfo('part')" title="Klik untuk penjelasan"><div class="v2-h">Training Participant<i class="fas fa-info-circle v2-i"></i></div><div class="v2-gauge"><canvas id="gPart"></canvas><div class="v2-gc" id="gPartT"></div></div></div>
                 <div class="v2-card v2-click" onclick="showInfo('evt')" title="Klik untuk penjelasan"><div class="v2-h">Training Event<i class="fas fa-info-circle v2-i"></i></div><div class="v2-gauge"><canvas id="gEvt"></canvas><div class="v2-gc" id="gEvtT"></div></div></div>
 
-                <!-- TODO(stage3): kartu Knowledge vs Application per unit (.v2-gain, #cGain, sort select) -->
+                <div class="v2-card v2-gain"><div class="v2-gainhead"><div class="v2-h" style="cursor:pointer" onclick="showInfo('gain')" title="Klik untuk penjelasan">Knowledge vs Application per Unit<i class="fas fa-info-circle v2-i"></i></div><select id="gainSortSel" onchange="gainSort=this.value;renderDashboard()"><option value="appLo">Urut: Application terendah</option><option value="kHi">Urut: Knowledge tertinggi</option><option value="nHi">Urut: Peserta terbanyak</option><option value="name">Urut: Nama A–Z</option></select></div><div class="v2-leg"><span><i style="background:#4285f4"></i>Knowledge</span><span><i style="background:#34a853"></i>Application</span><span style="color:#777;font-weight:600">Klik batang untuk detail unit</span></div><div class="v2-gainscroll"><div id="gainWrap" style="position:relative"><canvas id="cGain"></canvas></div></div></div>
                 <div class="v2-card v2-heatcard"><div class="v2-h">Peta Kinerja per Area <small style="text-transform:none;color:#777">(klik baris untuk filter)</small></div><table class="v2-heat" id="heatArea"></table></div>
                 <div class="v2-card v2-attn"><div class="v2-h" style="cursor:pointer" onclick="showInfo('attn')" title="Klik untuk penjelasan">Perlu Perhatian · Done% Terendah<i class="fas fa-info-circle v2-i"></i><span class="v2-attnote" id="attnNote"></span></div><div class="v2-tog"><button id="tgArea" class="on" onclick="setAttn('area')">Area</button><button id="tgPic" onclick="setAttn('pic')">PIC</button></div><div id="attn"></div></div>
                 <div class="v2-card v2-pic"><div class="v2-h">Peta Kinerja per PIC <small style="text-transform:none;color:#777">(klik baris untuk filter)</small></div><div id="picWrap"><table class="v2-heat" id="heatPic"></table></div></div>
-                <!-- TODO(stage3): tabel Detail Status Peserta + modal perbesar + export Excel/PDF (.v2-table) -->
+                <div class="v2-card v2-table">
+                    <div class="v2-h" style="display:flex;justify-content:space-between"><span>Detail Status Peserta<span class="v2-attnote" id="tableNote"></span></span><button onclick="openTableModal()" style="background:none;border:none;cursor:pointer" title="Perbesar Tabel"><i class="fas fa-expand"></i></button></div>
+                    <div class="table-wrapper"><table class="jabatan-table"><thead><tr><th>Nama / NRP</th><th style="text-align:center">Area</th><th>PIC</th><th style="text-align:center">Final Status</th></tr></thead><tbody id="pesertaBody"></tbody></table></div>
+                    <!-- TODO(stage4): export Excel/PDF -->
+                </div>
             </div>
         </div>
 
@@ -410,9 +434,11 @@ function processRawData(sheetData) {
         const unit = mod.includes("-") ? mod.substring(mod.indexOf("-") + 1).trim() : mod;   // unit = teks setelah "-" pertama
         const fin = s => ["FINISHED", "LULUS"].includes(String(s).toUpperCase().trim());
         const p = people[key] || (people[key] = { key, name, nrp, area, pic, units: {} });
-        const u = p.units[unit] || (p.units[unit] = { hasAEFinished: false, hasAFFinished: false });   // AE = Knowledge, AF = Application
+        const u = p.units[unit] || (p.units[unit] = { hasAEFinished: false, hasAFFinished: false, kn: null, ap: null });   // AE = Knowledge, AF = Application; kn/ap = nama modul lengkap
         if (fin(getCol(row, ["STATUS MODUL 1"]))) u.hasAEFinished = true;
         if (fin(getCol(row, ["STATUS MODUL 2"]))) u.hasAFFinished = true;
+        const MU = mod.toUpperCase();
+        if (MU.includes("KNOWLEDGE")) u.kn = mod; else if (MU.includes("APPLICATION")) u.ap = mod; else { u.kn = u.kn || mod; u.ap = u.ap || mod; }
         const nilai = String(getCol(row, ["NILAI", "SCORE"])).trim();
         events.push({ area, pic, mod, hasNilai: nilai !== "" && nilai !== "-" });
     });
@@ -420,7 +446,12 @@ function processRawData(sheetData) {
         const st = Object.values(p.units).map(u => u.hasAEFinished && u.hasAFFinished ? "DONE" : (u.hasAEFinished || u.hasAFFinished) ? "ON PROGRESS" : "NOT YET");
         p.finalStatus = st.includes("DONE") ? "DONE" : st.includes("ON PROGRESS") ? "ON PROGRESS" : "NOT YET";
         p.covStatus = p.finalStatus === "DONE" ? "Tercoverage" : "Not Yet";
-        // TODO(stage3): p.unfinishedModules (kolom "Modul Belum Selesai" di tabel & export)
+        p.unfinishedModules = [];   // nama lengkap modul yang Knowledge / Application-nya belum selesai
+        Object.entries(p.units).forEach(([unit, u]) => {
+            const add = x => { if (!p.unfinishedModules.includes(x)) p.unfinishedModules.push(x); };
+            if (!u.hasAEFinished) add(u.kn || "Product Knowledge - " + unit);
+            if (!u.hasAFFinished) add(u.ap || "Product Application - " + unit);
+        });
     });
     rawData = Object.values(people); rawEventData = events;
     const sel = $("filterPIC"), cur = sel.value;
@@ -481,9 +512,66 @@ function showInfo(key) {
     else if (key === "attn") Object.assign(o, { title: "Perlu Perhatian · Done% Terendah",
         desc: "Area atau PIC dengan persentase peserta Done paling rendah (ganti dengan tombol Area / PIC). Klik satu baris untuk melihat peserta yang belum DONE.",
         formula: "Peserta DONE ÷ total peserta di area/PIC tersebut. Area: semua area. PIC: minimal 3 peserta, 7 terendah." });
+    else if (key === "gain") { const us = c.units, tn = us.reduce((a, u) => a + u.n, 0);
+        Object.assign(o, { title: "Knowledge vs Application per Unit", desc: "Persentase peserta yang sudah menyelesaikan bagian Knowledge (biru) dan Application (hijau) untuk tiap unit. Mengikuti filter aktif.",
+            formula: "Unit = teks setelah tanda '-' pada TRAINING MODUL. Knowledge selesai jika STATUS MODUL 1 FINISHED/LULUS; Application selesai jika STATUS MODUL 2 FINISHED/LULUS. % = selesai ÷ peserta yang punya unit tersebut. Klik batang untuk detail unit.",
+            chips: chip(us.length, "Unit", B) + chip(P(us.reduce((a, u) => a + u.k, 0), tn) + "%", "Knowledge selesai", B) + chip(P(us.reduce((a, u) => a + u.a, 0), tn) + "%", "Application selesai", G) }); }
     openInfo(o);
 }
-// TODO(stage3): showUnitInfo(i) (Knowledge vs Application)
+// ---- Knowledge vs Application per unit (stage 3B) ----
+let gainSort = "appLo";
+function renderGain(data) {
+    const um = {};
+    data.forEach(d => Object.entries(d.units).forEach(([u, x]) => { const o = um[u] = um[u] || { name: u, n: 0, k: 0, a: 0, both: 0 }; o.n++; if (x.hasAEFinished) o.k++; if (x.hasAFFinished) o.a++; if (x.hasAEFinished && x.hasAFFinished) o.both++; }));
+    const sorters = { appLo: (a, b) => a.a / a.n - b.a / b.n, kHi: (a, b) => b.k / b.n - a.k / a.n, nHi: (a, b) => b.n - a.n, name: (a, b) => a.name.localeCompare(b.name) };
+    const units = Object.values(um).sort(sorters[gainSort] || sorters.appLo); units.forEach(u => { u.kp = P(u.k, u.n); u.ap = P(u.a, u.n); });
+    lastCtx.units = units;
+    const wrapLabel = (t, w = 26) => { const ls = []; let cur = ""; String(t).split(" ").forEach(wd => { if (cur && (cur + " " + wd).length > w) { ls.push(cur); cur = wd; } else cur = cur ? cur + " " + wd : wd; }); if (cur) ls.push(cur); return ls; };
+    $("gainWrap").style.height = Math.max(300, units.length * 66 + 40) + "px";
+    if (chartInstances.gain) chartInstances.gain.destroy();
+    chartInstances.gain = new Chart($("cGain"), { type: "bar",
+        data: { labels: units.map(u => wrapLabel(u.name)), datasets: [
+            { label: "Knowledge", data: units.map(u => u.kp), backgroundColor: "#4285f4", borderRadius: 3 },
+            { label: "Application", data: units.map(u => u.ap), backgroundColor: "#34a853", borderRadius: 3 }] },
+        options: { indexAxis: "y", responsive: true, maintainAspectRatio: false, layout: { padding: { right: 50 } },
+            interaction: { mode: "nearest", axis: "y", intersect: false },
+            onClick: (e, els) => { if (els.length) showUnitInfo(els[0].index); },
+            onHover: (e, els) => { e.native.target.style.cursor = els.length ? "pointer" : "default"; },
+            categoryPercentage: 0.85, barPercentage: 0.9,
+            plugins: { legend: { display: false },
+                tooltip: { titleFont: { size: 13 }, bodyFont: { size: 13 }, callbacks: { title: it => units[it[0].dataIndex].name,
+                    label: c => { const u = units[c.dataIndex]; return `${c.dataset.label}: ${c.parsed.x}% (${c.datasetIndex ? u.a : u.k}/${u.n})`; } } },
+                datalabels: { anchor: "end", align: "end", clamp: true, font: { weight: "bold", size: 12 }, color: c => c.datasetIndex ? "#15803d" : "#1d4ed8", formatter: v => v + "%" } },
+            scales: { x: { min: 0, max: 100, ticks: { font: { size: 12 }, callback: v => v + "%" }, grid: { color: "#eee" } },
+                      y: { ticks: { font: { size: 12, weight: "600" }, color: "#222", autoSkip: false }, grid: { display: false } } } } });
+}
+function showUnitInfo(i) {
+    const c = lastCtx, u = c && c.units[i]; if (!u) return;
+    const rows = c.data.filter(d => d.units[u.name] && !(d.units[u.name].hasAEFinished && d.units[u.name].hasAFFinished));
+    const mk = v => v ? '<span style="color:#16a34a;font-weight:700">✓</span>' : '<span style="color:#dc2626;font-weight:700">✗</span>';
+    openInfo({ title: esc(u.name),
+        desc: `Dari <b>${u.n}</b> peserta yang memiliki unit ini, <b>${u.kp}%</b> sudah menyelesaikan Knowledge dan <b>${u.ap}%</b> sudah menyelesaikan Application (sesuai filter aktif).`,
+        formula: "Knowledge selesai = STATUS MODUL 1 FINISHED/LULUS. Application selesai = STATUS MODUL 2 FINISHED/LULUS. Unit DONE jika keduanya selesai.",
+        chips: chip(u.n, "Peserta", "#4285f4") + chip(u.k + " (" + u.kp + "%)", "Knowledge selesai", "#4285f4") + chip(u.a + " (" + u.ap + "%)", "Application selesai", "#34a853") + chip(u.both, "Unit DONE", "#34a853"),
+        listTitle: `Peserta belum menyelesaikan unit ini (${rows.length})`,
+        listHtml: tblHtml(rows, ["Nama", "Area", "Knowledge", "Application"], d => { const x = d.units[u.name]; return `<tr>${td(esc(d.name || d.nrp))}${td(esc(d.area))}${td(mk(x.hasAEFinished), "text-align:center")}${td(mk(x.hasAFFinished), "text-align:center")}</tr>`; }, "Semua peserta sudah menyelesaikan unit ini ✓") });
+}
+
+// ---- Tabel peserta + modal (stage 3B) ----
+function openTableModal() { $("tableModal").style.display = "flex"; }
+function closeTableModal() { $("tableModal").style.display = "none"; }
+function renderTable(data) {
+    const cell = d => `<td><b>${esc(d.name)}</b><br><small>${esc(d.nrp)}</small></td><td style="text-align:center">${esc(d.area)}</td><td>${esc(d.pic)}</td><td style="text-align:center;font-weight:bold;color:${stColor(d.finalStatus)}">${d.finalStatus}</td>`;
+    const empty = c => `<tr><td colspan="${c}" style="text-align:center;padding:12px">Data tidak ditemukan.</td></tr>`;
+    $("pesertaBody").innerHTML = data.slice(0, 5).map(d => `<tr>${cell(d)}</tr>`).join("") || empty(4);
+    $("tableNote").textContent = data.length > 5 ? `Menampilkan 5 dari ${data.length} peserta · klik ⤢ untuk semua` : "";
+    $("modalTableHead").innerHTML = '<tr><th>Nama / NRP</th><th style="text-align:center">Area</th><th>PIC</th><th style="text-align:center">Final Status</th><th style="width:38%">Modul Belum Selesai</th></tr>';
+    $("modalTableBody").innerHTML = data.map(d => {
+        const m = d.unfinishedModules.length ? d.unfinishedModules.map(x => "• " + esc(x)).join("<br>") : '<span style="color:#34a853;font-weight:bold">All Clear ✓</span>';
+        return `<tr>${cell(d)}<td style="font-size:12px;line-height:1.5">${m}</td></tr>`;
+    }).join("") || empty(5);
+}
+
 // ==========================================
 // PETA, HEATMAP & PERLU PERHATIAN (stage 3A)
 // ==========================================
@@ -602,7 +690,7 @@ function renderDashboard() {
     G("gEvt", [ev.d, ev.t - ev.d], ["#34a853", "#ea4335"], ["Done", "Belum"], P(ev.d, ev.t), `${ev.d} / ${ev.t} event`);
 
     renderMap(data); renderHeat(data, evList); renderAttn();
-    // TODO(stage3): grafik Knowledge vs Application, tabel peserta
+    renderGain(data); renderTable(data);
 }
 </script>
 </body>
