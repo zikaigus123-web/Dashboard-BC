@@ -294,6 +294,7 @@ body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-
                     </select>
                     <label>PIC:</label>
                     <select id="filterPIC" class="filter-select" onchange="renderDashboard()"><option value="ALL">-- Semua PIC --</option></select>
+                    <label>Status Kerja:</label><select id="filterAktif" class="filter-select" style="min-width:100px" onchange="renderDashboard()"><option value="AKTIF">Aktif saja</option><option value="ALL">Semua (+Resign)</option></select><span id="aktifNote" style="font-size:11px;color:#777;font-weight:600"></span>
                 </div>
                 <div class="filter-right">
                     <button class="btn-action" onclick="toggleFullScreen()"><i class="fas fa-tv"></i> TV / Fullscreen</button>
@@ -332,14 +333,18 @@ body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-
         <!-- VIEW 2: MASTER DATA -->
         <div id="view-database" class="view-section">
             <div class="master-header"><h2>Database Master Data (Spreadsheet)</h2></div>
-            <div class="filter-container"><div class="filter-left"><label>Area:</label><select id="fAreaM" class="filter-select" onchange="renderMasterTable()"><option value="ALL">-- Semua Area --</option><option value="JKT">Jakarta (JKT)</option><option value="PKB">Pekanbaru (PKB)</option><option value="BLP">Balikpapan (BLP)</option><option value="SMD">Samarinda (SMD)</option><option value="BJM">Banjarmasin (BJM)</option><option value="UPG">Ujung Pandang (UPG)</option></select></div>
+            <div class="filter-container"><div class="filter-left"><input id="searchM" class="filter-select" placeholder="Cari NRP / nama..." oninput="renderMasterTable()" style="min-width:170px"><select id="fAktifM" class="filter-select" style="min-width:110px" onchange="renderMasterTable()"><option value="AKTIF">Aktif</option><option value="RESIGN">Resign</option><option value="ALL">Semua</option></select><label>Area:</label><select id="fAreaM" class="filter-select" onchange="renderMasterTable()"><option value="ALL">-- Semua Area --</option><option value="JKT">Jakarta (JKT)</option><option value="PKB">Pekanbaru (PKB)</option><option value="BLP">Balikpapan (BLP)</option><option value="SMD">Samarinda (SMD)</option><option value="BJM">Banjarmasin (BJM)</option><option value="UPG">Ujung Pandang (UPG)</option></select></div>
                 <div class="filter-right">
+                    <button class="btn-action" style="background:#ea4335;color:#fff;border-color:#991b1b" onclick="openStatusModal('Resign')"><i class="fas fa-user-slash"></i> Nonaktifkan (<span id="selCount">0</span>)</button>
+                    <button class="btn-action" style="background:#fff" onclick="openStatusModal('Aktif')"><i class="fas fa-user-check"></i> Aktifkan kembali</button>
+                    <input type="file" id="resignFile" accept=".xlsx,.xls,.csv" style="display:none" onchange="handleResignFile(event)">
+                    <button class="btn-action" style="background:#fff" onclick="document.getElementById('resignFile').click()"><i class="fas fa-file-excel"></i> Upload Daftar Resign</button>
                     <a class="btn-action" style="background:#fff" target="_blank" href="https://docs.google.com/spreadsheets/d/1aq8n8EWhcZq-rtPn4szUsM7eIJmxidYGF_A_T60GTjU/edit?usp=sharing"><i class="fas fa-external-link-alt"></i> Buka Spreadsheet</a>
                     <button class="btn-action" style="background:#fff" onclick="downloadTemplate()"><i class="fas fa-download"></i> Download Template</button>
                     <input type="file" id="impFile" accept=".xlsx,.xls" style="display:none" onchange="importExcel(event)">
                     <button class="btn-action btn-upload" onclick="document.getElementById('impFile').click()"><i class="fas fa-upload"></i> Import Data</button>
                 </div></div>
-            <div class="master-table-wrapper"><table class="master-table" id="tblMasterData"><thead><tr><th>NO</th><th>NAMA</th><th>NRP</th><th>AREA</th><th>PIC</th><th>STATUS MODUL 1</th><th>STATUS MODUL 2</th></tr></thead>
+            <div class="master-table-wrapper"><table class="master-table" id="tblMasterData"><thead><tr><th style="width:30px"><input type="checkbox" onclick="toggleAllSel(this)"></th><th>NO</th><th>NAMA</th><th>NRP</th><th>AREA</th><th>PIC</th><th>STATUS MODUL 1</th><th>STATUS MODUL 2</th><th>STATUS KERJA</th></tr></thead>
                 <tbody><tr><td colspan="7" style="text-align:center;padding:20px">Memuat data...</td></tr></tbody></table></div>
         </div>
 
@@ -365,7 +370,7 @@ body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-
 // ==========================================
 // KONFIGURASI
 // ==========================================
-const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzVnujVX5ieXEbCKeAK0rBl9u-pdmpVqwRkfTdc4i0523OuwagDPVnKvblcr5MiMy-yKQ/exec';
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwerEurBZYCfspB1ymQKynd4-3IMU9j64GByzCG5rAtMfP8bdsAmmso2YwPz52EAnKK6w/exec';
 const CACHE_KEY = 'dashboardbc_data_cache';
 let rawData = [], rawEventData = [], chartInstances = {}, lastCtx = null;
 const AREA_KEYS = ["JKT", "PKB", "BLP", "SMD", "BJM", "UPG"];
@@ -422,6 +427,7 @@ async function loadDataFromAPI(manual = false) {
         let r; try { r = JSON.parse(await res.text()); } catch (e) { throw new Error("Google Script meminta login / akses ditolak. Periksa deployment (Who has access: Anyone)."); }
         if (r.status !== "success") throw new Error(r.message || "Gagal mengambil data.");
         try { localStorage.setItem(CACHE_KEY, JSON.stringify(r.data)); } catch (e) { console.warn("Cache penuh:", e); }
+        await loadEmployeeStatus();
         processRawData(r.data);
         if (manual) Swal.fire({ title: "Berhasil!", text: "Data telah diperbarui.", icon: "success", timer: 1500, showConfirmButton: false });
     } catch (err) {
@@ -462,7 +468,7 @@ function processRawData(sheetData) {
         const MU = mod.toUpperCase();
         if (MU.includes("KNOWLEDGE")) u.kn = mod; else if (MU.includes("APPLICATION")) u.ap = mod; else { u.kn = u.kn || mod; u.ap = u.ap || mod; }
         const nilai = String(getCol(row, ["NILAI", "SCORE"])).trim();
-        events.push({ area, pic, mod, hasNilai: nilai !== "" && nilai !== "-" });
+        events.push({ key, area, pic, mod, hasNilai: nilai !== "" && nilai !== "-" });
     });
     Object.values(people).forEach(p => {
         const st = Object.values(p.units).map(u => u.hasAEFinished && u.hasAFFinished ? "DONE" : (u.hasAEFinished || u.hasAFFinished) ? "ON PROGRESS" : "NOT YET");
@@ -686,16 +692,16 @@ function renderAttn() {
 // ==========================================
 function renderDashboard() {
     const fA = $("filterArea").value, fS = $("filterStatus").value, fP = $("filterPIC").value;
-    const data = rawData.filter(d => (fA === "ALL" || d.area === fA) && (fS === "ALL" || d.finalStatus === fS) && (fP === "ALL" || d.pic === fP));
+    const data = rawData.filter(d => inScope(d) && (fA === "ALL" || d.area === fA) && (fS === "ALL" || d.finalStatus === fS) && (fP === "ALL" || d.pic === fP));
     const evMap = new Map();   // event unik per area+modul; done jika ada NILAI
-    rawEventData.filter(e => AREA_KEYS.includes(e.area) && e.mod && (fA === "ALL" || e.area === fA) && (fP === "ALL" || e.pic === fP)).forEach(e => {
+    rawEventData.filter(e => inScope({ key: e.key }) && AREA_KEYS.includes(e.area) && e.mod && (fA === "ALL" || e.area === fA) && (fP === "ALL" || e.pic === fP)).forEach(e => {
         const k = e.area + "|" + e.mod, o = evMap.get(k) || { area: e.area, mod: e.mod, pic: new Set(), done: false };
         o.pic.add(e.pic); if (e.hasNilai) o.done = true; evMap.set(k, o);
     });
     const evList = [...evMap.values()], ev = { t: evList.length, d: evList.filter(x => x.done).length };
     const n = data.length, nCov = data.filter(d => d.covStatus === "Tercoverage").length;
     const nDone = data.filter(d => d.finalStatus === "DONE").length, nProg = data.filter(d => d.finalStatus === "ON PROGRESS").length;
-    lastCtx = { data, n, nCov, nDone, nProg, ev, evList };
+    lastCtx = { data, n, nCov, nDone, nProg, ev, evList }; updateAktifNote();
 
     $("kpiTotal").textContent = n;
     $("kpiCov").innerHTML = `${nCov} <small>(${P(nCov, n)}%)</small>`;
@@ -726,12 +732,16 @@ const isBlankName = r => { const n = String(getCol(r, ["NAME", "NAMA"])).trim().
 const noData = (c, m) => `<tr><td colspan="${c}" style="text-align:center;padding:14px">${m}</td></tr>`;
 
 function renderMasterTable() {
-    const f = $("fAreaM").value; let i = 0;
+    const fa = $("fAreaM").value, fk = $("fAktifM").value, q = ($("searchM").value || "").toLowerCase(); let i = 0;
     const html = rawSheet.filter(r => !isBlankName(r)).map(r => {
-        const a = normArea(getCol(r, ["UT CORPU"])); if (f !== "ALL" && a !== f) return "";
-        return `<tr><td style="text-align:center">${++i}</td><td><b>${esc(getCol(r, ["NAME", "NAMA"]))}</b></td><td>${esc(getCol(r, ["NRP"])) || "-"}</td><td style="text-align:center">${esc(a) || "-"}</td><td>${esc(getCol(r, ["PIC"])) || "-"}</td><td style="text-align:center">${esc(getCol(r, ["STATUS MODUL 1"])) || "-"}</td><td style="text-align:center">${esc(getCol(r, ["STATUS MODUL 2"])) || "-"}</td></tr>`;
+        const a = normArea(getCol(r, ["UT CORPU"])); if (fa !== "ALL" && a !== fa) return "";
+        const name = String(getCol(r, ["NAME", "NAMA"])).trim(), nrp = String(getCol(r, ["NRP"]) ?? "").replace(/\.0+$/, "").trim(), k = nrp || name.toUpperCase(), s = statusMap[k];
+        if ((fk === "AKTIF" && s) || (fk === "RESIGN" && !s)) return "";
+        if (q && !(nrp + " " + name).toLowerCase().includes(q)) return "";
+        return `<tr><td><input type="checkbox" data-k="${esc(k)}" ${selected.has(k) ? "checked" : ""} onchange="toggleSel(this.dataset.k, this.checked)"></td><td style="text-align:center">${++i}</td><td><b>${esc(name)}</b></td><td>${esc(nrp) || "-"}</td><td style="text-align:center">${esc(a) || "-"}</td><td>${esc(getCol(r, ["PIC"])) || "-"}</td><td style="text-align:center">${esc(getCol(r, ["STATUS MODUL 1"])) || "-"}</td><td style="text-align:center">${esc(getCol(r, ["STATUS MODUL 2"])) || "-"}</td><td>${s ? `<span style="color:#dc2626;font-weight:bold">Resign</span><br><small>${esc(s)}</small>` : '<span style="color:#16a34a;font-weight:bold">Aktif</span>'}</td></tr>`;
     }).join("");
-    $("tblMasterData").querySelector("tbody").innerHTML = html || noData(7, "Tidak ada data.");
+    $("tblMasterData").querySelector("tbody").innerHTML = html || noData(9, "Tidak ada data.");
+    updateSelCount();
 }
 function downloadTemplate() {
     if (!rawSheet.length) return Swal.fire("Data Kosong", "Tunggu hingga data termuat.", "warning");
@@ -779,7 +789,7 @@ async function sendImport(action, token, data, confirm) {
 
 function generateReport() {
     const a = $("rArea").value, s = $("rStatus").value, p = $("rPic").value;
-    reportRows = rawData.filter(d => (a === "ALL" || d.area === a) && (s === "ALL" || d.finalStatus === s) && (p === "ALL" || d.pic === p));
+    reportRows = rawData.filter(d => inScope(d) && (a === "ALL" || d.area === a) && (s === "ALL" || d.finalStatus === s) && (p === "ALL" || d.pic === p));
     $("tblReport").querySelector("tbody").innerHTML = reportRows.map(d => `<tr><td><b>${esc(d.name)}</b></td><td>${esc(d.nrp) || "-"}</td><td style="text-align:center">${esc(d.area)}</td><td>${esc(d.pic)}</td><td style="text-align:center;font-weight:bold;color:${stColor(d.finalStatus)}">${d.finalStatus}</td></tr>`).join("") || noData(5, "Data tidak ditemukan.");
 }
 function saveXLSX(rows, sheet, file) { const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(rows), sheet); XLSX.writeFile(wb, file); }
@@ -800,6 +810,80 @@ function exportModal(kind) {
     if (!data.length) return Swal.fire("Kosong", "Tidak ada data untuk diekspor.", "warning");
     if (kind === "xlsx") saveXLSX(toObjs(MOD_HEAD, modRow, data), "Detail Peserta", "Follow_Up_Modul_Peserta.xlsx");
     else savePDF("Daftar Follow Up Modul Peserta", MOD_HEAD, data.map(modRow), "Follow_Up_Modul_Peserta.pdf", { 5: { cellWidth: 80 } });
+}
+
+// ==========================================
+// STAGE 5: STATUS KERJA (AKTIF / RESIGN). Karyawan tidak dihapus, hanya diberi status.
+// Kunci pegawai = NRP, jika kosong nama huruf besar (sama dengan aturan BC).
+// ==========================================
+let statusMap = {}, selected = new Set(), adminToken = "";
+const isAktif = d => !statusMap[d.key];
+const inScope = d => { const f = document.getElementById("filterAktif"); return !f || f.value !== "AKTIF" || isAktif(d); };
+function updateAktifNote() {
+    const n = rawData.filter(d => !isAktif(d)).length, el = $("aktifNote");
+    if (el) el.textContent = ($("filterAktif").value === "AKTIF" && n) ? `${rawData.length - n} aktif · ${n} resign dikecualikan` : "";
+}
+async function loadEmployeeStatus() {
+    try {
+        const r = await (await fetch(SCRIPT_URL + "?action=getStatus&t=" + Date.now(), { redirect: "follow" })).json();
+        if (r.status !== "success") throw new Error(r.message);
+        statusMap = {}; r.resigned.forEach(x => statusMap[String(x.nrp).trim()] = x.tglResign || "-");
+    } catch (e) {
+        console.error(e);
+        Swal.fire({ toast: true, position: "top-end", icon: "warning", title: "Status resign gagal dimuat, semua dihitung aktif", showConfirmButton: false, timer: 4000 });
+    }
+}
+function updateSelCount() { const el = $("selCount"); if (el) el.textContent = selected.size; }
+function toggleSel(k, on) {
+    on ? selected.add(k) : selected.delete(k);
+    document.querySelectorAll("#tblMasterData tbody input[type=checkbox]").forEach(c => { if (c.dataset.k === k) c.checked = on; });
+    updateSelCount();
+}
+function toggleAllSel(cb) { document.querySelectorAll("#tblMasterData tbody input[type=checkbox]").forEach(c => { c.checked = cb.checked; cb.checked ? selected.add(c.dataset.k) : selected.delete(c.dataset.k); }); updateSelCount(); }
+
+async function sendStatus(status, emps, tgl, alasan) {
+    if (!adminToken) {
+        const t = await Swal.fire({ title: "Admin token", input: "password", inputPlaceholder: "Token admin", showCancelButton: true });
+        if (!t.isConfirmed || !String(t.value || "").trim()) return;
+        adminToken = String(t.value).trim();
+    }
+    Swal.fire({ title: "Menyimpan...", allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+    try {
+        const res = await fetch(SCRIPT_URL, { method: "POST", headers: { "Content-Type": "text/plain;charset=utf-8" }, redirect: "follow",
+            body: JSON.stringify({ action: "setEmployeeStatus", token: adminToken, status, tglResign: tgl, alasan, by: "admin", employees: emps }) });
+        let r; try { r = JSON.parse(await res.text()); } catch (e) { throw new Error("Server menolak akses. Periksa deployment Apps Script."); }
+        if (r.status !== "success") { if (/token/i.test(r.message || "")) adminToken = ""; throw new Error(r.message); }
+        emps.forEach(e => { const k = String(e.nrp).trim(); if (status === "Resign") statusMap[k] = e.tglResign || tgl || "-"; else delete statusMap[k]; selected.delete(k); });
+        renderDashboard(); renderMasterTable();
+        Swal.fire({ title: "Berhasil", text: r.message, icon: "success" });
+    } catch (e) { Swal.fire("Gagal", e.message, "error"); }
+}
+function openStatusModal(status) {
+    const emps = rawData.filter(d => selected.has(d.key)).map(d => ({ nrp: d.key, nama: d.name, area: d.area, pic: d.pic }));
+    if (!emps.length) return Swal.fire("Belum ada yang dipilih", "Centang pegawai di tabel Master Data terlebih dahulu.", "info");
+    if (status === "Aktif") return Swal.fire({ title: `Aktifkan kembali ${emps.length} pegawai?`, icon: "question", showCancelButton: true }).then(r => r.isConfirmed && sendStatus("Aktif", emps));
+    Swal.fire({ title: `Nonaktifkan ${emps.length} pegawai`, showCancelButton: true, confirmButtonText: "Nonaktifkan", confirmButtonColor: "#ea4335",
+        html: `<input type="date" id="rsDate" class="swal2-input" value="${new Date().toISOString().slice(0, 10)}"><select id="rsWhy" class="swal2-input"><option>Resign</option><option>Pensiun</option><option>Mutasi keluar</option><option>PHK</option><option>Lainnya</option></select>`,
+        preConfirm: () => { const d = $("rsDate").value; if (!d) { Swal.showValidationMessage("Tanggal wajib diisi"); return false; } return { d, a: $("rsWhy").value }; } })
+        .then(r => r.isConfirmed && sendStatus("Resign", emps.map(e => ({ ...e, tglResign: r.value.d, alasan: r.value.a })), r.value.d, r.value.a));
+}
+// Upload daftar resign dari HR: kolom NRP, Tgl Resign, Alasan
+const toISO = v => typeof v === "number" ? new Date(Math.round((v - 25569) * 864e5)).toISOString().slice(0, 10)
+    : (m => m ? `${m[3]}-${m[2].padStart(2, "0")}-${m[1].padStart(2, "0")}` : String(v).trim())(String(v).trim().match(/^(\d{1,2})[\/.-](\d{1,2})[\/.-](\d{4})$/));
+async function handleResignFile(ev) {
+    const f = ev.target.files[0]; ev.target.value = ""; if (!f) return;
+    let rows; try { const wb = XLSX.read(await f.arrayBuffer(), { type: "array" }); rows = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], { defval: "" }); }
+    catch (e) { return Swal.fire("Gagal Membaca File", "Format file tidak terbaca.", "error"); }
+    const kk = (r, s) => Object.keys(r).find(k => k.toLowerCase().includes(s)), byKey = {}; rawData.forEach(d => byKey[d.key] = d);
+    const emps = [], miss = [];
+    rows.forEach(r => {
+        const n = String(r[kk(r, "nrp")] ?? "").replace(/\.0+$/, "").trim(); if (!n) return;
+        const d = byKey[n]; if (!d) { miss.push(n); return; }
+        emps.push({ nrp: n, nama: d.name, area: d.area, pic: d.pic, tglResign: toISO(r[kk(r, "tgl")] ?? ""), alasan: String(r[kk(r, "alasan")] || "Resign") });
+    });
+    const ok = await Swal.fire({ title: `Nonaktifkan ${emps.length} pegawai?`, icon: "question", showCancelButton: true,
+        html: miss.length ? `${miss.length} NRP tidak ditemukan: ${esc(miss.slice(0, 10).join(", "))}` : "Semua NRP cocok." });
+    if (ok.isConfirmed && emps.length) sendStatus("Resign", emps, "", "");
 }
 </script>
 </body>
