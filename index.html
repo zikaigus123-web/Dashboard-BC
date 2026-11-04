@@ -1,803 +1,616 @@
 <!DOCTYPE html>
 <html lang="id">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dashboard Monitoring Development 8 DP</title>
-    
-    <!-- FAVICON -->
-    <link rel="icon" type="image/png" href="logo corpu.png">
-    
-    <!-- Google Fonts -->
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-    
-    <!-- Bootstrap 5 CSS -->
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    
-    <!-- Font Awesome -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    
-    <!-- Leaflet CSS (Map) -->
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin=""/>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dashboard Monitoring Development BC</title>
 
-    <!-- SweetAlert2 -->
-    <link href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css" rel="stylesheet">
+<!-- Favicon -->
+<link rel="icon" type="image/png" href="logo corpu.png">
 
-    <!-- SheetJS (Excel) -->
-    <script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
-    
-    <!-- jsPDF & AutoTable -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.1/jspdf.plugin.autotable.min.js"></script>
+<!-- Font Awesome untuk Icon Sidebar -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
-    <style>
-        :root {
-            --primary-bg: #F1F5F9;
-            --sidebar-bg: #1A1A1A;
-            --sidebar-hover: #2D3748;
-            --brand-color: #ffc107;
-            --brand-hover: #e0a800;
-            --text-main: #2D3748;
-            --text-muted: #718096;
-            --card-bg: #ffffff;
-            --border-color: #E2E8F0;
-        }
+<!-- SweetAlert2 untuk Popup -->
+<link href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
-        body {
-            font-family: 'Inter', sans-serif;
-            background-color: var(--primary-bg);
-            color: var(--text-main);
-            overflow-x: hidden;
-            margin: 0;
-            height: 100vh;
-        }
+<!-- Chart.js CDN & Plugin DataLabels -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2"></script>
 
-        /* ==========================================
-           MODAL LOGIN STYLES 
-           ========================================== */
-        .login-wrapper { 
-            height: 100vh; 
-            display: flex; 
-            align-items: center; 
-            justify-content: center; 
-            background: linear-gradient(135deg, #1A1A1A 0%, #2D3748 100%); 
-            position: fixed; 
-            top: 0; left: 0; width: 100%; z-index: 9999;
-            overflow: hidden; 
-        }
-        .login-wrapper::before { 
-            content: ''; 
-            position: absolute; 
-            width: 400px; 
-            height: 400px; 
-            background: var(--brand-color); 
-            border-radius: 50%; 
-            top: -100px; 
-            left: -100px; 
-            opacity: 0.15; 
-            filter: blur(50px); 
-        }
-        .login-card { 
-            background: rgba(255, 255, 255, 0.98); 
-            padding: 3rem; 
-            border-radius: 1.5rem; 
-            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5); 
-            width: 100%; 
-            max-width: 420px; 
-            z-index: 10; 
-            border-top: 8px solid var(--brand-color); 
-        }
-        .fade-in { animation: fadeIn 0.4s cubic-bezier(0.4, 0, 0.2, 1); }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(15px); } to { opacity: 1; transform: translateY(0); } }
+<!-- Leaflet untuk peta lokasi kerja -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
 
-        /* --- SIDEBAR --- */
-        #appContainer { display: flex; min-height: 100vh; height: 100vh; }
-        
-        .sidebar {
-            width: 250px;
-            background-color: var(--sidebar-bg);
-            color: white;
-            transition: all 0.3s ease;
-            display: flex;
-            flex-direction: column;
-            position: sticky;
-            top: 0;
-            height: 100vh;
-            z-index: 1000;
-            border-right: 3px solid var(--brand-color);
-        }
-        .sidebar.collapsed { width: 70px; }
-        .sidebar-brand {
-            padding: 1.5rem 1rem;
-            font-size: 1.2rem;
-            font-weight: 800;
-            text-align: center;
-            border-bottom: 1px solid rgba(255,255,255,0.1);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 10px;
-            color: var(--brand-color);
-        }
-        .nav-link-custom {
-            color: #d1d5db;
-            padding: 1rem 1.5rem;
-            display: flex;
-            align-items: center;
-            gap: 1rem;
-            text-decoration: none;
-            border-left: 4px solid transparent;
-            font-weight: 600;
-            transition: 0.2s;
-            white-space: nowrap;
-            cursor: pointer;
-        }
-        .nav-link-custom:hover, .nav-link-custom.active {
-            background-color: rgba(255, 193, 7, 0.1);
-            color: var(--brand-color);
-            border-left-color: var(--brand-color);
-        }
-        .sidebar.collapsed .nav-text { display: none; }
+<!-- Library SheetJS untuk Export & Import Excel (.xlsx) -->
+<script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
 
-        /* --- MAIN CONTENT & HEADER --- */
-        .main-content {
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-            width: calc(100% - 250px);
-            transition: all 0.3s ease;
-            height: 100vh;
-            overflow-y: auto;
-        }
-        
-        .topbar {
-            background: #ffffff;
-            padding: 0.5rem 1.5rem;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            border-bottom: 2px solid var(--border-color);
-            position: sticky;
-            top: 0;
-            z-index: 999;
-            flex-shrink: 0;
-        }
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.1/jspdf.plugin.autotable.min.js"></script>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #1e1e1e; color: #333; overflow: hidden; }
 
-        .header-logos img { height: 40px; object-fit: contain; }
-        .content-body { padding: 1.5rem; flex: 1; display: flex; flex-direction: column; }
+/* ==========================================
+   MODAL LOGIN STYLES
+   ========================================== */
+.login-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #18181b; display: flex; justify-content: center; align-items: center; z-index: 9999; padding: 15px; }
+.login-card { background: #ffffff; border-radius: 12px; padding: 24px 32px 30px 32px; width: 100%; max-width: 450px; box-shadow: 0 20px 40px rgba(0,0,0,0.5); text-align: center; position: relative; border-top: 6px solid #ffc107; }
+.login-header-logos { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
+.login-logo-ut { height: 32px; object-fit: contain; }
+.login-logo-corpu { height: 40px; object-fit: contain; }
+.login-icon-badge { background-color: #ffc107; width: 56px; height: 56px; border-radius: 12px; display: flex; align-items: center; justify-content: center; margin: 0 auto 12px auto; box-shadow: 0 4px 10px rgba(255, 193, 7, 0.3); }
+.login-icon-badge i { font-size: 24px; color: #111; }
+.brand-title { font-size: 24px; font-weight: 800; color: #111; letter-spacing: -0.5px; margin-bottom: 4px; }
+.brand-title span { color: #ffc107; }
+.brand-subtitle { font-size: 10.5px; font-weight: 700; color: #666; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 24px; line-height: 1.3; }
+.login-field { margin-bottom: 16px; text-align: left; }
+.login-field label { display: block; font-size: 13px; font-weight: 600; color: #444; margin-bottom: 6px; }
+.input-icon-wrapper { position: relative; display: flex; align-items: center; }
+.input-icon-wrapper i { position: absolute; left: 14px; font-size: 16px; color: #a0aec0; }
+.login-field input { width: 100%; padding: 12px 14px 12px 42px; font-size: 13.5px; border: 1px solid #e2e8f0; background-color: #f8fafc; border-radius: 8px; outline: none; transition: all 0.2s; color: #1a202c; }
+.login-field input:focus { background-color: #ffffff; border-color: #ffc107; box-shadow: 0 0 0 3px rgba(255, 193, 7, 0.2); }
+.login-btn { width: 100%; background: #ffc107; color: #111; border: none; padding: 12px; font-size: 13.5px; font-weight: 800; letter-spacing: 0.5px; border-radius: 8px; cursor: pointer; margin-top: 8px; transition: all 0.2s; box-shadow: 0 4px 12px rgba(255, 193, 7, 0.25); }
+.login-btn:hover { background: #e0a800; transform: translateY(-1px); }
 
-        /* View Toggle */
-        .view-section { display: none; flex: 1; flex-direction: column; }
-        .view-section.active { display: flex; }
+/* ==========================================
+   APP CONTAINER & SIDEBAR
+   ========================================== */
+#appContainer { display: none; height: 100vh; width: 100vw; display: flex; }
+.sidebar { width: 250px; background-color: #111; color: white; transition: all 0.3s ease; display: flex; flex-direction: column; height: 100vh; z-index: 1000; border-right: 3px solid #ffc107; flex-shrink: 0; }
+.sidebar.collapsed { width: 70px; }
+.sidebar-brand { padding: 1.5rem 1rem; font-size: 1.2rem; font-weight: 800; text-align: center; border-bottom: 1px solid rgba(255,255,255,0.1); display: flex; align-items: center; justify-content: center; gap: 10px; color: #ffc107; }
+.nav-link-custom { color: #d1d5db; padding: 1rem 1.5rem; display: flex; align-items: center; gap: 1rem; text-decoration: none; border-left: 4px solid transparent; font-weight: 600; transition: 0.2s; white-space: nowrap; cursor: pointer; font-size: 14px; }
+.nav-link-custom:hover, .nav-link-custom.active { background-color: rgba(255, 193, 7, 0.1); color: #ffc107; border-left-color: #ffc107; }
+.sidebar.collapsed .nav-text { display: none; }
 
-        /* --- FILTER BAR --- */
-        .filter-container {
-            background: #ffffff;
-            border: 2px solid #000;
-            border-radius: 6px;
-            padding: 10px 15px;
-            margin-bottom: 15px;
-            display: flex;
-            flex-wrap: wrap;
-            gap: 15px;
-            align-items: center;
-            justify-content: space-between;
-            box-shadow: 2px 2px 0px rgba(0,0,0,0.1);
-            flex-shrink: 0;
-        }
-        
-        .filter-group { display: flex; align-items: center; gap: 8px; }
-        .filter-group label { font-weight: 700; font-size: 0.85rem; color:#000; }
-        .form-select-sm { border: 1px solid #777; font-weight: 600; min-width: 130px; color:#000; }
+.main-content { flex: 1; display: flex; flex-direction: column; height: 100vh; overflow-y: auto; background-color: #e5e7eb; }
+.topbar { background: #ffffff; padding: 10px 20px; display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #ccc; position: sticky; top: 0; z-index: 999; flex-shrink: 0; }
+.topbar-left { display: flex; align-items: center; gap: 15px; }
+.toggle-btn { background: #fff; border: 1px solid #111; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-size: 16px; }
+.toggle-btn:hover { background: #eee; }
+.topbar-title { font-size: 18px; font-weight: 800; font-style: italic; color: #111; margin: 0; }
+.header-logos { display: flex; gap: 10px; align-items: center; }
+.header-logos img { height: 35px; object-fit: contain; }
 
-        .btn-brand {
-            background-color: var(--brand-color);
-            color: #000;
-            border: 2px solid #000;
-            font-weight: 800;
-            transition: 0.2s;
-        }
-        .btn-brand:hover { background-color: var(--brand-hover); color: #000; transform: translateY(-1px); }
+.view-section { display: none; flex: 1; flex-direction: column; padding: 15px; animation: fadeIn 0.4s ease; }
+.view-section.active { display: flex; }
+@keyframes fadeIn { from { opacity: 0; transform: scale(0.98); } to { opacity: 1; transform: scale(1); } }
 
-        /* --- CARDS & KPI --- */
-        .card-custom {
-            background: #ffffff;
-            border-radius: 6px;
-            border: 2px solid #000;
-            padding: 1rem;
-            margin-bottom: 1rem;
-            box-shadow: 3px 3px 0px rgba(0,0,0,0.1);
-            height: 100%;
-            display: flex;
-            flex-direction: column;
-        }
-        .card-header-title {
-            background: var(--brand-color);
-            border: 2px solid #000;
-            padding: 6px;
-            text-align: center;
-            font-weight: 800;
-            font-style: italic;
-            border-radius: 4px;
-            margin-bottom: 10px;
-            font-size: 0.95rem;
-            color: #000;
-            flex-shrink: 0;
-        }
-        .kpi-title { font-size: 0.85rem; color: #555; font-weight: 700; text-transform: uppercase; }
-        .kpi-value { font-size: 2rem; font-weight: 800; color: #000; line-height: 1.1; margin-top: 5px; }
+/* ==========================================
+   DASHBOARD STYLES
+   ========================================== */
+.filter-container { background: #ffffff; border: 2px solid #000; border-radius: 4px; padding: 6px 12px; margin-bottom: 10px; display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
+.filter-left, .filter-right { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.filter-container label { font-weight: bold; font-size: 12px; }
+.filter-select { padding: 4px 8px; font-size: 12px; border-radius: 4px; border: 1px solid #aaa; outline: none; min-width: 140px; }
 
-        /* --- CHARTS --- */
-        .chart-wrapper { 
-            position: relative; 
-            width: 100%;
-            height: 220px; 
-        }
-        canvas { max-height: 100% !important; max-width: 100% !important; }
+.btn-action { background-color: #ffb703; color: #000; border: 2px solid #000; padding: 6px 12px; font-size: 12px; font-weight: bold; border-radius: 4px; cursor: pointer; text-decoration: none; display: inline-flex; align-items: center; gap: 6px; transition: background-color 0.2s, transform 0.1s; }
+.btn-action:hover { background-color: #e0a200; transform: translateY(-1px); }
 
-        /* --- TABLE --- */
-        .table-custom th {
-            background-color: var(--brand-color) !important;
-            color: #000 !important;
-            border: 1px solid #000;
-            font-weight: 700;
-            text-align: center;
-            font-size: 0.85rem;
-            position: sticky; 
-            top: 0; 
-            z-index: 10;
-        }
-        .table-custom td {
-            border: 1px solid #ccc;
-            font-size: 0.85rem;
-            vertical-align: middle;
-            color:#000;
-        }
+.main-layout { display: grid; grid-template-columns: 1fr 2fr; gap: 10px; margin-bottom: 10px; align-items: stretch; }
+.left-column, .right-column { display: flex; flex-direction: column; gap: 10px; }
+.top-right-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.column-card { background: #ffffff; border: 2px solid #000; border-radius: 4px; padding: 8px; display: flex; flex-direction: column; gap: 8px; height: 100%; width: 100%; flex: 1; }
+.column-header, .sub-header { background: #ffb703; border: 2px solid #000; padding: 4px; text-align: center; font-weight: bold; font-style: italic; color: #000; border-radius: 4px; }
+.column-header { font-size: 15px; }
+.sub-header { font-size: 11px; padding: 3px; }
+.chart-wrapper { display: flex; flex-direction: column; gap: 4px; flex: 1; min-height: 0; min-width: 0; }
+.canvas-wrapper { position: relative; width: 100%; height: 100%; min-height: 0; min-width: 0; }
+.chart-box { background: #ffffff; border: 1px solid #ccc; border-radius: 4px; padding: 6px; height: 200px; position: relative; flex: 1; min-height: 0; min-width: 0; display: flex; flex-direction: column; }
 
-        /* --- MAP --- */
-        #mapArea { flex: 1 1 0; min-height: 250px; width: 100%; border-radius: 6px; border: 1px solid #000; z-index: 1; }
+/* KPI BOX & TABLE */
+.kpi-container { background: #ffffff; border: 2px solid #000; border-radius: 4px; padding: 10px 12px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; }
+.kpi-content-wrapper { display: grid; grid-template-columns: 50px 1fr; gap: 12px; align-items: center; width: 100%; }
+.kpi-icon-box { background: #ffb703; border: 2px solid #000; border-radius: 8px; padding: 6px; display: flex; align-items: center; justify-content: center; width: 50px; height: 50px; font-size: 24px; color: #000; }
+.kpi-metrics { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; width: 100%; align-items: center; }
+.kpi-item { display: flex; flex-direction: column; align-items: center; text-align: center; justify-content: center; }
+.kpi-item h3 { font-size: 18px; font-weight: 800; color: #000; line-height: 1.1; margin-bottom: 2px; width: 100%; }
+.kpi-item p { font-size: 10px; font-weight: bold; color: #444; line-height: 1.2; margin: 0; }
 
-        /* --- FULLSCREEN --- */
-        :fullscreen .sidebar { display: none !important; }
-        :fullscreen .topbar { display: none !important; }
-        :fullscreen .main-content { width: 100vw !important; height: 100vh !important; overflow: hidden !important; }
-        :fullscreen #view-dashboard { display: flex; flex-direction: column; padding: 8px !important; gap: 8px !important; height: 100vh !important; min-height: 100vh !important; overflow: hidden !important; }
-        
-        :fullscreen .filter-container { flex: 0 0 auto; margin-bottom: 0 !important; padding: 5px 10px !important; min-height: 0 !important; }
-        :fullscreen .row { flex: 1 1 0 !important; margin-bottom: 0 !important; flex-wrap: nowrap !important; gap: 8px !important; min-height: 0 !important; }
-        :fullscreen .row > div { padding: 0 !important; display: flex; flex-direction: column; flex: 1; min-height: 0 !important; }
-        
-        :fullscreen .kpi-row { flex: 0 0 auto !important; }
-        :fullscreen .pie-row { flex: 1 1 0 !important; min-height: 0 !important; }
-        :fullscreen .bar-row { flex: 1 1 0 !important; min-height: 0 !important; }
-        :fullscreen .map-row { flex: 1.2 1 0 !important; min-height: 0 !important; }
-        :fullscreen .map-row > div:nth-child(1) { flex: 0 0 35% !important; }
-        :fullscreen .map-row > div:nth-child(2) { flex: 0 0 65% !important; }
+.jabatan-table-container { background: #ffffff; border: 2px solid #000; border-radius: 4px; padding: 8px; flex: 1; }
+.table-wrapper { max-height: 160px; overflow-y: auto; }
+.jabatan-table { width: 100%; border-collapse: collapse; font-size: 11px; }
+.jabatan-table th, .jabatan-table td { border: 1px solid #ccc; padding: 4px 8px; text-align: left; color:#000;}
+.jabatan-table th { background-color: #ffb703; color: #000; font-weight: bold; position: sticky; top: 0; }
+.jabatan-table tr:nth-child(even) { background-color: #f9fafb; }
+.jabatan-table td.count-col { text-align: center; font-weight: bold; }
 
-        :fullscreen .card-custom { padding: 8px !important; margin-bottom: 0 !important; height: 100% !important; }
-        :fullscreen .card-header-title { margin-bottom: 4px !important; padding: 2px !important; font-size: 0.75rem !important; }
-        :fullscreen .kpi-title { font-size: 0.7rem !important; }
-        :fullscreen .kpi-value { font-size: 1.4rem !important; margin-top: 2px !important; }
-        
-        :fullscreen .chart-wrapper { flex: 1 1 0 !important; height: 100% !important; min-height: 0 !important; }
-        :fullscreen .table-responsive { flex: 1 1 0 !important; height: 100% !important; min-height: 0 !important; overflow-y: auto !important; display: flex; flex-direction: column; }
-        :fullscreen #mapArea { flex: 1 1 0 !important; height: 100% !important; min-height: 0 !important; }
-        
-        :fullscreen .table-custom th, :fullscreen .table-custom td { padding: 4px !important; font-size: 0.75rem !important; }
-        :fullscreen .table-custom { margin-bottom: 0 !important; }
+.bottom-section { background: #ffffff; border: 2px solid #000; border-radius: 4px; padding: 10px; display: flex; flex-direction: column; gap: 8px; }
+.bottom-chart-box { height: 220px; position: relative; min-height: 0; min-width: 0; display: flex; flex-direction: column; }
 
-        /* Kompatibilitas Webkit Fullscreen */
-        :-webkit-full-screen .sidebar { display: none !important; }
-        :-webkit-full-screen .topbar { display: none !important; }
-        :-webkit-full-screen .main-content { width: 100vw !important; height: 100vh !important; overflow: hidden !important; }
-        :-webkit-full-screen #view-dashboard { display: flex; flex-direction: column; padding: 8px !important; gap: 8px !important; height: 100vh !important; min-height: 100vh !important; overflow: hidden !important; }
-        
-        :-webkit-full-screen .filter-container { flex: 0 0 auto; margin-bottom: 0 !important; padding: 5px 10px !important; min-height: 0 !important; }
-        :-webkit-full-screen .row { flex: 1 1 0 !important; margin-bottom: 0 !important; flex-wrap: nowrap !important; gap: 8px !important; min-height: 0 !important; }
-        :-webkit-full-screen .row > div { padding: 0 !important; display: flex; flex-direction: column; flex: 1; min-height: 0 !important; }
-        
-        :-webkit-full-screen .kpi-row { flex: 0 0 auto !important; }
-        :-webkit-full-screen .pie-row { flex: 1 1 0 !important; min-height: 0 !important; }
-        :-webkit-full-screen .bar-row { flex: 1 1 0 !important; min-height: 0 !important; }
-        :-webkit-full-screen .map-row { flex: 1.2 1 0 !important; min-height: 0 !important; }
-        :-webkit-full-screen .map-row > div:nth-child(1) { flex: 0 0 35% !important; }
-        :-webkit-full-screen .map-row > div:nth-child(2) { flex: 0 0 65% !important; }
+/* ==========================================
+   MASTER DATA VIEW STYLES
+   ========================================== */
+.master-header { display: flex; justify-content: space-between; align-items: center; padding-bottom: 15px; border-bottom: 2px solid #ccc; margin-bottom: 15px; color:#111; }
+.master-header h2 { font-size: 20px; font-weight: 800; }
+.btn-upload { background-color: #34a853; color: white; border: 2px solid #1a6d32; }
+.btn-upload:hover { background-color: #2b8b44; }
 
-        :-webkit-full-screen .card-custom { padding: 8px !important; margin-bottom: 0 !important; height: 100% !important; }
-        :-webkit-full-screen .card-header-title { margin-bottom: 4px !important; padding: 2px !important; font-size: 0.75rem !important; }
-        :-webkit-full-screen .kpi-title { font-size: 0.7rem !important; }
-        :-webkit-full-screen .kpi-value { font-size: 1.4rem !important; margin-top: 2px !important; }
-        
-        :-webkit-full-screen .chart-wrapper { flex: 1 1 0 !important; height: 100% !important; min-height: 0 !important; }
-        :-webkit-full-screen .table-responsive { flex: 1 1 0 !important; height: 100% !important; min-height: 0 !important; overflow-y: auto !important; display: flex; flex-direction: column; }
-        :-webkit-full-screen #mapArea { flex: 1 1 0 !important; height: 100% !important; min-height: 0 !important; }
-        
-        :-webkit-full-screen .table-custom th, :-webkit-full-screen .table-custom td { padding: 4px !important; font-size: 0.75rem !important; }
-        :-webkit-full-screen .table-custom { margin-bottom: 0 !important; }
+.master-table-wrapper { background: #fff; border: 2px solid #000; border-radius: 4px; flex: 1; overflow: auto; }
+.master-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+.master-table th, .master-table td { border: 1px solid #ddd; padding: 8px; text-align: left; color:#000;}
+.master-table th { background-color: #ffb703; color: #000; position: sticky; top: 0; z-index: 2; }
+.master-table tr:nth-child(even) { background-color: #f9fafb; }
 
-        /* SPINNER Animasi Load */
-        @keyframes spin { 100% { transform: rotate(360deg); } }
-        .fa-spin-fast { animation: spin 0.8s linear infinite; }
-    </style>
+/* ==========================================
+   FULLSCREEN OVERRIDES
+   ========================================== */
+:fullscreen .sidebar { display: none !important; }
+:fullscreen .topbar { display: none !important; }
+:fullscreen .main-content { width: 100vw !important; height: 100vh !important; padding: 0 !important; }
+:fullscreen #view-dashboard { padding: 8px; height: 100vh; overflow: hidden; justify-content: space-between; }
+:fullscreen .filter-container { margin-bottom: 8px; padding: 4px 10px; }
+:fullscreen .main-layout { margin-bottom: 8px; gap: 8px; flex: 1; min-height: 0; }
+:fullscreen .bottom-section { height: 160px; flex-shrink: 0; padding: 6px; }
+
+:-webkit-full-screen .sidebar { display: none !important; }
+:-webkit-full-screen .topbar { display: none !important; }
+:-webkit-full-screen .main-content { width: 100vw !important; height: 100vh !important; padding: 0 !important; }
+:-webkit-full-screen #view-dashboard { padding: 8px; height: 100vh; overflow: hidden; justify-content: space-between; }
+:-webkit-full-screen .filter-container { margin-bottom: 8px; padding: 4px 10px; }
+:-webkit-full-screen .main-layout { margin-bottom: 8px; gap: 8px; flex: 1; min-height: 0; }
+:-webkit-full-screen .bottom-section { height: 160px; flex-shrink: 0; padding: 6px; }
+
+.spinning { animation: spin 0.8s linear infinite; }
+@keyframes spin { 100% { transform: rotate(360deg); } }
+
+/* ===== DASHBOARD V2 ===== */
+.v2-mapcard{background:#fff;border:2px solid #000;border-radius:6px;padding:10px 12px;margin-bottom:10px;display:flex;flex-direction:column;height:360px;flex:none;min-width:0}
+#lokMap{flex:1;min-height:0;border:1px solid #ccc;border-radius:4px;z-index:0;background:#eef2f6}
+.map-lbl{background:transparent!important;border:0!important;box-shadow:none!important;font-weight:800;font-size:11px;color:#000;text-shadow:0 0 3px #fff,0 0 3px #fff,0 0 3px #fff;padding:0}
+.map-lbl:before{display:none!important}
+.map-legend{background:#fff;border:2px solid #000;border-radius:6px;padding:6px 10px;font-size:12px;font-weight:700;line-height:1.7}
+.map-legend i{display:inline-block;width:12px;height:12px;border-radius:50%;border:1px solid #000;margin-right:6px;vertical-align:-2px}
+:fullscreen .v2-mapcard{flex:1 1 0;height:auto;min-height:260px}
+:-webkit-full-screen .v2-mapcard{flex:1 1 0;height:auto;min-height:260px}
+.v2{display:grid;grid-template-columns:repeat(3,1fr) 1.9fr;gap:10px}
+.v2-kpis{grid-column:1/-1;display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
+.v2-kpi,.v2-card{background:#fff;border:2px solid #000;border-radius:6px;padding:10px 12px;min-width:0}
+.v2-kpi{border-left:6px solid #ffb703}
+.v2-kpi span{font-size:13px;font-weight:700;color:#555;text-transform:uppercase}
+.v2-kpi,.v2-click{cursor:pointer;transition:box-shadow .15s,transform .1s}
+.v2-kpi:hover,.v2-click:hover{box-shadow:0 3px 10px rgba(0,0,0,.25);transform:translateY(-1px)}
+.v2-i{color:#9ca3af;margin-left:4px;font-size:12px}
+.v2-kpi b span.kn{font-size:30px;font-weight:800;text-transform:none}
+.v2-kpi b span.kl{font-size:14px;font-weight:700;color:#444;text-transform:none;margin:0 14px 0 4px}
+.v2-kpi b{display:block;font-size:28px;font-weight:800;line-height:1.2;color:#000}
+.v2-kpi b small{font-size:18px;font-weight:700;color:#444}
+.v2-bar{height:8px;background:#e5e7eb;border-radius:3px;overflow:hidden}
+.v2-bar i{display:block;height:100%;background:#34a853;transition:width .6s}
+.v2-h{font-size:14px;font-weight:800;color:#000;margin-bottom:8px;padding-left:8px;border-left:4px solid #ffb703;text-transform:uppercase}
+.v2-gauge{position:relative;height:175px}
+.v2-gc{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;pointer-events:none;text-align:center}
+.v2-gc b{font-size:32px;font-weight:800;color:#000}.v2-gc span{font-size:13px;font-weight:700;color:#444;max-width:130px;line-height:1.3}
+.v2-gain{grid-column:4;grid-row:2/4;position:relative;min-height:440px}
+.v2-gainhead{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:6px;flex-wrap:wrap}
+.v2-gainhead .v2-h{margin:0}
+.v2-gainhead select{font-size:12px;padding:3px 6px;border:1px solid #aaa;border-radius:4px}
+.v2-leg{display:flex;gap:14px;font-size:12px;font-weight:700;color:#333;margin-bottom:4px}
+.v2-leg i{display:inline-block;width:12px;height:12px;border-radius:2px;margin-right:5px;vertical-align:-2px}
+.v2-gainscroll{position:absolute;left:12px;right:12px;bottom:10px;top:92px;overflow-y:auto}
+.v2-heatcard{grid-column:1/3;grid-row:3}.v2-attn{grid-column:3;grid-row:3}.v2-table{grid-column:1/-1}
+.v2-heat{width:100%;border-collapse:collapse;font-size:14px;text-align:center}
+.v2-heat th{cursor:pointer}
+.v2-heat th{background:#ffb703;border:1px solid #000;padding:4px}
+.v2-heat td{border:1px solid #ddd;padding:4px 6px;color:#000}
+.v2-heat tbody tr:hover{outline:2px solid #000}
+.v2-hc{display:flex;align-items:center;gap:6px}.v2-hc i{display:block;height:10px;border-radius:2px;flex:none}
+#attn{max-height:250px;overflow-y:auto;padding-right:4px}
+.v2-at{display:grid;grid-template-columns:70px 1fr 56px 30px;gap:8px;align-items:center;font-size:14px;margin-bottom:9px;font-weight:700;cursor:pointer;padding:2px 4px;border-radius:4px}
+.v2-at:hover{background:#fff7e0}
+.v2-attnote{font-size:11px;font-weight:600;color:#777;text-transform:none;margin-left:6px}
+.v2-at small{color:#555;font-size:13px}
+@media(max-width:1100px){.v2{grid-template-columns:1fr 1fr}.v2-gain,.v2-heatcard,.v2-attn{grid-column:1/-1;grid-row:auto}.v2-gain{min-height:560px}}
+:fullscreen #view-dashboard,:-webkit-full-screen #view-dashboard{overflow:auto}
+:fullscreen .v2-table,:-webkit-full-screen .v2-table{display:none}
+/* ===== BC additions ===== */
+.text-center{text-align:center}.fw-bold{font-weight:700}.text-dark{color:#000}.text-muted{color:#6b7280}.text-danger{color:#dc2626}
+.py-4{padding-top:24px!important;padding-bottom:24px!important}.py-5{padding-top:32px!important;padding-bottom:32px!important}.me-2{margin-right:8px}
+.badge{display:inline-block;padding:3px 10px;border-radius:4px;font-size:11px;font-weight:700;color:#fff}.border{border:1px solid #000}.text-dark{color:#000!important}
+.bg-success{background:#34a853}.bg-warning{background:#fbbc04}.bg-danger{background:#ea4335}.fa-spin-fast{animation:spin .8s linear infinite}
+.side-nav{flex:1;display:flex;flex-direction:column;gap:4px;margin-top:12px}
+.v2-gain{grid-row:2/4}.v2-pic{grid-column:1/-1}.v2-sub{font-size:11px;font-weight:800;color:#777;text-transform:uppercase;margin:6px 0 4px}
+#attn .v2-at{grid-template-columns:90px 1fr 52px 30px}#attn .v2-at span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#picWrap{max-height:260px;overflow-y:auto}
+.master-table td ul{padding-left:16px}
+.report-bar{margin-bottom:10px}
+</style>
 </head>
 <body>
 
-    <!-- ==========================================
-         SECURE LOGIN SCREEN
-         ========================================== -->
-    <div id="loginScreen" class="login-wrapper fade-in">
-        <div class="login-card text-center">
-            <div class="mb-3 d-flex justify-content-center gap-3">
-                <img src="logo ut.png" alt="UT" style="height: 40px; object-fit: contain;" onerror="this.src='https://via.placeholder.com/80x40?text=Logo+UT'">
-                <img src="logo corpu.png" alt="Corpu" style="height: 50px; object-fit: contain;" onerror="this.src='https://via.placeholder.com/80x40?text=Corpu'">
+<!-- MODAL LOGIN SECURITY -->
+<div id="loginModal" class="login-overlay">
+    <div class="login-card">
+        <div class="login-header-logos">
+            <img src="logo ut.png" alt="UT" class="login-logo-ut" onerror="this.src='https://via.placeholder.com/80x40?text=UT'">
+            <img src="logo corpu.png" alt="Corpu" class="login-logo-corpu" onerror="this.src='https://via.placeholder.com/80x40?text=Corpu'">
+        </div>
+        <div class="login-icon-badge"><i class="fas fa-shield-alt"></i></div>
+        <h2 class="brand-title">BC <span>Development</span></h2>
+        <div class="brand-subtitle">DASHBOARD MONITORING DEVELOPMENT BC</div>
+
+        <form onsubmit="handleLogin(event)">
+            <div class="login-field">
+                <label>Username / NIK</label>
+                <div class="input-icon-wrapper">
+                    <i class="fas fa-user"></i>
+                    <input type="text" id="username" placeholder="Masukkan ID Anda" required autocomplete="off">
+                </div>
             </div>
-            <h3 class="fw-bold mb-1 text-dark">8 DP Portal</h3>
-            <p class="fw-bold text-dark mb-4" style="font-size: 0.85rem;">SECURE ENTERPRISE LOGIN</p>
-            
-            <form id="loginForm" onsubmit="handleLogin(event)">
-                <div class="mb-3 text-start">
-                    <label class="form-label fw-bold small text-dark">Username</label>
-                    <div class="input-group">
-                        <span class="input-group-text bg-light border-end-0"><i class="fas fa-user text-muted"></i></span>
-                        <input type="text" class="form-control border-start-0 ps-0 bg-light" id="username" required>
-                    </div>
+            <div class="login-field">
+                <label>Password</label>
+                <div class="input-icon-wrapper">
+                    <i class="fas fa-lock"></i>
+                    <input type="password" id="password" placeholder="••••••••" required>
                 </div>
-                <div class="mb-4 text-start">
-                    <label class="form-label fw-bold small text-dark">Password</label>
-                    <div class="input-group">
-                        <span class="input-group-text bg-light border-end-0"><i class="fas fa-lock text-muted"></i></span>
-                        <input type="password" class="form-control border-start-0 ps-0 bg-light" id="password" required>
-                        <button class="btn btn-light border" type="button" onclick="togglePassword()"><i class="fas fa-eye text-muted" id="eyeIcon"></i></button>
-                    </div>
-                </div>
-                <button type="submit" class="btn btn-brand w-100 py-2 fs-6 shadow-sm border-2">MASUK KE SISTEM <i class="fas fa-arrow-right ms-2"></i></button>
-            </form>
+            </div>
+            <button type="submit" class="login-btn">MASUK KE SISTEM <i class="fas fa-arrow-right ms-2"></i></button>
+        </form>
+    </div>
+</div>
+
+<!-- MODAL TABLE FULLSCREEN (POP UP TABEL BESAR) -->
+<div id="tableModal" class="login-overlay" style="display: none; z-index: 10000; padding: 30px;">
+    <div class="login-card" style="max-width: 1000px; width: 100%; height: 90%; display: flex; flex-direction: column; padding: 20px; box-shadow: 0 10px 40px rgba(0,0,0,0.6);">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; border-bottom: 2px solid #f1f5f9; padding-bottom: 10px;">
+            <h2 class="brand-title" style="font-size: 20px; margin:0; text-align: left; color:#111;" id="modalTableTitle">Detail Status Peserta</h2>
+            <div style="display: flex; gap: 10px;">
+                <button class="btn-action" style="background:#10b981; color:#fff; border-color:#047857;" onclick="exportModalExcel()">
+                    <i class="fas fa-file-excel"></i> Download Excel
+                </button>
+                <button class="btn-action" style="background:#fff;" onclick="exportModalPDF()"><i class="fas fa-file-pdf"></i> Download PDF</button>
+                <button class="btn-action" style="background:#e53e3e; color:#fff; border-color:#b91c1c;" onclick="closeTableModal()">
+                    <i class="fas fa-times"></i> Tutup
+                </button>
+            </div>
+        </div>
+        <div style="overflow-y: auto; flex: 1; border: 1px solid #ccc; border-radius: 4px; text-align: left;">
+            <table class="jabatan-table" style="width: 100%; font-size: 13px;">
+                <thead id="modalTableHead"></thead>
+                <tbody id="modalTableBody"></tbody>
+            </table>
         </div>
     </div>
+</div>
 
-    <!-- ==========================================
-         MODAL LIHAT SEMUA KARYAWAN
-         ========================================== -->
-    <div class="modal fade" id="modalPeserta" tabindex="-1" aria-hidden="true">
-      <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
-        <div class="modal-content border-dark border-2">
-          <div class="modal-header bg-warning align-items-center">
-            <h5 class="modal-title fw-bold text-dark mb-0"><i class="fas fa-users me-2"></i>Detail Seluruh Status Peserta</h5>
-            <div class="ms-auto me-3">
-                <button class="btn btn-sm btn-success fw-bold me-2" onclick="exportModalExcel()"><i class="fas fa-file-excel me-1"></i> Excel</button>
-                <button class="btn btn-sm btn-danger fw-bold" onclick="exportModalPDF()"><i class="fas fa-file-pdf me-1"></i> PDF</button>
-            </div>
-            <button type="button" class="btn-close m-0" data-bs-dismiss="modal" aria-label="Close"></button>
-          </div>
-          <div class="modal-body p-0">
-            <table class="table table-hover table-custom mb-0" id="tablePesertaFull">
-              <thead style="position: sticky; top: 0; z-index: 10;">
-                <tr>
-                  <th>Nama / NRP</th>
-                  <th>Area</th>
-                  <th>PIC</th>
-                  <th>Final Status</th>
-                  <th style="width: 35%;">Modul Belum Selesai</th> <!-- NEW COLUMN ADDED -->
-                </tr>
-              </thead>
-              <tbody></tbody>
-            </table>
-          </div>
+<!-- APP WRAPPER -->
+<div id="appContainer">
+  <div class="sidebar" id="sidebar">
+    <div class="sidebar-brand"><i class="fas fa-chart-line"></i><span class="nav-text">BC Portal</span></div>
+    <div class="side-nav">
+      <div class="nav-link-custom active" onclick="switchView('dashboard', this)"><i class="fas fa-home"></i> <span class="nav-text">Dashboard Overview</span></div>
+      <div class="nav-link-custom" onclick="switchView('database', this)"><i class="fas fa-database"></i> <span class="nav-text">Master Data</span></div>
+      <div class="nav-link-custom" onclick="switchView('report', this)"><i class="fas fa-file-invoice"></i> <span class="nav-text">Laporan (Report)</span></div>
+      <div style="margin-top:auto;margin-bottom:15px"><div class="nav-link-custom" style="color:#ef4444" onclick="logout()"><i class="fas fa-sign-out-alt"></i> <span class="nav-text">Keluar</span></div></div>
+    </div>
+  </div>
+  <div class="main-content">
+    <div class="topbar">
+      <div class="topbar-left"><button class="toggle-btn" onclick="toggleSidebar()"><i class="fas fa-bars"></i></button><h1 class="topbar-title">DASHBOARD MONITORING DEVELOPMENT BC</h1></div>
+      <div class="header-logos"><img src="logo ut.png" alt="UT" onerror="this.src='https://via.placeholder.com/80x40?text=UT'"><img src="logo corpu.png" alt="Corpu" onerror="this.src='https://via.placeholder.com/80x40?text=Corpu'"></div>
+    </div>
+
+    <div id="view-dashboard" class="view-section active">
+      <div class="filter-container">
+        <div class="filter-left">
+          <label>Area:</label>
+          <select id="filterArea" class="filter-select" onchange="renderDashboard()"><option value="ALL">-- Semua Area --</option><option value="JKT">Jakarta (JKT)</option><option value="PKB">Pekanbaru (PKB)</option><option value="BLP">Balikpapan (BLP)</option><option value="SMD">Samarinda (SMD)</option><option value="BJM">Banjarmasin (BJM)</option><option value="UPG">Ujung Pandang (UPG)</option></select>
+          <label>PIC:</label>
+          <select id="filterPIC" class="filter-select" onchange="renderDashboard()"><option value="ALL">Sedang Memuat...</option></select>
+          <label>Status:</label>
+          <select id="filterStatus" class="filter-select" onchange="renderDashboard()"><option value="ALL">-- Semua Status --</option><option value="DONE">Done</option><option value="ON PROGRESS">On Progress</option><option value="NOT YET">Not Yet</option></select>
+        </div>
+        <div class="filter-right">
+          <button class="btn-action" onclick="toggleFullScreen()"><i class="fas fa-tv"></i> TV / Fullscreen</button>
+          <button class="btn-action" id="btnRefresh" onclick="loadDataFromAPI(true)"><i class="fas fa-sync-alt" id="iconRefresh"></i> Refresh Data</button>
+        </div>
+      </div>
+
+      <div class="v2-mapcard">
+        <div class="v2-h" style="cursor:pointer" onclick="showInfo('map')" title="Klik untuk penjelasan">Peta Sebaran Area <i class="fas fa-info-circle v2-i"></i><span class="v2-attnote" id="mapNote"></span></div>
+        <div id="lokMap"></div>
+      </div>
+
+      <div class="v2">
+        <div class="v2-kpis">
+          <div class="v2-kpi" onclick="showInfo('total')" title="Klik untuk penjelasan"><span>Total Karyawan (Peserta)<i class="fas fa-info-circle v2-i"></i></span><b id="kpiTotal">0</b></div>
+          <div class="v2-kpi" onclick="showInfo('cov')" title="Klik untuk penjelasan"><span>Coverage (Tercoverage)<i class="fas fa-info-circle v2-i"></i></span><b id="kpiCov">0</b><div class="v2-bar"><i id="barCov"></i></div></div>
+          <div class="v2-kpi" onclick="showInfo('part')" title="Klik untuk penjelasan"><span>Progress (Done/Prog)<i class="fas fa-info-circle v2-i"></i></span><b id="kpiProg">0/0</b><div class="v2-bar"><i id="barDone"></i></div></div>
+          <div class="v2-kpi" onclick="showInfo('evt')" title="Klik untuk penjelasan"><span>Training Event (Done/Belum)<i class="fas fa-info-circle v2-i"></i></span><b id="kpiEvt">0/0</b><div class="v2-bar"><i id="barEvt"></i></div></div>
+        </div>
+        <div class="v2-card v2-click" onclick="showInfo('cov')" title="Klik untuk penjelasan"><div class="v2-h">Training Coverage<i class="fas fa-info-circle v2-i"></i></div><div class="v2-gauge"><canvas id="gCov"></canvas><div class="v2-gc" id="gCovT"></div></div></div>
+        <div class="v2-card v2-click" onclick="showInfo('part')" title="Klik untuk penjelasan"><div class="v2-h">Training Participant<i class="fas fa-info-circle v2-i"></i></div><div class="v2-gauge"><canvas id="gPart"></canvas><div class="v2-gc" id="gPartT"></div></div></div>
+        <div class="v2-card v2-click" onclick="showInfo('evt')" title="Klik untuk penjelasan"><div class="v2-h">Training Event<i class="fas fa-info-circle v2-i"></i></div><div class="v2-gauge"><canvas id="gEvt"></canvas><div class="v2-gc" id="gEvtT"></div></div></div>
+        <div class="v2-card v2-gain"><div class="v2-gainhead"><div class="v2-h" style="cursor:pointer" onclick="showInfo('gain')" title="Klik untuk penjelasan">Knowledge vs Application per Unit<i class="fas fa-info-circle v2-i"></i></div><select id="gainSortSel" onchange="gainSort=this.value;renderDashboard()"><option value="appLo">Urut: Application terendah</option><option value="kHi">Urut: Knowledge tertinggi</option><option value="nHi">Urut: Peserta terbanyak</option><option value="name">Urut: Nama A–Z</option></select></div><div class="v2-leg"><span><i style="background:#4285f4"></i>Knowledge</span><span><i style="background:#34a853"></i>Application</span><span style="color:#777;font-weight:600">Klik batang untuk detail unit</span></div><div class="v2-gainscroll"><div id="gainWrap" style="position:relative"><canvas id="cGain"></canvas></div></div></div>
+        <div class="v2-card v2-heatcard"><div class="v2-h">Peta Kinerja per Area <small style="text-transform:none;color:#777">(klik baris untuk filter)</small></div><table class="v2-heat" id="heatArea"></table></div>
+        <div class="v2-card v2-attn"><div class="v2-h" style="cursor:pointer" onclick="showInfo('attn')" title="Klik untuk penjelasan">Perlu Perhatian · Done% Terendah<i class="fas fa-info-circle v2-i"></i></div><div id="attn"></div></div>
+        <div class="v2-card v2-pic"><div class="v2-h">Peta Kinerja per PIC <small style="text-transform:none;color:#777">(klik baris untuk filter)</small></div><div id="picWrap"><table class="v2-heat" id="heatPic"></table></div></div>
+        <div class="v2-card v2-table">
+          <div class="v2-h" style="display:flex;justify-content:space-between"><span>Detail Status Peserta</span><button onclick="openTableModal()" style="background:none;border:none;cursor:pointer" title="Perbesar Tabel"><i class="fas fa-expand"></i></button></div>
+          <div class="table-wrapper"><table class="jabatan-table" id="tablePeserta"><thead id="pesertaHead"><tr><th>Nama / NRP</th><th style="text-align:center">Area</th><th>PIC</th><th style="text-align:center">Final Status</th><th style="width:35%">Modul Belum Selesai</th></tr></thead><tbody id="pesertaBody"><tr><td colspan="5" class="text-center py-4 text-muted fw-bold"><i class="fas fa-spinner fa-spin-fast me-2"></i> Sedang memuat data dari Spreadsheet...</td></tr></tbody></table></div>
         </div>
       </div>
     </div>
 
-    <div id="appContainer" class="d-none">
-        <!-- SIDEBAR -->
-        <div class="sidebar" id="sidebar">
-            <div class="sidebar-brand">
-                <i class="fas fa-chart-line"></i>
-                <span class="nav-text">8 DP Portal</span>
-            </div>
-            <div class="d-flex flex-column mt-3 gap-1">
-                <div class="nav-link-custom active" onclick="switchView('dashboard', this)">
-                    <i class="fas fa-home"></i> <span class="nav-text">Dashboard Overview</span>
-                </div>
-                <div class="nav-link-custom" onclick="switchView('database', this)">
-                    <i class="fas fa-database"></i> <span class="nav-text">Master Data</span>
-                </div>
-                <div class="nav-link-custom" onclick="switchView('report', this)">
-                    <i class="fas fa-file-invoice-dollar"></i> <span class="nav-text">Laporan (Report)</span>
-                </div>
-                <div class="mt-auto mb-3 pt-3 px-2">
-                    <div class="nav-link-custom py-2 text-danger" onclick="logout()" style="border-radius: 4px;">
-                        <i class="fas fa-sign-out-alt"></i> <span class="nav-text">Keluar</span>
-                    </div>
-                </div>
-            </div>
+    <div id="view-database" class="view-section">
+      <div class="master-header">
+        <h2>Database Master Data (Spreadsheet)</h2>
+        <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center">
+          <label style="font-weight:bold;font-size:13px">Filter Area:</label>
+          <select id="filterAreaMaster" class="filter-select" onchange="renderMasterTable()"><option value="ALL">Semua Area</option><option value="JKT">Jakarta (JKT)</option><option value="PKB">Pekanbaru (PKB)</option><option value="BLP">Balikpapan (BLP)</option><option value="SMD">Samarinda (SMD)</option><option value="BJM">Banjarmasin (BJM)</option><option value="UPG">Ujung Pandang (UPG)</option></select>
+          <a href="https://docs.google.com/spreadsheets/d/1aq8n8EWhcZq-rtPn4szUsM7eIJmxidYGF_A_T60GTjU/edit?usp=sharing" target="_blank" class="btn-action" style="background:#fff"><i class="fas fa-external-link-alt"></i> Buka Spreadsheet</a>
+          <button class="btn-action" style="background:#fff" onclick="downloadTemplate()"><i class="fas fa-download"></i> Download Template</button>
+          <input type="file" id="importExcelInput" accept=".xlsx, .xls" style="display:none" onchange="uploadExcelToCloud(event)">
+          <button class="btn-action btn-upload" onclick="document.getElementById('importExcelInput').click()"><i class="fas fa-upload"></i> Import Data (Upload)</button>
         </div>
-
-        <!-- MAIN CONTENT -->
-        <div class="main-content">
-            
-            <!-- TOPBAR -->
-            <div class="topbar">
-                <div class="d-flex align-items-center gap-3">
-                    <button class="btn btn-light border border-dark fw-bold" onclick="toggleSidebar()"><i class="fas fa-bars"></i></button>
-                    <div class="header-logos d-none d-md-flex align-items-center gap-2">
-                        <img src="logo ut.png" alt="UT" onerror="this.src='https://via.placeholder.com/80x40?text=Logo+UT'">
-                    </div>
-                </div>
-                <h4 class="mb-0 fw-bold fst-italic d-none d-lg-block" style="letter-spacing: -0.5px; color:#000;">DASHBOARD MONITORING DEVELOPMENT 8 DP</h4>
-                <div class="header-logos">
-                    <img src="logo corpu.png" alt="Corpu" onerror="this.src='https://via.placeholder.com/80x40?text=Corpu'">
-                </div>
-            </div>
-
-            <div class="content-body">
-                
-                <!-- ==================== VIEW 1: DASHBOARD OVERVIEW ==================== -->
-                <div id="view-dashboard" class="view-section active">
-                    
-                    <!-- FILTER & ACTIONS -->
-                    <div class="filter-container">
-                        <div class="d-flex flex-wrap gap-3">
-                            <div class="filter-group">
-                                <label>Filter Area:</label>
-                                <select id="filterArea" class="form-select form-select-sm shadow-sm" onchange="renderDashboard()">
-                                    <option value="ALL">Semua Area</option>
-                                    <option value="JKT">Jakarta (JKT)</option>
-                                    <option value="PKB">Pekanbaru (PKB)</option>
-                                    <option value="BLP">Balikpapan (BLP)</option>
-                                    <option value="SMD">Samarinda (SMD)</option>
-                                    <option value="BJM">Banjarmasin (BJM)</option>
-                                    <option value="UPG">Ujung Pandang (UPG)</option>
-                                </select>
-                            </div>
-                            <div class="filter-group">
-                                <label>Filter Status:</label>
-                                <select id="filterStatus" class="form-select form-select-sm shadow-sm" onchange="renderDashboard()">
-                                    <option value="ALL">Semua Status</option>
-                                    <option value="DONE">Done</option>
-                                    <option value="ON PROGRESS">On Progress</option>
-                                    <option value="NOT YET">Not Yet</option>
-                                </select>
-                            </div>
-                            <div class="filter-group">
-                                <label>Filter PIC:</label>
-                                <select id="filterPIC" class="form-select form-select-sm shadow-sm" onchange="renderDashboard()">
-                                    <option value="ALL">Sedang Memuat...</option>
-                                </select>
-                            </div>
-                        </div>
-                        
-                        <div class="d-flex gap-2">
-                            <button class="btn btn-brand btn-sm" id="btnRefresh" onclick="loadDataFromAPI(true)"><i class="fas fa-sync-alt me-1" id="iconRefresh"></i> Refresh Data</button>
-                            <button class="btn btn-dark btn-sm fw-bold border-2 border-dark" onclick="toggleFullscreen()"><i class="fas fa-tv me-1"></i> Fullscreen</button>
-                        </div>
-                    </div>
-
-                    <!-- KPI SCORECARDS -->
-                    <div class="row g-3 kpi-row">
-                        <div class="col-md-4">
-                            <div class="card-custom text-center justify-content-center">
-                                <div class="kpi-title">Total Karyawan (Peserta)</div>
-                                <div class="kpi-value text-dark" id="kpiTotal">0</div>
-                            </div>
-                        </div>
-                        <div class="col-md-4">
-                            <div class="card-custom text-center justify-content-center">
-                                <div class="kpi-title">Coverage (Tercapai / Karyawan)</div>
-                                <div class="kpi-value text-success" id="kpiCoverage">0 <span style="font-size: 1.1rem; color: #555;">(0%)</span></div>
-                            </div>
-                        </div>
-                        <div class="col-md-4">
-                            <div class="card-custom text-center justify-content-center">
-                                <div class="kpi-title">Progress (On Progress / Not Yet)</div>
-                                <div class="kpi-value"><span class="text-warning" id="kpiProgress">0</span> <span style="color:#ccc;">/</span> <span class="text-danger" id="kpiNotYet">0</span></div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- PIE CHARTS ROW -->
-                    <div class="row g-3 pie-row">
-                        <div class="col-md-4">
-                            <div class="card-custom">
-                                <div class="card-header-title">Training Coverage</div>
-                                <div class="chart-wrapper"><canvas id="pieCoverage"></canvas></div>
-                            </div>
-                        </div>
-                        <div class="col-md-4">
-                            <div class="card-custom">
-                                <div class="card-header-title">Training Participant</div>
-                                <div class="chart-wrapper"><canvas id="pieParticipant"></canvas></div>
-                            </div>
-                        </div>
-                        <div class="col-md-4">
-                            <div class="card-custom">
-                                <div class="card-header-title">Distribution By Area</div>
-                                <div class="chart-wrapper"><canvas id="pieArea"></canvas></div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- BAR CHARTS ROW -->
-                    <div class="row g-3 bar-row">
-                        <div class="col-md-6">
-                            <div class="card-custom">
-                                <div class="card-header-title">Training Event per Area</div>
-                                <div class="chart-wrapper"><canvas id="barCoverage"></canvas></div>
-                            </div>
-                        </div>
-                        <div class="col-md-6">
-                            <div class="card-custom">
-                                <div class="card-header-title">Training Participant per Area</div>
-                                <div class="chart-wrapper"><canvas id="barParticipant"></canvas></div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- MAP & TABLE ROW -->
-                    <div class="row g-3 map-row">
-                        <div class="col-xl-5">
-                            <div class="card-custom p-2">
-                                <div class="card-header-title">Peta Persebaran Lokasi</div>
-                                <div id="mapArea"></div>
-                            </div>
-                        </div>
-                        <div class="col-xl-7">
-                            <div class="card-custom p-2">
-                                <div class="card-header-title">Detail Status Peserta</div>
-                                <div class="table-responsive" style="overflow: hidden; display: flex; flex-direction: column;">
-                                    <div style="flex: 1; overflow: hidden;">
-                                        <table class="table table-hover table-custom mb-0" id="tablePeserta">
-                                            <thead>
-                                                <tr>
-                                                    <th>Nama / NRP</th>
-                                                    <th>Area</th>
-                                                    <th>PIC</th>
-                                                    <th>Final Status</th>
-                                                </tr>
-                                            </thead>
-                                            <tbody>
-                                                <tr><td colspan="4" class="text-center py-5 text-muted fw-bold"><i class="fas fa-spinner fa-spin me-2"></i> Sedang memuat data dari Spreadsheet...</td></tr>
-                                            </tbody>
-                                        </table>
-                                    </div>
-                                    <button class="btn btn-light w-100 fw-bold border-top border-dark rounded-0 mt-auto" onclick="new bootstrap.Modal(document.getElementById('modalPeserta')).show()">
-                                        Lihat Semua Karyawan (See More) <i class="fas fa-chevron-down ms-1"></i>
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- ==================== VIEW 2: DATABASE MASTER DATA ==================== -->
-                <div id="view-database" class="view-section">
-                    <div class="d-flex justify-content-between align-items-center mb-3 border-bottom pb-3 flex-wrap gap-2">
-                        <h3 class="mb-0 fw-bold text-dark">Database Master Data (Spreadsheet)</h3>
-                        
-                        <div class="d-flex gap-2 flex-wrap align-items-center">
-                            <label class="fw-bold small text-dark mb-0 me-1">Filter Area:</label>
-                            <select id="filterAreaMaster" class="form-select form-select-sm shadow-sm" style="width: auto;" onchange="renderMasterTable()">
-                                <option value="ALL">Semua Area</option>
-                                <option value="JKT">Jakarta (JKT)</option>
-                                <option value="PKB">Pekanbaru (PKB)</option>
-                                <option value="BLP">Balikpapan (BLP)</option>
-                                <option value="SMD">Samarinda (SMD)</option>
-                                <option value="BJM">Banjarmasin (BJM)</option>
-                                <option value="UPG">Ujung Pandang (UPG)</option>
-                            </select>
-
-                            <a href="https://docs.google.com/spreadsheets/d/1aq8n8EWhcZq-rtPn4szUsM7eIJmxidYGF_A_T60GTjU/edit?usp=sharing" target="_blank" class="btn btn-outline-info fw-bold bg-white text-dark border-2 border-info shadow-sm ms-2">
-                                <i class="fas fa-external-link-alt me-2 text-info"></i> Buka Spreadsheet
-                            </a>
-                            
-                            <button class="btn btn-outline-success fw-bold bg-white text-dark border-2 border-success shadow-sm" onclick="downloadTemplate()">
-                                <i class="fas fa-download me-2 text-success"></i> Download Template
-                            </button>
-
-                            <input type="file" id="importExcelInput" class="d-none" accept=".xlsx, .xls" onchange="uploadExcelToCloud(event)">
-                            <button class="btn btn-outline-secondary fw-bold bg-white text-dark border-2 border-secondary shadow-sm" onclick="document.getElementById('importExcelInput').click()">
-                                <i class="fas fa-upload me-2 text-secondary"></i> Import Data (Upload)
-                            </button>
-                        </div>
-                    </div>
-
-                    <div class="card-custom flex-grow-1" style="min-height: 400px;">
-                        <div class="table-responsive" style="height: 100%;">
-                            <table class="table table-hover table-custom align-middle" id="tblMasterData">
-                                <thead>
-                                    <tr>
-                                        <th>NO</th>
-                                        <th>NAMA PESERTA</th>
-                                        <th>NRP</th>
-                                        <th>CABANG / SITE</th>
-                                        <th>PIC</th>
-                                        <th>STATUS MODUL 1</th>
-                                        <th>STATUS MODUL 2</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    <tr><td colspan="7" class="text-center py-5 text-muted fw-bold"><i class="fas fa-spinner fa-spin me-2"></i> Memuat data...</td></tr>
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- ==================== VIEW 3: LAPORAN (REPORT) ==================== -->
-                <div id="view-report" class="view-section fade-in">
-                    <h3 class="mb-4 fw-bold text-dark border-bottom pb-2">Laporan Ringkasan Karyawan (Report)</h3>
-                    
-                    <div class="card-custom mb-4 bg-light border-2">
-                        <div class="row g-3 align-items-end">
-                            <div class="col-md-2">
-                                <label class="form-label small fw-bold text-dark">Filter Area</label>
-                                <select class="form-select shadow-sm border-dark" id="reportFilterArea">
-                                    <option value="ALL">Semua Area (ALL)</option>
-                                    <option value="JKT">Jakarta (JKT)</option>
-                                    <option value="PKB">Pekanbaru (PKB)</option>
-                                    <option value="BLP">Balikpapan (BLP)</option>
-                                    <option value="SMD">Samarinda (SMD)</option>
-                                    <option value="BJM">Banjarmasin (BJM)</option>
-                                    <option value="UPG">Ujung Pandang (UPG)</option>
-                                </select>
-                            </div>
-                            <div class="col-md-2">
-                                <label class="form-label small fw-bold text-dark">Filter Status Akhir</label>
-                                <select class="form-select shadow-sm border-dark" id="reportFilterStatus">
-                                    <option value="ALL">Semua Status (ALL)</option>
-                                    <option value="DONE">Done</option>
-                                    <option value="ON PROGRESS">On Progress</option>
-                                    <option value="NOT YET">Not Yet</option>
-                                </select>
-                            </div>
-                            <div class="col-md-2">
-                                <label class="form-label small fw-bold text-dark">Filter PIC</label>
-                                <select class="form-select shadow-sm border-dark" id="reportFilterPIC">
-                                    <option value="ALL">Semua PIC (ALL)</option>
-                                </select>
-                            </div>
-                            <div class="col-md-2">
-                                <button class="btn btn-dark w-100 shadow-sm fw-bold border-2" onclick="generateReport()"><i class="fas fa-bolt me-2 text-warning"></i> Tarik Data</button>
-                            </div>
-                            <div class="col-md-2">
-                                <button class="btn btn-outline-success bg-white w-100 shadow-sm fw-bold border-2" onclick="exportReportExcel()"><i class="fas fa-file-excel me-2"></i> Excel</button>
-                            </div>
-                            <div class="col-md-2">
-                                <button class="btn btn-outline-danger bg-white w-100 shadow-sm fw-bold border-2" onclick="exportReportPDF()"><i class="fas fa-file-pdf me-2"></i> PDF</button>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <div class="card-custom flex-grow-1">
-                        <div class="table-responsive" style="height: 100%;">
-                            <table class="table table-hover table-custom" id="tblReport">
-                                <thead>
-                                    <tr>
-                                        <th>NAMA PESERTA</th>
-                                        <th>NRP</th>
-                                        <th>AREA</th>
-                                        <th>PIC</th>
-                                        <th>FINAL STATUS</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    <tr><td colspan="5" class="text-center py-5 text-muted fw-bold"><i class="fas fa-table fs-3 mb-2 text-secondary"></i><br>Klik "Tarik Data" untuk menampilkan Laporan</td></tr>
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-                </div>
-
-            </div>
-        </div>
+      </div>
+      <div class="master-table-wrapper"><table class="master-table" id="tblMasterData"><thead><tr><th>NO</th><th>NAMA PESERTA</th><th>NRP</th><th>CABANG / SITE</th><th>PIC</th><th>STATUS MODUL 1</th><th>STATUS MODUL 2</th></tr></thead><tbody><tr><td colspan="7" class="text-center py-5 text-muted fw-bold"><i class="fas fa-spinner fa-spin-fast me-2"></i> Memuat data...</td></tr></tbody></table></div>
     </div>
 
-    <!-- Scripts -->
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2"></script>
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
-    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <div id="view-report" class="view-section">
+      <div class="master-header"><h2>Laporan Ringkasan Karyawan (Report)</h2></div>
+      <div class="filter-container report-bar">
+        <div class="filter-left">
+          <label>Area:</label><select id="reportFilterArea" class="filter-select"><option value="ALL">Semua Area (ALL)</option><option value="JKT">Jakarta (JKT)</option><option value="PKB">Pekanbaru (PKB)</option><option value="BLP">Balikpapan (BLP)</option><option value="SMD">Samarinda (SMD)</option><option value="BJM">Banjarmasin (BJM)</option><option value="UPG">Ujung Pandang (UPG)</option></select>
+          <label>Status Akhir:</label><select id="reportFilterStatus" class="filter-select"><option value="ALL">Semua Status (ALL)</option><option value="DONE">Done</option><option value="ON PROGRESS">On Progress</option><option value="NOT YET">Not Yet</option></select>
+          <label>PIC:</label><select id="reportFilterPIC" class="filter-select"><option value="ALL">Semua PIC (ALL)</option></select>
+        </div>
+        <div class="filter-right">
+          <button class="btn-action" onclick="generateReport()"><i class="fas fa-bolt"></i> Tarik Data</button>
+          <button class="btn-action" style="background:#10b981;color:#fff;border-color:#047857" onclick="exportReportExcel()"><i class="fas fa-file-excel"></i> Excel</button>
+          <button class="btn-action" style="background:#e53e3e;color:#fff;border-color:#b91c1c" onclick="exportReportPDF()"><i class="fas fa-file-pdf"></i> PDF</button>
+        </div>
+      </div>
+      <div class="master-table-wrapper"><table class="master-table" id="tblReport"><thead><tr><th>NAMA PESERTA</th><th>NRP</th><th>AREA</th><th>PIC</th><th>FINAL STATUS</th></tr></thead><tbody><tr><td colspan="5" class="text-center py-5 text-muted fw-bold"><i class="fas fa-table"></i><br>Klik "Tarik Data" untuk menampilkan Laporan</td></tr></tbody></table></div>
+    </div>
+  </div>
+</div>
 
-    <script>
-        // Registrasi plugin DataLabels untuk Chart.js
-        Chart.register(ChartDataLabels);
+<script>
+let lastCtx = null;
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxXD5HaVt96h11lrS2CXl_Zpafx-pyyDWmKopsEEwUBa01pYokq5iJPFHUWtPvPN3sfcA/exec';
+const CACHE_KEY = 'dashboard8dp_data_cache';
 
-        // --- KONFIGURASI API GOOGLE APPS SCRIPT ---
-        const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxXD5HaVt96h11lrS2CXl_Zpafx-pyyDWmKopsEEwUBa01pYokq5iJPFHUWtPvPN3sfcA/exec';
-        const CACHE_KEY = 'dashboard8dp_data_cache';
+const esc = x => String(x == null ? "" : x).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+const chip = (v, l, c) => `<div style="flex:1;min-width:110px;background:#f8fafc;border:1px solid #e2e8f0;border-left:5px solid ${c};border-radius:6px;padding:8px 10px;text-align:left"><div style="font-size:26px;font-weight:800;color:#111;line-height:1.1">${v}</div><div style="font-size:12px;font-weight:700;color:#555">${l}</div></div>`;
+const tblHtml = (rows, heads, rowFn, okMsg) => !rows.length ? `<div style="color:#16a34a;font-weight:700;margin-top:6px">${okMsg}</div>` :
+    `<div style="max-height:240px;overflow-y:auto;border:1px solid #ddd;border-radius:6px;margin-top:6px"><table style="width:100%;border-collapse:collapse;font-size:13px;text-align:left"><thead><tr>${heads.map(h => `<th style="position:sticky;top:0;background:#ffb703;padding:6px 8px;border-bottom:1px solid #000">${h}</th>`).join("")}</tr></thead><tbody>${rows.slice(0, 200).map(rowFn).join("")}</tbody></table></div>${rows.length > 200 ? `<div style="font-size:12px;color:#777;margin-top:4px">Menampilkan 200 dari ${rows.length} pegawai</div>` : ""}`;
+const td = (v, extra = "") => `<td style="padding:5px 8px;border-bottom:1px solid #eee;${extra}">${v}</td>`;
+function openInfo(o) {
+    Swal.fire({
+        width: 680, showDenyButton: !!o.action, denyButtonText: o.action ? o.action.label : "", denyButtonColor: "#4285f4", confirmButtonText: "Tutup", confirmButtonColor: "#ffb703", customClass: { confirmButton: "swal-info-btn" },
+        title: `<span style="font-size:20px;font-weight:800">${o.title}</span>`,
+        html: `<div style="text-align:left;font-size:14px;color:#222;line-height:1.5">
+            <p>${o.desc}</p>
+            ${o.formula ? `<p style="background:#fff8e1;border:1px solid #ffe082;border-radius:6px;padding:8px 10px;margin-top:8px;font-size:13px"><b>Cara hitung:</b> ${o.formula}</p>` : ""}
+            ${o.chips ? `<div style="display:flex;gap:8px;flex-wrap:wrap;margin:12px 0">${o.chips}</div>` : ""}
+            ${o.listTitle ? `<div style="font-weight:800;margin-top:6px">${o.listTitle}</div>${o.listHtml}` : ""}
+        </div>`
+    }).then(r => { if (r.isDenied && o.action) o.action.fn(); });
+}
 
-        // --- GLOBAL VARIABLES ---
-        let rawData = [];
-        let rawDataPerArea = []; 
-        let rawDataFromSheet = []; 
-        let rawEventData = []; 
-        let chartInstances = {};
-        let map = null;
-        let mapMarkers = [];
+Chart.register(ChartDataLabels);
+let rawData = [], rawDataPerArea = [], rawDataFromSheet = [], rawEventData = [], chartInstances = {};
+let gainSort = "appLo";
+const AREA_KEYS = ["JKT", "PKB", "BLP", "SMD", "BJM", "UPG"];
+const COORDS = { JKT: { ll: [-6.2088, 106.8456], n: "Jakarta" }, SMD: { ll: [-0.5022, 117.1536], n: "Samarinda" }, BLP: { ll: [-1.2379, 116.8529], n: "Balikpapan" },
+    PKB: { ll: [0.5333, 101.45], n: "Pekanbaru" }, BJM: { ll: [-3.3167, 114.5901], n: "Banjarmasin" }, UPG: { ll: [-5.1476, 119.4327], n: "Ujung Pandang" } };
+const AREA_COL = { JKT: "#4285f4", PKB: "#f97316", BLP: "#a855f7", SMD: "#ec4899", BJM: "#14b8a6", UPG: "#64748b" };
+const $ = id => document.getElementById(id);
+const P = (a, b) => b ? Math.round(a * 1000 / b) / 10 : 0;
+const band = v => v >= 80 ? "#34a853" : v >= 50 ? "#fbbc04" : "#ea4335";
+const hexToRgba = (h, a) => { const n = parseInt(h.replace("#", ""), 16); return `rgba(${(n >> 16) & 255},${(n >> 8) & 255},${n & 255},${a})`; };
+const heatBg = v => hexToRgba(band(v), v >= 80 ? 0.3 + (v - 80) / 40 : v >= 50 ? 0.4 : 0.3 + (50 - v) / 100);
+const stColor = s => s === "DONE" ? "#16a34a" : s === "ON PROGRESS" ? "#d97706" : "#dc2626";
 
-        const COORDS = {
-            "JKT": { lat: -6.2088, lng: 106.8456, nama: "Jakarta" },
-            "SMD": { lat: -0.5022, lng: 117.1536, nama: "Samarinda" },
-            "BLP": { lat: -1.2379, lng: 116.8529, nama: "Balikpapan" },
-            "PKB": { lat: 0.5333, lng: 101.4500,  nama: "Pekanbaru" },
-            "BJM": { lat: -3.3167, lng: 114.5901, nama: "Banjarmasin" },
-            "UPG": { lat: -5.1476, lng: 119.4327, nama: "Ujung Pandang" }
-        };
-        const AREA_KEYS = ["JKT", "PKB", "BLP", "SMD", "BJM", "UPG"];
+// ---------- sistem & navigasi ----------
+function handleLogin(e) {
+    e.preventDefault();
+    const u = $("username").value.trim(), p = $("password").value.trim();
+    if (u === "admin" && p === "utcorp2026") {
+        $("loginModal").style.display = "none"; $("appContainer").style.display = "flex";
+        const cached = localStorage.getItem(CACHE_KEY);
+        if (cached) { try { processRawData(JSON.parse(cached)); } catch (err) { console.error("Gagal membaca cache:", err); } }
+        loadDataFromAPI(false);
+        Swal.fire({ title: "Login Berhasil", text: "Selamat datang di BC Portal", icon: "success", timer: 1500, showConfirmButton: false });
+    } else Swal.fire({ title: "Akses Ditolak", text: "Username atau password salah.", icon: "error", confirmButtonColor: "#1A1A1A" });
+}
+function logout() {
+    Swal.fire({ title: "Konfirmasi", text: "Apakah Anda yakin ingin keluar?", icon: "question", showCancelButton: true, confirmButtonColor: "#d33", confirmButtonText: "Ya, Keluar" })
+        .then(r => { if (r.isConfirmed) location.reload(); });
+}
+function rs() { setTimeout(() => { Object.values(chartInstances).forEach(c => c && c.resize()); if (lokMap) lokMap.invalidateSize(); }, 200); }
+function toggleSidebar() { $("sidebar").classList.toggle("collapsed"); rs(); }
+function switchView(v, el) {
+    document.querySelectorAll(".view-section").forEach(x => x.classList.remove("active")); $("view-" + v).classList.add("active");
+    document.querySelectorAll(".nav-link-custom").forEach(x => x.classList.remove("active")); el.classList.add("active");
+    if (v === "dashboard") rs();
+}
+function toggleFullScreen() {
+    const el = document.documentElement;
+    if (!document.fullscreenElement && !document.webkitFullscreenElement) (el.requestFullscreen || el.webkitRequestFullscreen).call(el);
+    else (document.exitFullscreen || document.webkitExitFullscreen).call(document);
+}
+["fullscreenchange", "webkitfullscreenchange"].forEach(e => document.addEventListener(e, rs)); window.addEventListener("resize", rs);
+function openTableModal() { $("tableModal").style.display = "flex"; }
+function closeTableModal() { $("tableModal").style.display = "none"; }
+function resetChart(id) { if (chartInstances[id]) { chartInstances[id].destroy(); delete chartInstances[id]; } }
 
-        function togglePassword() {
-            const pass = document.getElementById('password');
-            const icon = document.getElementById('eyeIcon');
-            if(pass.type === 'password') { pass.type = 'text'; icon.className = 'fas fa-eye-slash text-dark'; } 
-            else { pass.type = 'password'; icon.className = 'fas fa-eye text-muted'; }
-        }
+// ---------- popup info ----------
+function showInfo(key) {
+    const c = lastCtx; if (!c) return;
+    const { data, n, nCov, nDone, nProg, ev, evList, isCov } = c, G = "#34a853", Y = "#fbbc04", R = "#ea4335", B = "#4285f4", o = {};
+    const who = (rows, extra, fn, ok) => tblHtml(rows, ["Nama", "Area", "PIC"].concat(extra), fn, ok);
+    if (key === "total") Object.assign(o, { title: "Total Karyawan (Peserta)",
+        desc: "Jumlah peserta unik yang dipantau. Angka mengikuti filter Area, PIC, dan Status yang aktif.",
+        formula: "Satu peserta = satu NRP (jika NRP kosong, memakai nama huruf besar). Peserta dihitung sekali walau punya banyak modul.",
+        chips: chip(n, "Total peserta", B) + AREA_KEYS.filter(k => data.some(d => d.area === k)).map(k => chip(data.filter(d => d.area === k).length, "Area " + k, AREA_COL[k])).join("") });
+    else if (key === "cov") { const rows = data.filter(d => !isCov(d));
+        Object.assign(o, { title: "Training Coverage", desc: "Persentase peserta yang sudah ter-cover, yaitu Final Status-nya DONE.",
+            formula: "Final Status DONE jika minimal satu unit DONE (Knowledge dan Application sama-sama FINISHED/LULUS). Coverage = peserta 'Tercoverage' ÷ total peserta.",
+            chips: chip(nCov, "Tercoverage", G) + chip(n - nCov, "Belum tercoverage", R) + chip(P(nCov, n) + "%", "Coverage", B),
+            listTitle: `Peserta belum tercoverage (${rows.length})`,
+            listHtml: who(rows, ["Status"], d => `<tr>${td(esc(d.name || d.nrp))}${td(esc(d.area))}${td(esc(d.pic))}${td(d.finalStatus, "font-weight:700;color:" + stColor(d.finalStatus))}</tr>`, "Semua peserta sudah tercoverage ✓") }); }
+    else if (key === "part") { const rows = data.filter(d => d.finalStatus !== "DONE");
+        Object.assign(o, { title: "Training Participant / Progress", desc: "Status penyelesaian per peserta: <b>Done</b>, <b>On Progress</b> (ada unit yang baru satu bagian selesai), <b>Not Yet</b> (belum ada yang selesai).",
+            formula: "Unit DONE = Knowledge dan Application selesai; ON PROGRESS = salah satu; NOT YET = tidak ada. Final: DONE jika ada unit DONE, else ON PROGRESS jika ada unit ON PROGRESS, else NOT YET. Angka tengah = Done ÷ total.",
+            chips: chip(nDone, "Done", G) + chip(nProg, "On Progress", Y) + chip(n - nDone - nProg, "Not Yet", R) + chip(P(nDone, n) + "%", "Done %", B),
+            listTitle: `Peserta belum Done (${rows.length})`,
+            listHtml: who(rows, ["Status"], d => `<tr>${td(esc(d.name || d.nrp))}${td(esc(d.area))}${td(esc(d.pic))}${td(d.finalStatus, "font-weight:700;color:" + stColor(d.finalStatus))}</tr>`, "Semua peserta sudah Done ✓") }); }
+    else if (key === "evt") { const rows = evList.filter(x => !x.done);
+        Object.assign(o, { title: "Training Event", desc: "Jumlah event (modul) per area yang sudah memiliki nilai. Mengikuti filter Area dan PIC.",
+            formula: "Event = nama modul unik per area. Event Done jika minimal satu baris modul tersebut punya NILAI.",
+            chips: chip(ev.t, "Total event", B) + chip(ev.d, "Done", G) + chip(ev.t - ev.d, "Belum ada nilai", R) + chip(P(ev.d, ev.t) + "%", "Event Done %", B),
+            listTitle: `Event belum ada nilai (${rows.length})`,
+            listHtml: tblHtml(rows, ["Area", "Modul"], x => `<tr>${td(esc(x.area))}${td(esc(x.mod))}</tr>`, "Semua event sudah memiliki nilai ✓") }); }
+    else if (key === "gain") { const us = c.units;
+        Object.assign(o, { title: "Knowledge vs Application per Unit", desc: "Persentase peserta yang sudah menyelesaikan bagian Knowledge (biru) dan Application (hijau) untuk tiap unit.",
+            formula: "Unit = teks setelah tanda '-' pada TRAINING MODUL. Knowledge selesai jika STATUS MODUL 1 FINISHED/LULUS; Application selesai jika STATUS MODUL 2 FINISHED/LULUS. % = selesai ÷ peserta yang punya unit tersebut. Klik batang untuk detail.",
+            chips: chip(us.length, "Unit", B) + chip(us.length ? P(us.reduce((a, u) => a + u.k, 0), us.reduce((a, u) => a + u.n, 0)) + "%" : "0%", "Knowledge selesai", B) + chip(us.length ? P(us.reduce((a, u) => a + u.a, 0), us.reduce((a, u) => a + u.n, 0)) + "%" : "0%", "Application selesai", G) }); }
+    else if (key === "attn") Object.assign(o, { title: "Perlu Perhatian · Done% Terendah",
+        desc: "Area dan PIC dengan persentase peserta Done paling rendah, agar tindak lanjut difokuskan ke sana. Klik satu baris untuk melihat peserta yang belum Done.",
+        formula: "Peserta Done ÷ total peserta di area/PIC tersebut. Area: semua area. PIC: minimal 3 peserta, 5 terendah." });
+    else if (key === "map") { const um = c.unmapped || [];
+        Object.assign(o, { title: "Peta Sebaran Area", desc: "Setiap lingkaran adalah satu area. <b>Ukuran</b> = jumlah peserta, <b>warna</b> = persentase Done (hijau ≥ 80%, kuning 50–79%, merah &lt; 50%). Mengikuti filter aktif. Klik lingkaran untuk rincian dan memfilter dashboard ke area itu.",
+            formula: "Done % = peserta Done ÷ total peserta di area. Koordinat area ada di daftar <code>COORDS</code>.",
+            chips: chip(c.mapped || 0, "Area di peta", G) + chip(um.length, "Area tanpa koordinat", um.length ? R : "#9aa5b1"),
+            listTitle: um.length ? "Area belum muncul di peta" : "", listHtml: um.length ? `<div style="margin-top:6px;font-size:13px">${um.map(esc).join(", ")}</div>` : "" }); }
+    openInfo(o);
+}
+function showUnitInfo(i) {
+    const c = lastCtx, u = c && c.units[i]; if (!u) return;
+    const rows = c.data.filter(d => d.units[u.name] && !(d.units[u.name].hasAEFinished && d.units[u.name].hasAFFinished));
+    const mk = v => v ? '<span style="color:#16a34a;font-weight:700">✓</span>' : '<span style="color:#dc2626;font-weight:700">✗</span>';
+    openInfo({ title: esc(u.name), desc: `Dari <b>${u.n}</b> peserta yang memiliki unit ini, <b>${u.kp}%</b> sudah menyelesaikan Knowledge dan <b>${u.ap}%</b> sudah menyelesaikan Application (sesuai filter aktif).`,
+        formula: "Knowledge = STATUS MODUL 1 FINISHED/LULUS. Application = STATUS MODUL 2 FINISHED/LULUS. Unit DONE jika keduanya selesai.",
+        chips: chip(u.n, "Peserta", "#4285f4") + chip(u.k + " (" + u.kp + "%)", "Knowledge selesai", "#4285f4") + chip(u.a + " (" + u.ap + "%)", "Application selesai", "#34a853") + chip(u.both, "Unit DONE", "#34a853"),
+        listTitle: `Peserta belum menyelesaikan unit ini (${rows.length})`,
+        listHtml: tblHtml(rows, ["Nama", "Area", "Knowledge", "Application"], d => { const x = d.units[u.name]; return `<tr>${td(esc(d.name || d.nrp))}${td(esc(d.area))}${td(mk(x.hasAEFinished), "text-align:center")}${td(mk(x.hasAFFinished), "text-align:center")}</tr>`; }, "Semua peserta sudah menyelesaikan unit ini ✓") });
+}
+function showGroup(kind, name) {
+    const c = lastCtx; if (!c || name === undefined) return;
+    const rows = c.data.filter(d => d[kind] === name), nd = rows.filter(d => d.finalStatus === "DONE").length, np = rows.filter(d => d.finalStatus === "ON PROGRESS").length;
+    const pend = rows.filter(d => d.finalStatus !== "DONE"), fid = kind === "area" ? "filterArea" : "filterPIC", other = kind === "area" ? "pic" : "area";
+    openInfo({ action: { label: "Filter " + kind + " ini", fn: () => { const f = $(fid); if ([...f.options].some(o => o.value === name)) { f.value = name; renderDashboard(); } } },
+        title: (kind === "area" ? "Area " + esc((COORDS[name] || {}).n ? COORDS[name].n + " (" + name + ")" : name) : "PIC " + esc(name)),
+        desc: "Rincian penyelesaian training peserta sesuai filter yang sedang aktif.",
+        chips: chip(rows.length, "Total peserta", "#4285f4") + chip(nd, "Done", "#34a853") + chip(np, "On Progress", "#fbbc04") + chip(rows.length - nd - np, "Not Yet", "#ea4335") + chip(P(nd, rows.length) + "%", "Done %", "#4285f4"),
+        listTitle: `Peserta belum Done (${pend.length})`,
+        listHtml: tblHtml(pend, ["Nama", kind === "area" ? "PIC" : "Area", "Status"], d => `<tr>${td(esc(d.name || d.nrp))}${td(esc(d[other]))}${td(d.finalStatus, "font-weight:700;color:" + stColor(d.finalStatus))}</tr>`, "Semua peserta sudah Done ✓") });
+}
+const showAreaIdx = i => showGroup("area", lastCtx.attnAreas[i]), showPicIdx = i => showGroup("pic", lastCtx.attnPics[i]);
+function pickArea(k) { const f = $("filterArea"); f.value = f.value === k ? "ALL" : k; renderDashboard(); }
+function pickPicIdx(i) { const f = $("filterPIC"), p = lastCtx.picList[i]; f.value = f.value === p ? "ALL" : p; renderDashboard(); }
 
-        function handleLogin(e) {
-            e.preventDefault();
-            const u = document.getElementById('username').value.trim();
-            const p = document.getElementById('password').value;
-            if(u === 'admin' && p === 'utcorp2026') {
-                document.getElementById('loginScreen').classList.add('d-none');
-                document.getElementById('appContainer').classList.remove('d-none');
-                const cachedData = localStorage.getItem(CACHE_KEY);
-                if (cachedData) {
-                    try { processRawData(JSON.parse(cachedData)); } 
-                    catch(err) { console.error("Gagal membaca cache:", err); }
-                }
-                loadDataFromAPI(false);
-                Swal.fire({ title: 'Login Berhasil', text: 'Selamat datang di 8 DP Portal', icon: 'success', timer: 1500, showConfirmButton: false });
-            } else {
-                Swal.fire({ title: 'Akses Ditolak', text: 'Username atau password yang Anda masukkan salah.', icon: 'error', confirmButtonColor: '#1A1A1A' });
-            }
-        }
+// ---------- peta ----------
+let lokMap = null, lokLayer = null;
+function ensureMap() {
+    if (lokMap) return true; const box = $("lokMap");
+    if (typeof L === "undefined") { box.innerHTML = '<div style="padding:20px;color:#b45309;font-weight:700">Peta tidak dapat dimuat (library Leaflet / koneksi internet).</div>'; return false; }
+    lokMap = L.map(box, { minZoom: 3 }).setView([-2.5, 118], 5);
+    L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", { maxZoom: 19, attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors' }).addTo(lokMap);
+    lokLayer = L.layerGroup().addTo(lokMap);
+    const lg = L.control({ position: "bottomleft" });
+    lg.onAdd = () => { const d = L.DomUtil.create("div", "map-legend"); d.innerHTML = '<i style="background:#34a853"></i>Done ≥ 80%<br><i style="background:#fbbc04"></i>Done 50–79%<br><i style="background:#ea4335"></i>Done &lt; 50%<br><span style="font-weight:600;color:#555">Ukuran = jumlah peserta</span>'; return d; };
+    lg.addTo(lokMap);
+    if (window.ResizeObserver) new ResizeObserver(() => lokMap.invalidateSize()).observe(box);
+    return true;
+}
+function renderMap(data) {
+    if (!ensureMap()) return; lokLayer.clearLayers();
+    const G = {}; data.forEach(d => { const g = G[d.area || "-"] = G[d.area || "-"] || { n: 0, done: 0 }; g.n++; if (d.finalStatus === "DONE") g.done++; });
+    const pts = [], unmapped = []; let mapped = 0;
+    Object.entries(G).forEach(([k, g]) => {
+        const geo = COORDS[k]; if (!geo) { unmapped.push(k); return; } mapped++;
+        const pct = P(g.done, g.n), r = Math.min(26, 8 + Math.sqrt(g.n) * 2.5);
+        const m = L.circleMarker(geo.ll, { radius: r, color: "#000", weight: 2, fillColor: band(pct), fillOpacity: 0.8 }).addTo(lokLayer);
+        m.bindTooltip(`${esc(k)} · ${pct}%`, { permanent: true, direction: "center", className: "map-lbl" });
+        m.on("click", () => showGroup("area", k)); m.on("mouseover", () => m.setStyle({ weight: 4 })); m.on("mouseout", () => m.setStyle({ weight: 2 }));
+        pts.push(geo.ll);
+    });
+    lastCtx.unmapped = unmapped; lastCtx.mapped = mapped;
+    $("mapNote").textContent = `${mapped} area dipetakan` + (unmapped.length ? ` · ${unmapped.length} belum ada koordinat (klik ⓘ)` : "");
+    if (pts.length) lokMap.fitBounds(L.latLngBounds(pts), { padding: [40, 40], maxZoom: 7 }); else lokMap.setView([-2.5, 118], 5);
+    setTimeout(() => lokMap.invalidateSize(), 50);
+}
 
-        function logout() {
-            Swal.fire({
-                title: 'Konfirmasi', text: 'Apakah Anda yakin ingin keluar?', icon: 'question',
-                showCancelButton: true, confirmButtonColor: '#d33', cancelButtonColor: '#3085d6', confirmButtonText: 'Ya, Keluar'
-            }).then((result) => { if (result.isConfirmed) location.reload(); });
-        }
+// ---------- dashboard ----------
+function renderDashboard() {
+    const fA = $("filterArea").value, fS = $("filterStatus").value, fP = $("filterPIC").value;
+    const data = rawData.filter(d => (fA === "ALL" || d.area === fA) && (fS === "ALL" || d.finalStatus === fS) && (fP === "ALL" || d.pic === fP));
+    const evMap = new Map();
+    rawEventData.filter(e => (fA === "ALL" || e.area === fA) && (fP === "ALL" || e.pic === fP)).forEach(e => {
+        if (!AREA_KEYS.includes(e.area) || !e.modulName) return;
+        const k = e.area + "|" + e.modulName, o = evMap.get(k) || { area: e.area, mod: e.modulName, pic: new Set(), done: false };
+        o.pic.add(e.pic); if (e.hasNilai) o.done = true; evMap.set(k, o);
+    });
+    const evList = [...evMap.values()], evOf = f => { const l = evList.filter(f); return { t: l.length, d: l.filter(x => x.done).length }; };
+    const isCov = d => d.covStatus === "Tercoverage";
+    const n = data.length, nCov = data.filter(isCov).length, nDone = data.filter(d => d.finalStatus === "DONE").length, nProg = data.filter(d => d.finalStatus === "ON PROGRESS").length, ev = evOf(() => true);
+    lastCtx = { data, n, nCov, nDone, nProg, ev, evList, isCov, units: [], attnAreas: [], attnPics: [], picList: [] };
 
-        function switchView(viewName, element) {
-            document.querySelectorAll('.view-section').forEach(el => el.classList.remove('active'));
-            document.getElementById('view-' + viewName).classList.add('active');
-            document.querySelectorAll('.nav-link-custom').forEach(el => el.classList.remove('active'));
-            element.classList.add('active');
-            if(viewName === 'dashboard') {
-                setTimeout(() => { if(map) map.invalidateSize(); Object.values(chartInstances).forEach(c => c.resize()); }, 200);
-            }
-        }
+    $("kpiTotal").textContent = n;
+    $("kpiCov").innerHTML = `${nCov} <small>(${P(nCov, n)}%)</small>`;
+    $("kpiProg").innerHTML = `<span class="kn" style="color:#2e7d32">${nDone}</span><span class="kl">Done</span><span class="kn" style="color:#d99a00">${nProg}</span><span class="kl">Prog</span>`;
+    $("kpiEvt").innerHTML = `<span class="kn" style="color:#2e7d32">${ev.d}</span><span class="kl">Done</span><span class="kn" style="color:#ea4335">${ev.t - ev.d}</span><span class="kl">Belum</span>`;
+    $("barCov").style.width = P(nCov, n) + "%"; $("barDone").style.width = P(nDone, n) + "%"; $("barEvt").style.width = P(ev.d, ev.t) + "%";
 
-        function toggleSidebar() { 
-            document.getElementById('sidebar').classList.toggle('collapsed'); 
-            setTimeout(() => { if(map) map.invalidateSize(); Object.values(chartInstances).forEach(c => c.resize()); }, 300); 
-        }
+    const G = (id, vals, cols, labels, pct, sub) => { resetChart(id);
+        chartInstances[id] = new Chart($(id), { type: "doughnut", data: { labels, datasets: [{ data: vals, backgroundColor: cols, borderWidth: 2, borderColor: "#fff" }] },
+            options: { responsive: true, maintainAspectRatio: false, cutout: "74%", plugins: { legend: { display: false }, datalabels: { display: false } } } });
+        $(id + "T").innerHTML = `<b>${pct}%</b><span>${sub}</span>`; };
+    G("gCov", [nCov, n - nCov], ["#34a853", "#ea4335"], ["Tercoverage", "Not Yet"], P(nCov, n), `${nCov} / ${n} peserta`);
+    G("gPart", [nDone, nProg, n - nDone - nProg], ["#34a853", "#fbbc04", "#ea4335"], ["Done", "On Progress", "Not Yet"], P(nDone, n), `${nDone} done<br>${nProg} prog · ${n - nDone - nProg} belum`);
+    G("gEvt", [ev.d, ev.t - ev.d], ["#34a853", "#ea4335"], ["Done", "Belum"], P(ev.d, ev.t), `${ev.d} / ${ev.t} event`);
 
-        function toggleFullscreen() {
-            const elem = document.documentElement;
-            if (!document.fullscreenElement && !document.webkitFullscreenElement) {
-                if (elem.requestFullscreen) elem.requestFullscreen();
-                else if (elem.webkitRequestFullscreen) elem.webkitRequestFullscreen();
-            } else {
-                if (document.exitFullscreen) document.exitFullscreen();
-                else if (document.webkitExitFullscreen) document.webkitExitFullscreen();
-            }
-        }
-        
-        function handleResize() { setTimeout(() => { if(map) map.invalidateSize(); Object.values(chartInstances).forEach(c => c.resize()); }, 350); }
-        document.addEventListener('fullscreenchange', handleResize);
-        document.addEventListener('webkitfullscreenchange', handleResize);
-        window.addEventListener('resize', handleResize);
+    // heatmap Area & PIC
+    const hcell = v => `<td style="background:${heatBg(v)}"><b>${v}%</b></td>`;
+    const head = f => `<thead><tr><th>${f}</th><th onclick="showInfo('total')">Headcount ⓘ</th><th onclick="showInfo('cov')">Coverage ⓘ</th><th onclick="showInfo('part')">Done ⓘ</th><th onclick="showInfo('evt')">Event ⓘ</th></tr></thead>`;
+    const row = (label, col, g, e, click, mx) => `<tr onclick="${click}" style="cursor:pointer"><td style="border-left:5px solid ${col}"><b>${esc(label)}</b></td><td><div class="v2-hc"><i style="width:${g.length * 70 / mx}%;background:${col}"></i><b>${g.length}</b></div></td>${hcell(P(g.filter(isCov).length, g.length))}${hcell(P(g.filter(d => d.finalStatus === "DONE").length, g.length))}${e.t ? hcell(P(e.d, e.t)) : "<td>-</td>"}</tr>`;
+    const areaRows = AREA_KEYS.map(k => [k, data.filter(d => d.area === k)]).filter(r => r[1].length), mxA = Math.max(1, ...areaRows.map(r => r[1].length));
+    $("heatArea").innerHTML = head("Area") + "<tbody>" + areaRows.map(([k, g]) => row(k, AREA_COL[k], g, evOf(x => x.area === k), `pickArea('${k}')`, mxA)).join("") + "</tbody>";
+    const pm = {}; data.forEach(d => (pm[d.pic] = pm[d.pic] || []).push(d));
+    const picRows = Object.entries(pm).sort((a, b) => b[1].length - a[1].length), mxP = Math.max(1, ...picRows.map(r => r[1].length));
+    lastCtx.picList = picRows.map(r => r[0]);
+    $("heatPic").innerHTML = head("PIC") + "<tbody>" + picRows.map(([p, g], i) => row(p, "#6366f1", g, evOf(x => x.pic.has(p)), `pickPicIdx(${i})`, mxP)).join("") + "</tbody>";
 
-        function resetChart(id) { if (chartInstances[id]) { chartInstances[id].destroy(); delete chartInstances[id]; } }
+    // perlu perhatian
+    const aw = areaRows.map(([k, g]) => [k, g.length, P(g.filter(d => d.finalStatus === "DONE").length, g.length)]).sort((a, b) => a[2] - b[2] || b[1] - a[1]);
+    let pw = picRows.map(([p, g]) => [p, g.length, P(g.filter(d => d.finalStatus === "DONE").length, g.length)]); const big = pw.filter(x => x[1] >= 3); if (big.length) pw = big;
+    pw = pw.sort((a, b) => a[2] - b[2] || b[1] - a[1]).slice(0, 5);
+    lastCtx.attnAreas = aw.map(x => x[0]); lastCtx.attnPics = pw.map(x => x[0]);
+    const item = (k, c, p, fn, i) => `<div class="v2-at" onclick="${fn}(${i})" title="Klik untuk detail"><span>${esc(k)}</span><div class="v2-bar"><i style="width:${p}%;background:${band(p)}"></i></div><b>${p}%</b><small>${c}</small></div>`;
+    $("attn").innerHTML = (aw.length || pw.length) ? `<div class="v2-sub">Area</div>` + aw.map((x, i) => item(x[0], x[1], x[2], "showAreaIdx", i)).join("") + `<div class="v2-sub">PIC · 5 terendah, min. 3 peserta</div>` + pw.map((x, i) => item(x[0], x[1], x[2], "showPicIdx", i)).join("") : "<small>Tidak ada data</small>";
 
-        function initMap() {
-            map = L.map('mapArea', { scrollWheelZoom: false }).setView([-2.5, 117.5], 4.5);
-            L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', { attribution: '&copy; OpenStreetMap' }).addTo(map);
-        }
-        initMap();
+    // Knowledge vs Application per unit
+    const um = {}; data.forEach(d => Object.entries(d.units).forEach(([u, x]) => { const o = um[u] = um[u] || { name: u, n: 0, k: 0, a: 0, both: 0 }; o.n++; if (x.hasAEFinished) o.k++; if (x.hasAFFinished) o.a++; if (x.hasAEFinished && x.hasAFFinished) o.both++; }));
+    const sorters = { appLo: (a, b) => a.a / a.n - b.a / b.n, kHi: (a, b) => b.k / b.n - a.k / a.n, nHi: (a, b) => b.n - a.n, name: (a, b) => a.name.localeCompare(b.name) };
+    const units = Object.values(um).sort(sorters[gainSort] || sorters.appLo); units.forEach(u => { u.kp = P(u.k, u.n); u.ap = P(u.a, u.n); });
+    lastCtx.units = units;
+    const wrap = (t, w = 26) => { const ls = []; let cur = ""; String(t).split(" ").forEach(wd => { if (cur && (cur + " " + wd).length > w) { ls.push(cur); cur = wd; } else cur = cur ? cur + " " + wd : wd; }); if (cur) ls.push(cur); return ls; };
+    $("gainWrap").style.height = Math.max(300, units.length * 66 + 40) + "px"; resetChart("gain");
+    chartInstances.gain = new Chart($("cGain"), { type: "bar", data: { labels: units.map(u => wrap(u.name)), datasets: [
+        { label: "Knowledge", data: units.map(u => u.kp), backgroundColor: "#4285f4", borderRadius: 3 }, { label: "Application", data: units.map(u => u.ap), backgroundColor: "#34a853", borderRadius: 3 }] },
+        options: { indexAxis: "y", responsive: true, maintainAspectRatio: false, layout: { padding: { right: 50 } }, interaction: { mode: "nearest", axis: "y", intersect: false },
+            onClick: (e, els) => { if (els.length) showUnitInfo(els[0].index); }, onHover: (e, els) => { e.native.target.style.cursor = els.length ? "pointer" : "default"; },
+            categoryPercentage: 0.85, barPercentage: 0.9,
+            plugins: { legend: { display: false }, tooltip: { titleFont: { size: 13 }, bodyFont: { size: 13 }, callbacks: { title: it => units[it[0].dataIndex].name, label: c => `${c.dataset.label}: ${c.parsed.x}% (${c.datasetIndex ? units[c.dataIndex].a : units[c.dataIndex].k}/${units[c.dataIndex].n})` } },
+                datalabels: { anchor: "end", align: "end", clamp: true, font: { weight: "bold", size: 12 }, color: c => c.datasetIndex ? "#15803d" : "#1d4ed8", formatter: v => v + "%" } },
+            scales: { x: { min: 0, max: 100, ticks: { font: { size: 12 }, callback: v => v + "%" }, grid: { color: "#eee" } }, y: { ticks: { font: { size: 12, weight: "600" }, color: "#222", autoSkip: false }, grid: { display: false } } } } });
 
-        function getCol(row, possibleNames) {
+    renderMap(data);
+
+    // tabel detail
+    $("pesertaBody").innerHTML = data.map(d => {
+        const m = d.unfinishedModules.length ? d.unfinishedModules.map(x => "• " + esc(x)).join("<br>") : '<span style="color:#34a853;font-weight:bold">All Clear ✓</span>';
+        return `<tr><td><b>${esc(d.name)}</b><br><small>${esc(d.nrp)}</small></td><td style="text-align:center">${esc(d.area)}</td><td>${esc(d.pic)}</td><td style="text-align:center;font-weight:bold;color:${stColor(d.finalStatus)}">${d.finalStatus}</td><td style="font-size:11px;line-height:1.4">${m}</td></tr>`;
+    }).join("") || '<tr><td colspan="5" style="text-align:center">Data tidak ditemukan.</td></tr>';
+    $("modalTableHead").innerHTML = $("pesertaHead").innerHTML; $("modalTableBody").innerHTML = $("pesertaBody").innerHTML;
+}
+
+function getCol(row, possibleNames) {
             for (let key in row) {
                 let cleanKey = key.toString().replace(/[\r\n]+/g, ' ').trim().toUpperCase();
                 if (possibleNames.includes(cleanKey)) return row[key];
@@ -965,7 +778,6 @@
                 });
             } else if (rawData.length === 0) {
                 document.querySelector('#tablePeserta tbody').innerHTML = '<tr><td colspan="4" class="text-center py-5 text-muted fw-bold"><i class="fas fa-spinner fa-spin-fast me-2"></i> Sinkronisasi Data Spreadsheet...</td></tr>';
-                document.querySelector('#tablePesertaFull tbody').innerHTML = '<tr><td colspan="5" class="text-center py-5 text-muted fw-bold"><i class="fas fa-spinner fa-spin-fast me-2"></i> Sinkronisasi Data Spreadsheet...</td></tr>';
             }
 
             try {
@@ -1004,7 +816,7 @@
                     localStorage.setItem(CACHE_KEY, JSON.stringify(result.data));
                     processRawData(result.data);
                     if(isManualRefresh) Swal.fire({ title: 'Berhasil!', text: 'Data telah diperbarui.', icon: 'success', timer: 2000, showConfirmButton: false });
-                    else if (isFirstLoad) Swal.fire({ title: 'Data Berhasil Dimuat', text: 'Selamat datang di 8 DP Portal', icon: 'success', timer: 1500, showConfirmButton: false });
+                    else if (isFirstLoad) Swal.fire({ title: 'Data Berhasil Dimuat', text: 'Selamat datang di BC Portal', icon: 'success', timer: 1500, showConfirmButton: false });
                 } else {
                     throw new Error("Error dari server: " + (result.message || "Gagal mengambil data."));
                 }
@@ -1017,7 +829,6 @@
                 
                 if (rawData.length === 0) {
                     document.querySelector('#tablePeserta tbody').innerHTML = `<tr><td colspan="4" class="text-center py-4 text-danger fw-bold"><i class="fas fa-exclamation-triangle me-2"></i> Error: ${errorMsg}</td></tr>`;
-                    document.querySelector('#tablePesertaFull tbody').innerHTML = `<tr><td colspan="5" class="text-center py-4 text-danger fw-bold"><i class="fas fa-exclamation-triangle me-2"></i> Error: ${errorMsg}</td></tr>`;
                 }
             } finally {
                 if(btnRefresh) btnRefresh.disabled = false;
@@ -1112,7 +923,7 @@
             const ws = XLSX.utils.json_to_sheet(rawDataFromSheet);
             const wb = XLSX.utils.book_new();
             XLSX.utils.book_append_sheet(wb, ws, "ATS_PTCP (PLAN)");
-            XLSX.writeFile(wb, "Template_Update_Nilai_8DP.xlsx");
+            XLSX.writeFile(wb, "Template_Update_Nilai_BC.xlsx");
         }
 
         function renderMasterTable() {
@@ -1166,244 +977,8 @@
             tbody.innerHTML = html || '<tr><td colspan="7" class="text-center py-4 text-muted fw-bold">Data tidak ditemukan pada area ini.</td></tr>';
         }
 
-        function renderDashboard() {
-            if (rawData.length === 0) {
-                document.getElementById("kpiTotal").innerText = 0;
-                document.getElementById("kpiCoverage").innerHTML = `0 <span style="font-size: 1.1rem; color: #555;">(0%)</span>`;
-                document.getElementById("kpiProgress").innerText = "0";
-                document.getElementById("kpiNotYet").innerText = "0";
-                
-                document.querySelector('#tablePeserta tbody').innerHTML = '<tr><td colspan="4" class="text-center py-4 text-muted fw-bold">Data kosong.</td></tr>';
-                document.querySelector('#tablePesertaFull tbody').innerHTML = '<tr><td colspan="5" class="text-center py-4 text-muted fw-bold">Data kosong.</td></tr>';
-                
-                ["pieCoverage", "pieParticipant", "pieArea", "barCoverage", "barParticipant"].forEach(id => resetChart(id));
-                mapMarkers.forEach(m => map.removeLayer(m));
-                mapMarkers = [];
-                return;
-            }
-
-            const fArea = document.getElementById("filterArea").value;
-            const fStatus = document.getElementById("filterStatus").value;
-            const fPIC = document.getElementById("filterPIC").value;
-
-            let filtered = rawData.filter(d => {
-                let mArea = fArea === "ALL" || d.area === fArea;
-                let mStat = fStatus === "ALL" || d.finalStatus === fStatus;
-                let mPIC = fPIC === "ALL" || d.pic === fPIC;
-                return mArea && mStat && mPIC;
-            });
-
-            // ... (Kalkulasi Chart dan KPI lainnya tetap sama)
-            let filteredPerArea = rawDataPerArea.filter(d => {
-                let mArea = fArea === "ALL" || d.area === fArea;
-                let mStat = fStatus === "ALL" || d.finalStatus === fStatus;
-                let mPIC = fPIC === "ALL" || d.pic === fPIC;
-                return mArea && mStat && mPIC;
-            });
-
-            let filteredEvents = rawEventData.filter(d => {
-                let mArea = fArea === "ALL" || d.area === fArea;
-                let mPIC = fPIC === "ALL" || d.pic === fPIC;
-                return mArea && mPIC;
-            });
-
-            let totalPeserta = filtered.length;
-            let totalCoverage = 0;
-            let totalDone = 0;
-            let totalOnProgress = 0;
-            let totalNotYet = 0;
-
-            let areaCount = {};
-            AREA_KEYS.forEach(k => areaCount[k] = { total: 0, cov: 0, notCov: 0, done: 0, prog: 0, ny: 0, eventDone: 0, eventNotYet: 0 });
-
-            filtered.forEach(d => {
-                if(d.covStatus === "Tercoverage") totalCoverage++;
-                if(d.finalStatus === "DONE") totalDone++;             
-                if(d.finalStatus === "ON PROGRESS") totalOnProgress++;
-                if(d.finalStatus === "NOT YET") totalNotYet++;
-            });
-
-            filteredPerArea.forEach(d => {
-                let k = AREA_KEYS.includes(d.area) ? d.area : null;
-                if(k) {
-                    areaCount[k].total++;
-                    if(d.covStatus === "Tercoverage") areaCount[k].cov++;
-                    else areaCount[k].notCov++;
-
-                    if(d.finalStatus === "DONE") areaCount[k].done++;
-                    else if(d.finalStatus === "ON PROGRESS") areaCount[k].prog++;
-                    else areaCount[k].ny++;
-                }
-            });
-
-            let eventMap = {};
-            AREA_KEYS.forEach(k => eventMap[k] = {});
-
-            filteredEvents.forEach(d => {
-                let k = d.area;
-                if (AREA_KEYS.includes(k) && d.modulName !== '') {
-                    if (eventMap[k][d.modulName] === undefined) eventMap[k][d.modulName] = false;
-                    if (d.hasNilai) eventMap[k][d.modulName] = true; 
-                }
-            });
-
-            AREA_KEYS.forEach(k => {
-                for (let mod in eventMap[k]) {
-                    if (eventMap[k][mod] === true) areaCount[k].eventDone++;
-                    else areaCount[k].eventNotYet++;
-                }
-            });
-
-            let pctCov = totalPeserta === 0 ? 0 : ((totalCoverage / totalPeserta) * 100).toFixed(1);
-            document.getElementById("kpiTotal").innerText = totalPeserta;
-            document.getElementById("kpiCoverage").innerHTML = `${totalCoverage} <span style="font-size: 1.1rem; color: #555;">(${pctCov}%)</span>`;
-            
-            document.getElementById("kpiProgress").innerText = totalOnProgress;
-            document.getElementById("kpiNotYet").innerText = totalNotYet;
-
-            const pieOptions = {
-                responsive: true, maintainAspectRatio: false,
-                plugins: {
-                    legend: { position: 'right', labels: { font: {size: 10, weight: 'bold'}, boxWidth: 12 } },
-                    datalabels: {
-                        color: '#fff', font: {weight: 'bold', size: 10},
-                        formatter: (val, ctx) => {
-                            let sum = ctx.chart.data.datasets[0].data.reduce((a,b)=>a+b,0);
-                            return sum===0||val===0 ? null : (val*100/sum).toFixed(1)+"%";
-                        }
-                    }
-                }
-            };
-
-            resetChart('pieCoverage');
-            chartInstances['pieCoverage'] = new Chart(document.getElementById('pieCoverage'), {
-                type: 'pie',
-                data: { labels: ['Tercoverage', 'Not Yet'], datasets: [{ data: [totalCoverage, totalPeserta - totalCoverage], backgroundColor: ['#34a853', '#ea4335'] }] },
-                options: pieOptions
-            });
-
-            resetChart('pieParticipant');
-            chartInstances['pieParticipant'] = new Chart(document.getElementById('pieParticipant'), {
-                type: 'pie',
-                data: { 
-                    labels: ['Done', 'On Progress', 'Not Yet'], 
-                    datasets: [{ 
-                        data: [totalDone, totalOnProgress, totalNotYet],
-                        backgroundColor: ['#34a853', '#fbbc04', '#ea4335'] 
-                    }] 
-                },
-                options: pieOptions
-            });
-
-            let pieAreaCountData = {};
-            AREA_KEYS.forEach(k => pieAreaCountData[k] = 0);
-            filteredPerArea.forEach(d => {
-                if(AREA_KEYS.includes(d.area)) pieAreaCountData[d.area]++;
-            });
-
-            let areaVals = AREA_KEYS.map(k => pieAreaCountData[k]);
-            resetChart('pieArea');
-            chartInstances['pieArea'] = new Chart(document.getElementById('pieArea'), {
-                type: 'pie',
-                data: { labels: AREA_KEYS, datasets: [{ data: areaVals, backgroundColor: ['#4285f4', '#f97316', '#a855f7', '#ec4899', '#14b8a6', '#64748b'] }] },
-                options: pieOptions
-            });
-
-            const barOptions = { 
-                responsive: true, maintainAspectRatio: false, 
-                plugins: { datalabels: { display: false } }, 
-                scales: { x: { stacked: true }, y: { stacked: true, beginAtZero: true } } 
-            };
-
-            resetChart('barCoverage');
-            chartInstances['barCoverage'] = new Chart(document.getElementById('barCoverage'), {
-                type: 'bar',
-                data: {
-                    labels: AREA_KEYS,
-                    datasets: [
-                        { label: 'Done', data: AREA_KEYS.map(k=>areaCount[k].eventDone), backgroundColor: '#34a853' },
-                        { label: 'Not Yet', data: AREA_KEYS.map(k=>areaCount[k].eventNotYet), backgroundColor: '#ea4335' }
-                    ]
-                },
-                options: barOptions
-            });
-
-            resetChart('barParticipant');
-            chartInstances['barParticipant'] = new Chart(document.getElementById('barParticipant'), {
-                type: 'bar',
-                data: {
-                    labels: AREA_KEYS,
-                    datasets: [
-                        { label: 'Done', data: AREA_KEYS.map(k=>areaCount[k].done), backgroundColor: '#34a853' },
-                        { label: 'On Progress', data: AREA_KEYS.map(k=>areaCount[k].prog), backgroundColor: '#fbbc04' },
-                        { label: 'Not Yet', data: AREA_KEYS.map(k=>areaCount[k].ny), backgroundColor: '#ea4335' }
-                    ]
-                },
-                options: barOptions
-            });
-
-            mapMarkers.forEach(m => map.removeLayer(m));
-            mapMarkers = [];
-            AREA_KEYS.forEach(k => {
-                if (areaCount[k].total > 0 && COORDS[k]) {
-                    let marker = L.circleMarker([COORDS[k].lat, COORDS[k].lng], {
-                        radius: 12, fillColor: "#ffc107", color: "#111", weight: 2, fillOpacity: 0.9
-                    }).bindPopup(`
-                        <div class="text-center" style="min-width: 120px;">
-                            <b class="fs-6 d-block border-bottom pb-1 mb-2">${COORDS[k].nama}</b>
-                            Total Karyawan: <b>${areaCount[k].total}</b><br>
-                            Coverage: <b class="text-success">${areaCount[k].cov}</b><br>
-                            Not Yet: <b class="text-danger">${areaCount[k].notCov}</b>
-                        </div>
-                    `).addTo(map);
-                    mapMarkers.push(marker);
-                }
-            });
-
-            // Update untuk Table UI Dashboard & Modal (Pisahkan Konfigurasi Barisnya)
-            let htmlTable = "";
-            let htmlTableFull = "";
-            
-            filtered.forEach((d, index) => {
-                let badgeClass = d.finalStatus === "DONE" ? 'bg-success' : 
-                                 d.finalStatus === "ON PROGRESS" ? 'bg-warning text-dark' : 'bg-danger';
-                
-                // 1. Baris untuk Dashboard Utama (Ringkas - 4 Kolom)
-                let rowHtml = `
-                    <tr>
-                        <td class="align-middle"><b class="text-dark">${d.name}</b><br><small class="text-muted">${d.nrp}</small></td>
-                        <td class="align-middle text-center fw-bold">${d.area}</td>
-                        <td class="align-middle text-center">${d.pic}</td>
-                        <td class="align-middle text-center"><span class="badge ${badgeClass} px-3 py-2 shadow-sm">${d.finalStatus}</span></td>
-                    </tr>
-                `;
-                
-                if (index < 5) htmlTable += rowHtml; 
-
-                // 2. Baris untuk Modal Full (Detail 5 Kolom, dengan list modul bulleted)
-                let listModul = '<span class="text-muted fst-italic">-</span>';
-                if (d.unfinishedModules && d.unfinishedModules.length > 0) {
-                    listModul = `<ul class="mb-0 text-start" style="padding-left: 1.2rem; font-size: 0.8rem; line-height: 1.4;"><li>${d.unfinishedModules.join('</li><li>')}</li></ul>`;
-                }
-
-                let rowHtmlFull = `
-                    <tr>
-                        <td class="align-middle"><b class="text-dark">${d.name}</b><br><small class="text-muted">${d.nrp}</small></td>
-                        <td class="align-middle text-center fw-bold">${d.area}</td>
-                        <td class="align-middle text-center">${d.pic}</td>
-                        <td class="align-middle text-center"><span class="badge ${badgeClass} px-3 py-2 shadow-sm">${d.finalStatus}</span></td>
-                        <td class="align-middle">${listModul}</td>
-                    </tr>
-                `;
-                
-                htmlTableFull += rowHtmlFull; 
-            });
-
-            document.querySelector('#tablePeserta tbody').innerHTML = htmlTable || '<tr><td colspan="4" class="text-center py-4 text-muted fw-bold">Data tidak ditemukan.</td></tr>';
-            document.querySelector('#tablePesertaFull tbody').innerHTML = htmlTableFull || '<tr><td colspan="5" class="text-center py-4 text-muted fw-bold">Data tidak ditemukan.</td></tr>';
-        }
-
-        // --- EXPORT & REPORTING FUNCTIONS ---
+        
+// --- EXPORT & REPORTING FUNCTIONS ---
         function generateReport() {
             const statFilter = document.getElementById('reportFilterStatus').value; 
             const areaFilter = document.getElementById('reportFilterArea').value; 
@@ -1438,8 +1013,8 @@
             if (table.rows.length <= 1 || table.rows[1].cells.length === 1) {
                 return Swal.fire('Kosong', 'Tarik data terlebih dahulu sebelum diekspor.', 'warning');
             }
-            let wb = XLSX.utils.table_to_book(table, {sheet:"Laporan 8DP"}); 
-            XLSX.writeFile(wb, "Laporan_Karyawan_8DP.xlsx"); 
+            let wb = XLSX.utils.table_to_book(table, {sheet:"Laporan BC"}); 
+            XLSX.writeFile(wb, "Laporan_Karyawan_BC.xlsx"); 
         }
 
         function exportReportPDF() {
@@ -1449,7 +1024,7 @@
             }
             const doc = new window.jspdf.jsPDF('landscape'); 
             doc.setFontSize(16); 
-            doc.text("Laporan Ringkasan Karyawan 8 DP", 14, 22); 
+            doc.text("Laporan Ringkasan Karyawan BC", 14, 22); 
             doc.setFontSize(10); 
             doc.text("Waktu cetak: " + new Date().toLocaleString('id-ID'), 14, 28);
             
@@ -1459,7 +1034,7 @@
                 theme: 'grid', 
                 headStyles: { fillColor: [255, 193, 7], textColor: [0, 0, 0] } 
             }); 
-            doc.save('Laporan_Karyawan_8DP.pdf'); 
+            doc.save('Laporan_Karyawan_BC.pdf'); 
         }
 
         function getFilteredDataForModal() {
@@ -1529,6 +1104,7 @@
             });
             doc.save('Follow_Up_Modul_Peserta.pdf');
         }
-    </script>
+    
+</script>
 </body>
 </html>
