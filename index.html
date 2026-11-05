@@ -370,7 +370,7 @@ body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-
 // ==========================================
 // KONFIGURASI
 // ==========================================
-const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwerEurBZYCfspB1ymQKynd4-3IMU9j64GByzCG5rAtMfP8bdsAmmso2YwPz52EAnKK6w/exec';
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyjgufFUvCEH2v_fiWFwY_iG9qoiRKy5WXk4BNx2QdxmbMILPl_DEZHjh9CVJk9BEk/exec';
 const CACHE_KEY = 'dashboardbc_data_cache_' + SCRIPT_URL.slice(-12);
 const hasFullCols = rows => Array.isArray(rows) && rows.length > 0 && ["NILAI", "STATUS MODUL 1"].every(n => Object.keys(rows[0]).some(k => String(k).replace(/[\r\n]+/g, " ").trim().toUpperCase() === n));
 function setDataSrc(kind, msg) {
