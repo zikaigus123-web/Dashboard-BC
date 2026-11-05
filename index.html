@@ -294,7 +294,7 @@ body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-
                     </select>
                     <label>PIC:</label>
                     <select id="filterPIC" class="filter-select" onchange="renderDashboard()"><option value="ALL">-- Semua PIC --</option></select>
-                    <label>Status Kerja:</label><select id="filterAktif" class="filter-select" style="min-width:100px" onchange="renderDashboard()"><option value="AKTIF">Aktif saja</option><option value="ALL">Semua (+Resign)</option></select><span id="aktifNote" style="font-size:11px;color:#777;font-weight:600"></span>
+                    <label>Status Kerja:</label><select id="filterAktif" class="filter-select" style="min-width:100px" onchange="renderDashboard()"><option value="AKTIF">Aktif saja</option><option value="ALL">Semua (+Resign)</option></select><span id="aktifNote" style="font-size:11px;color:#777;font-weight:600"></span> <span id="dataSrc" style="font-size:11px;font-weight:700"></span>
                 </div>
                 <div class="filter-right">
                     <button class="btn-action" onclick="toggleFullScreen()"><i class="fas fa-tv"></i> TV / Fullscreen</button>
@@ -371,7 +371,14 @@ body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-
 // KONFIGURASI
 // ==========================================
 const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwerEurBZYCfspB1ymQKynd4-3IMU9j64GByzCG5rAtMfP8bdsAmmso2YwPz52EAnKK6w/exec';
-const CACHE_KEY = 'dashboardbc_data_cache';
+const CACHE_KEY = 'dashboardbc_data_cache_' + SCRIPT_URL.slice(-12);
+const hasFullCols = rows => Array.isArray(rows) && rows.length > 0 && ["NILAI", "STATUS MODUL 1"].every(n => Object.keys(rows[0]).some(k => String(k).replace(/[\r\n]+/g, " ").trim().toUpperCase() === n));
+function setDataSrc(kind, msg) {
+    const el = document.getElementById("dataSrc"); if (!el) return;
+    const t = new Date().toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit" });
+    el.style.color = kind === "ok" ? "#16a34a" : kind === "cache" ? "#d97706" : "#dc2626";
+    el.textContent = kind === "ok" ? "✓ Data server " + t : kind === "cache" ? "⚠ Menampilkan data cache, menunggu server..." : "⚠ " + msg;
+}
 let rawData = [], rawEventData = [], chartInstances = {}, lastCtx = null;
 const AREA_KEYS = ["JKT", "PKB", "BLP", "SMD", "BJM", "UPG"];
 const AREA_ALIAS = [["JAKARTA", "JKT"], ["PEKANBARU", "PKB"], ["BALIKPAPAN", "BLP"], ["SAMARINDA", "SMD"], ["BANJARMASIN", "BJM"], ["UJUNG PANDANG", "UPG"], ["MAKASSAR", "UPG"]];
@@ -390,7 +397,7 @@ function handleLogin(e) {
     if (u === "admin" && p === "utcorp2026") {
         $("loginModal").style.display = "none"; $("appContainer").style.display = "flex";
         const cached = localStorage.getItem(CACHE_KEY);
-        if (cached) { try { processRawData(JSON.parse(cached)); } catch (err) { console.error("Cache rusak:", err); } }
+        if (cached) { try { const c = JSON.parse(cached); if (hasFullCols(c)) { processRawData(c); setDataSrc("cache"); } else localStorage.removeItem(CACHE_KEY); } catch (err) { console.error("Cache rusak:", err); } }
         loadDataFromAPI(false);
         Swal.fire({ title: "Login Berhasil", text: "Selamat datang di BC Portal", icon: "success", timer: 1500, showConfirmButton: false });
     } else Swal.fire({ title: "Akses Ditolak", text: "Username atau password salah.", icon: "error", confirmButtonColor: "#1A1A1A" });
@@ -426,13 +433,14 @@ async function loadDataFromAPI(manual = false) {
         clearTimeout(t);
         let r; try { r = JSON.parse(await res.text()); } catch (e) { throw new Error("Google Script meminta login / akses ditolak. Periksa deployment (Who has access: Anyone)."); }
         if (r.status !== "success") throw new Error(r.message || "Gagal mengambil data.");
+        if (!hasFullCols(r.data)) throw new Error("Data server tidak lengkap: kolom Nilai / Status Modul tidak terbaca. Periksa deployment Apps Script (Versi baru) dan SCRIPT_URL.");
         try { localStorage.setItem(CACHE_KEY, JSON.stringify(r.data)); } catch (e) { console.warn("Cache penuh:", e); }
         await loadEmployeeStatus();
-        processRawData(r.data);
+        processRawData(r.data); setDataSrc("ok");
         if (manual) Swal.fire({ title: "Berhasil!", text: "Data telah diperbarui.", icon: "success", timer: 1500, showConfirmButton: false });
     } catch (err) {
         const msg = err.name === "AbortError" ? "Koneksi ke server Google terlalu lama." : err.message;
-        if (manual) Swal.fire("Koneksi Gagal", msg, "error"); else console.warn("Background fetch gagal:", msg);
+        setDataSrc("err", msg); if (manual) Swal.fire("Koneksi Gagal", msg, "error"); else console.warn("Background fetch gagal:", msg);
     } finally { btn.disabled = false; icon.classList.remove("spinning"); }
 }
 
