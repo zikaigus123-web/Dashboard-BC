@@ -370,7 +370,7 @@ body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-
 // ==========================================
 // KONFIGURASI
 // ==========================================
-const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxfVe1hfmemgB4CoVQI60YIDLB6hzA-70oC5f9G4JPvIBPDduHHf6d7FLsal3I6SKEaNg/exec';
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwerEurBZYCfspB1ymQKynd4-3IMU9j64GByzCG5rAtMfP8bdsAmmso2YwPz52EAnKK6w/exec';
 const CACHE_KEY = 'dashboardbc_data_cache';
 let rawData = [], rawEventData = [], chartInstances = {}, lastCtx = null;
 const AREA_KEYS = ["JKT", "PKB", "BLP", "SMD", "BJM", "UPG"];
@@ -449,14 +449,15 @@ function normArea(raw) {
     return a;
 }
 function processRawData(sheetData) {
-    const people = {}, events = [], picSet = new Set();
+    const people = {}, events = [], picSet = new Set(), picCanon = {};
     (sheetData || []).forEach(row => {
         const name = String(getCol(row, ["NAME", "NAMA"])).trim();
         if (!name || ["NAME", "NAMA"].includes(name.toUpperCase())) return;
         const nrp = String(getCol(row, ["NRP"]) ?? "").replace(/\.0+$/, "").trim();
         const key = nrp || name.toUpperCase();                                   // kunci peserta: NRP, else nama huruf besar
         const area = normArea(getCol(row, ["UT CORPU"]));
-        const pic = String(getCol(row, ["PIC"]) || "Unknown").trim() || "Unknown";
+        const picRaw = String(getCol(row, ["PIC"]) || "Unknown").replace(/\s+/g, " ").trim() || "Unknown";   // rapikan spasi ganda / non-breaking space
+        const pic = picCanon[picRaw.toUpperCase()] || (picCanon[picRaw.toUpperCase()] = picRaw);              // huruf besar/kecil berbeda dianggap satu PIC
         if (pic !== "Unknown") picSet.add(pic);
         const mod = String(getCol(row, ["TRAINING MODUL", "NAMA MODUL", "MODUL", "EVENT"])).trim();
         const unit = mod.includes("-") ? mod.substring(mod.indexOf("-") + 1).trim() : mod;   // unit = teks setelah "-" pertama
