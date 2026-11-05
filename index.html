@@ -319,9 +319,9 @@ body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-
                 <div class="v2-card v2-click" onclick="showInfo('evt')" title="Klik untuk penjelasan"><div class="v2-h">Training Event<i class="fas fa-info-circle v2-i"></i></div><div class="v2-gauge"><canvas id="gEvt"></canvas><div class="v2-gc" id="gEvtT"></div></div></div>
 
                 <div class="v2-card v2-gain"><div class="v2-gainhead"><div class="v2-h" style="cursor:pointer" onclick="showInfo('gain')" title="Klik untuk penjelasan">Knowledge vs Application per Unit<i class="fas fa-info-circle v2-i"></i></div><select id="gainSortSel" onchange="gainSort=this.value;renderDashboard()"><option value="appLo">Urut: Application terendah</option><option value="kHi">Urut: Knowledge tertinggi</option><option value="nHi">Urut: Peserta terbanyak</option><option value="name">Urut: Nama A–Z</option></select></div><div class="v2-leg"><span><i style="background:#4285f4"></i>Knowledge</span><span><i style="background:#34a853"></i>Application</span><span style="color:#777;font-weight:600">Klik batang untuk detail unit</span></div><div class="v2-gainscroll"><div id="gainWrap" style="position:relative"><canvas id="cGain"></canvas></div></div></div>
-                <div class="v2-card v2-heatcard"><div class="v2-h">Peta Kinerja per Area <small style="text-transform:none;color:#777">(klik baris untuk filter)</small></div><table class="v2-heat" id="heatArea"></table></div>
-                <div class="v2-card v2-attn"><div class="v2-h" style="cursor:pointer" onclick="showInfo('attn')" title="Klik untuk penjelasan">Perlu Perhatian · Done% Terendah<i class="fas fa-info-circle v2-i"></i><span class="v2-attnote" id="attnNote"></span></div><div class="v2-tog"><button id="tgArea" class="on" onclick="setAttn('area')">Area</button><button id="tgPic" onclick="setAttn('pic')">PIC</button></div><div id="attn"></div></div>
-                <div class="v2-card v2-pic"><div class="v2-h">Peta Kinerja per PIC <small style="text-transform:none;color:#777">(klik baris untuk filter)</small></div><div id="picWrap"><table class="v2-heat" id="heatPic"></table></div></div>
+                <div class="v2-card v2-heatcard"><div class="v2-h">Peta Kinerja per Area <small style="text-transform:none;color:#777">(fokus peserta · klik baris untuk filter)</small></div><table class="v2-heat" id="heatArea"></table></div>
+                <div class="v2-card v2-attn"><div class="v2-h" style="cursor:pointer" onclick="showInfo('attn')" title="Klik untuk penjelasan">Perlu Perhatian · Capaian Terendah<i class="fas fa-info-circle v2-i"></i><span class="v2-attnote" id="attnNote"></span></div><div class="v2-tog"><button id="tgArea" class="on" onclick="setAttn('area')">Area</button><button id="tgPic" onclick="setAttn('pic')">PIC</button></div><div id="attn"></div></div>
+                <div class="v2-card v2-pic"><div class="v2-h">Peta Kinerja per PIC <small style="text-transform:none;color:#777">(fokus event yang ditangani · klik baris untuk filter)</small></div><div id="picWrap"><table class="v2-heat" id="heatPic"></table></div></div>
                 <div class="v2-card v2-table">
                     <div class="v2-h" style="display:flex;justify-content:space-between"><span>Detail Status Peserta<span class="v2-attnote" id="tableNote"></span></span><button onclick="openTableModal()" style="background:none;border:none;cursor:pointer" title="Perbesar Tabel"><i class="fas fa-expand"></i></button></div>
                     <div class="table-wrapper"><table class="jabatan-table"><thead><tr><th>Nama / NRP</th><th style="text-align:center">Area</th><th>PIC</th><th style="text-align:center">Final Status</th></tr></thead><tbody id="pesertaBody"></tbody></table></div>
@@ -370,7 +370,7 @@ body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-
 // ==========================================
 // KONFIGURASI
 // ==========================================
-const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxfVe1hfmemgB4CoVQI60YIDLB6hzA-70oC5f9G4JPvIBPDduHHf6d7FLsal3I6SKEaNg/exec';
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwerEurBZYCfspB1ymQKynd4-3IMU9j64GByzCG5rAtMfP8bdsAmmso2YwPz52EAnKK6w/exec';
 const CACHE_KEY = 'dashboardbc_data_cache';
 let rawData = [], rawEventData = [], chartInstances = {}, lastCtx = null;
 const AREA_KEYS = ["JKT", "PKB", "BLP", "SMD", "BJM", "UPG"];
@@ -541,9 +541,9 @@ function showInfo(key) {
             formula: "Done % = peserta Done ÷ total peserta di area. Koordinat 6 area tetap ada di daftar <code>COORDS</code>.",
             chips: chip(c.mapped || 0, "Area di peta", G) + chip(um.length, "Area tanpa koordinat", um.length ? R : "#9aa5b1"),
             listTitle: um.length ? "Area belum muncul di peta" : "", listHtml: um.length ? `<div style="margin-top:6px;font-size:13px">${um.map(esc).join(", ")}</div>` : "" }); }
-    else if (key === "attn") Object.assign(o, { title: "Perlu Perhatian · Done% Terendah",
-        desc: "Area atau PIC dengan persentase peserta Done paling rendah (ganti dengan tombol Area / PIC). Klik satu baris untuk melihat peserta yang belum DONE.",
-        formula: "Peserta DONE ÷ total peserta di area/PIC tersebut. Area: semua area. PIC: minimal 3 peserta, 7 terendah." });
+    else if (key === "attn") Object.assign(o, { title: "Perlu Perhatian · Capaian Terendah",
+        desc: "<b>Area</b> = % peserta yang sudah Done (angka di kanan = jumlah peserta). <b>PIC</b> = % event yang sudah memiliki nilai (angka di kanan = jumlah event yang ditangani). Klik satu baris untuk melihat peserta (Area) atau event (PIC) yang belum selesai.",
+        formula: "Area: peserta DONE ÷ total peserta di area. PIC: event ber-nilai ÷ total event yang ditangani PIC (event = modul per area, Done jika minimal satu peserta punya nilai). Menampilkan 7 terendah." });
     else if (key === "gain") { const us = c.units, tn = us.reduce((a, u) => a + u.n, 0);
         Object.assign(o, { title: "Knowledge vs Application per Unit", desc: "Persentase peserta yang sudah menyelesaikan bagian Knowledge (biru) dan Application (hijau) untuk tiap unit. Mengikuti filter aktif.",
             formula: "Unit = teks setelah tanda '-' pada TRAINING MODUL. Knowledge selesai jika STATUS MODUL 1 FINISHED/LULUS; Application selesai jika STATUS MODUL 2 FINISHED/LULUS. % = selesai ÷ peserta yang punya unit tersebut. Klik batang untuk detail unit.",
@@ -662,30 +662,46 @@ function showGroup(kind, name, setFilter) {
 }
 function pickArea(k) { const f = $("filterArea"); f.value = f.value === k ? "ALL" : k; renderDashboard(); }
 function pickPicIdx(i) { const f = $("filterPIC"), p = lastCtx.picList[i]; f.value = f.value === p ? "ALL" : p; renderDashboard(); }
-function showAttnIdx(i) { showGroup(attnMode, lastCtx.attnList[i]); }
+function showAttnIdx(i) { const k = lastCtx.attnList[i]; if (attnMode === "pic") showPicEvents(k); else showGroup("area", k); }
+function showPicEvents(name) {
+    const evs = lastCtx.evList.filter(x => x.pic.has(name)), nd = evs.filter(x => x.done).length, pend = evs.filter(x => !x.done);
+    openInfo({ title: "PIC " + esc(name), desc: "Event (modul per area) yang ditangani PIC ini. Event dianggap Done jika minimal satu peserta sudah memiliki nilai.",
+        chips: chip(evs.length, "Event ditangani", "#4285f4") + chip(nd, "Event Done", "#34a853") + chip(evs.length - nd, "Belum ada nilai", "#ea4335") + chip(P(nd, evs.length) + "%", "Event Done %", "#4285f4"),
+        listTitle: `Event belum ada nilai (${pend.length})`, listHtml: tblHtml(pend, ["Area", "Modul"], x => `<tr>${td(esc(x.area))}${td(esc(x.mod))}</tr>`, "Semua event sudah memiliki nilai ✓") });
+}
 function setAttn(m) { attnMode = m; $("tgArea").classList.toggle("on", m === "area"); $("tgPic").classList.toggle("on", m === "pic"); renderAttn(); }
 
 function renderHeat(data, evList) {
     const isCov = d => d.covStatus === "Tercoverage", hcell = v => `<td style="background:${heatBg(v)}"><b>${v}%</b></td>`;
-    const head = f => `<thead><tr><th>${f}</th><th onclick="showInfo('total')" title="Klik untuk penjelasan">Headcount ⓘ</th><th onclick="showInfo('cov')" title="Klik untuk penjelasan">Coverage % ⓘ</th><th onclick="showInfo('part')" title="Klik untuk penjelasan">Done % ⓘ</th><th onclick="showInfo('evt')" title="Klik untuk penjelasan">Event Done % ⓘ</th></tr></thead>`;
-    const row = (label, col, g, evs, click, mx) => { const ed = evs.filter(x => x.done).length;
-        return `<tr onclick="${click}" style="cursor:pointer"><td style="border-left:5px solid ${col}"><b>${esc(label)}</b></td><td><div class="v2-hc"><i style="width:${g.length * 70 / mx}%;background:${col}"></i><b>${g.length}</b></div></td>${hcell(P(g.filter(isCov).length, g.length))}${hcell(P(g.filter(d => d.finalStatus === "DONE").length, g.length))}${evs.length ? hcell(P(ed, evs.length)) : "<td>-</td>"}</tr>`; };
+    const th = (t, k) => `<th onclick="showInfo('${k}')" title="Klik untuk penjelasan">${t} ⓘ</th>`;
+    const bar = (n, col, mx) => `<td><div class="v2-hc"><i style="width:${n * 70 / mx}%;background:${col}"></i><b>${n}</b></div></td>`;
+    const evCell = (ed, tot) => tot ? hcell(P(ed, tot)) : "<td>-</td>";
+    const doneN = g => g.filter(d => d.finalStatus === "DONE").length;
+    // AREA = fokus peserta
+    const headA = `<thead><tr><th>Area</th>${th("Jumlah Peserta", "total")}${th("Peserta Tercoverage %", "cov")}${th("Peserta Done %", "part")}${th("Event Done % (di area)", "evt")}</tr></thead>`;
+    const rowA = (k, g, evs, mx) => { const ed = evs.filter(x => x.done).length;
+        return `<tr onclick="pickArea('${k}')" style="cursor:pointer"><td style="border-left:5px solid ${AREA_COL[k]}"><b>${esc(k)}</b></td>${bar(g.length, AREA_COL[k], mx)}${hcell(P(g.filter(isCov).length, g.length))}${hcell(P(doneN(g), g.length))}${evCell(ed, evs.length)}</tr>`; };
     const areas = AREA_KEYS.map(k => [k, data.filter(d => d.area === k)]).filter(r => r[1].length), mxA = Math.max(1, ...areas.map(r => r[1].length));
-    $("heatArea").innerHTML = head("Area") + "<tbody>" + areas.map(([k, g]) => row(k, AREA_COL[k], g, evList.filter(x => x.area === k), `pickArea('${k}')`, mxA)).join("") + "</tbody>";
+    $("heatArea").innerHTML = headA + "<tbody>" + areas.map(([k, g]) => rowA(k, g, evList.filter(x => x.area === k), mxA)).join("") + "</tbody>";
+    // PIC = fokus event yang ditangani (peserta di bawah PIC sebagai pelengkap)
+    const headP = `<thead><tr><th>PIC</th>${th("Peserta di Bawah PIC", "total")}<th>Event Ditangani (Done / Total)</th>${th("Event Coverage %", "evt")}${th("Event Done % (event ber-nilai)", "evt")}${th("Peserta Done %", "part")}</tr></thead>`;
     const pm = {}, fPic = $("filterPIC").value; data.forEach(d => d.pics.forEach(pc => { if (fPic === "ALL" || pc === fPic) (pm[pc] = pm[pc] || []).push(d); }));
-    const pics = Object.entries(pm).sort((a, b) => b[1].length - a[1].length), mxP = Math.max(1, ...pics.map(r => r[1].length));
+    const evOf = p => evList.filter(x => x.pic.has(p));
+    const pics = Object.entries(pm).sort((a, b) => evOf(b[0]).length - evOf(a[0]).length || b[1].length - a[1].length), mxP = Math.max(1, ...pics.map(r => r[1].length));
     lastCtx.picList = pics.map(r => r[0]);
-    $("heatPic").innerHTML = head("PIC") + "<tbody>" + pics.map(([p, g], i) => row(p, "#6366f1", g, evList.filter(x => x.pic.has(p)), `pickPicIdx(${i})`, mxP)).join("") + "</tbody>";
+    const rowP = (p, g, i) => { const evs = evOf(p), ed = evs.filter(x => x.done).length;
+        return `<tr onclick="pickPicIdx(${i})" style="cursor:pointer"><td style="border-left:5px solid #6366f1"><b>${esc(p)}</b></td>${bar(g.length, "#6366f1", mxP)}<td style="text-align:center"><b>${ed}</b> / ${evs.length}</td>${evCell(ed, evs.length)}${evCell(ed, evs.length)}${hcell(P(doneN(g), g.length))}</tr>`; };   // Coverage PIC = event (setara Event Done)
+    $("heatPic").innerHTML = headP + "<tbody>" + pics.map(([p, g], i) => rowP(p, g, i)).join("") + "</tbody>";
 }
 function renderAttn() {
     const c = lastCtx; if (!c) return;
-    const grp = {}; const fPic = $("filterPIC").value; c.data.forEach(d => (attnMode === "pic" ? [...d.pics].filter(k => fPic === "ALL" || k === fPic) : [d[attnMode]]).forEach(k => { const g = grp[k] = grp[k] || { n: 0, done: 0 }; g.n++; if (d.finalStatus === "DONE") g.done++; }));
-    let list = Object.entries(grp).map(([k, g]) => [k, g.n, P(g.done, g.n)]);
-    if (attnMode === "pic") { const big = list.filter(x => x[1] >= 3); if (big.length) list = big; }   // PIC: min. 3 peserta
-    list = list.sort((a, b) => a[2] - b[2] || b[1] - a[1]).slice(0, 7);
+    const fPic = $("filterPIC").value, grp = {};
+    if (attnMode === "area") c.data.forEach(d => { const g = grp[d.area] = grp[d.area] || { n: 0, done: 0 }; g.n++; if (d.finalStatus === "DONE") g.done++; });   // Area = peserta
+    else c.evList.forEach(x => x.pic.forEach(pc => { if (fPic !== "ALL" && pc !== fPic) return; const g = grp[pc] = grp[pc] || { n: 0, done: 0 }; g.n++; if (x.done) g.done++; }));   // PIC = event
+    const list = Object.entries(grp).map(([k, g]) => [k, g.n, P(g.done, g.n)]).sort((a, b) => a[2] - b[2] || b[1] - a[1]).slice(0, 7);
     c.attnList = list.map(x => x[0]);
-    $("attnNote").textContent = attnMode === "area" ? "Area · Done% terendah" : "PIC · min. 3 peserta, 7 terendah";
-    $("attn").innerHTML = list.map(([k, n, p], i) => `<div class="v2-at" onclick="showAttnIdx(${i})" title="Klik untuk detail"><span>${esc(k)}</span><div class="v2-bar"><i style="width:${p}%;background:${band(p)}"></i></div><b>${p}%</b><small>${n}</small></div>`).join("") || "<small>Tidak ada data</small>";
+    $("attnNote").textContent = attnMode === "area" ? "Area · % peserta Done (angka = peserta)" : "PIC · % event ber-nilai (angka = event)";
+    $("attn").innerHTML = list.map(([k, n, p], i) => `<div class="v2-at" onclick="showAttnIdx(${i})" title="${n} ${attnMode === "area" ? "peserta" : "event"} · klik untuk detail"><span>${esc(k)}</span><div class="v2-bar"><i style="width:${p}%;background:${band(p)}"></i></div><b>${p}%</b><small>${n}</small></div>`).join("") || "<small>Tidak ada data</small>";
 }
 
 
