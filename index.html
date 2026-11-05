@@ -370,7 +370,7 @@ body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-
 // ==========================================
 // KONFIGURASI
 // ==========================================
-const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbz6LXwcXPB62xFjCN1bunC4HBbOSMPCZgwxFvvGryNRpW_vaohdG7JMDoMGnAQ-nJQDXw/exec';
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxfVe1hfmemgB4CoVQI60YIDLB6hzA-70oC5f9G4JPvIBPDduHHf6d7FLsal3I6SKEaNg/exec';
 const CACHE_KEY = 'dashboardbc_data_cache';
 let rawData = [], rawEventData = [], chartInstances = {}, lastCtx = null;
 const AREA_KEYS = ["JKT", "PKB", "BLP", "SMD", "BJM", "UPG"];
@@ -842,17 +842,12 @@ function toggleSel(k, on) {
 function toggleAllSel(cb) { document.querySelectorAll("#tblMasterData tbody input[type=checkbox]").forEach(c => { c.checked = cb.checked; cb.checked ? selected.add(c.dataset.k) : selected.delete(c.dataset.k); }); updateSelCount(); }
 
 async function sendStatus(status, emps, tgl, alasan) {
-    if (!adminToken) {
-        const t = await Swal.fire({ title: "Admin token", input: "password", inputPlaceholder: "Token admin", showCancelButton: true });
-        if (!t.isConfirmed || !String(t.value || "").trim()) return;
-        adminToken = String(t.value).trim();
-    }
     Swal.fire({ title: "Menyimpan...", allowOutsideClick: false, didOpen: () => Swal.showLoading() });
     try {
         const res = await fetch(SCRIPT_URL, { method: "POST", headers: { "Content-Type": "text/plain;charset=utf-8" }, redirect: "follow",
-            body: JSON.stringify({ action: "setEmployeeStatus", token: adminToken, status, tglResign: tgl, alasan, by: "admin", employees: emps }) });
+            body: JSON.stringify({ action: "setEmployeeStatus", status, tglResign: tgl, alasan, by: "admin", employees: emps }) });
         let r; try { r = JSON.parse(await res.text()); } catch (e) { throw new Error("Server menolak akses. Periksa deployment Apps Script."); }
-        if (r.status !== "success") { if (/token/i.test(r.message || "")) adminToken = ""; throw new Error(r.message); }
+        if (r.status !== "success") throw new Error(r.message);
         emps.forEach(e => { const k = String(e.nrp).trim(); if (status === "Resign") statusMap[k] = e.tglResign || tgl || "-"; else delete statusMap[k]; selected.delete(k); });
         renderDashboard(); renderMasterTable();
         Swal.fire({ title: "Berhasil", text: r.message, icon: "success" });
