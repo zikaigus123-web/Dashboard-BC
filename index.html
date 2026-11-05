@@ -370,7 +370,7 @@ body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-
 // ==========================================
 // KONFIGURASI
 // ==========================================
-const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwerEurBZYCfspB1ymQKynd4-3IMU9j64GByzCG5rAtMfP8bdsAmmso2YwPz52EAnKK6w/exec';
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxfVe1hfmemgB4CoVQI60YIDLB6hzA-70oC5f9G4JPvIBPDduHHf6d7FLsal3I6SKEaNg/exec';
 const CACHE_KEY = 'dashboardbc_data_cache';
 let rawData = [], rawEventData = [], chartInstances = {}, lastCtx = null;
 const AREA_KEYS = ["JKT", "PKB", "BLP", "SMD", "BJM", "UPG"];
@@ -462,7 +462,7 @@ function processRawData(sheetData) {
         const mod = String(getCol(row, ["TRAINING MODUL", "NAMA MODUL", "MODUL", "EVENT"])).trim();
         const unit = mod.includes("-") ? mod.substring(mod.indexOf("-") + 1).trim() : mod;   // unit = teks setelah "-" pertama
         const fin = s => ["FINISHED", "LULUS"].includes(String(s).toUpperCase().trim());
-        const p = people[key] || (people[key] = { key, name, nrp, area, pic, units: {} });
+        const p = people[key] || (people[key] = { key, name, nrp, area, pic, pics: new Set(), units: {} }); p.pics.add(pic);   // PIC per baris modul: satu orang bisa punya >1 PIC
         const u = p.units[unit] || (p.units[unit] = { hasAEFinished: false, hasAFFinished: false, kn: null, ap: null });   // AE = Knowledge, AF = Application; kn/ap = nama modul lengkap
         if (fin(getCol(row, ["STATUS MODUL 1"]))) u.hasAEFinished = true;
         if (fin(getCol(row, ["STATUS MODUL 2"]))) u.hasAFFinished = true;
@@ -472,6 +472,7 @@ function processRawData(sheetData) {
         events.push({ key, area, pic, mod, hasNilai: nilai !== "" && nilai !== "-" });
     });
     Object.values(people).forEach(p => {
+        p.pic = [...p.pics].join(" / ");
         const st = Object.values(p.units).map(u => u.hasAEFinished && u.hasAFFinished ? "DONE" : (u.hasAEFinished || u.hasAFFinished) ? "ON PROGRESS" : "NOT YET");
         p.finalStatus = st.includes("DONE") ? "DONE" : st.includes("ON PROGRESS") ? "ON PROGRESS" : "NOT YET";
         p.covStatus = p.finalStatus === "DONE" ? "Tercoverage" : "Not Yet";
@@ -650,7 +651,7 @@ function showGroup(kind, name, setFilter) {
     const fid = kind === "area" ? "filterArea" : "filterPIC", other = kind === "area" ? "pic" : "area";
     const applyF = () => { const f = $(fid); if ([...f.options].some(o => o.value === name)) { f.value = name; renderDashboard(); } };
     if (setFilter) applyF();
-    const rows = (lastCtx.data).filter(d => d[kind] === name), nd = rows.filter(d => d.finalStatus === "DONE").length, np = rows.filter(d => d.finalStatus === "ON PROGRESS").length;
+    const rows = (lastCtx.data).filter(d => kind === "pic" ? d.pics.has(name) : d[kind] === name), nd = rows.filter(d => d.finalStatus === "DONE").length, np = rows.filter(d => d.finalStatus === "ON PROGRESS").length;
     const pend = rows.filter(d => d.finalStatus !== "DONE");
     openInfo({ action: setFilter ? null : { label: "Filter " + kind + " ini", fn: applyF },
         title: kind === "area" ? "Area " + esc(COORDS[name] ? COORDS[name].n + " (" + name + ")" : name) : "PIC " + esc(name),
@@ -671,14 +672,14 @@ function renderHeat(data, evList) {
         return `<tr onclick="${click}" style="cursor:pointer"><td style="border-left:5px solid ${col}"><b>${esc(label)}</b></td><td><div class="v2-hc"><i style="width:${g.length * 70 / mx}%;background:${col}"></i><b>${g.length}</b></div></td>${hcell(P(g.filter(isCov).length, g.length))}${hcell(P(g.filter(d => d.finalStatus === "DONE").length, g.length))}${evs.length ? hcell(P(ed, evs.length)) : "<td>-</td>"}</tr>`; };
     const areas = AREA_KEYS.map(k => [k, data.filter(d => d.area === k)]).filter(r => r[1].length), mxA = Math.max(1, ...areas.map(r => r[1].length));
     $("heatArea").innerHTML = head("Area") + "<tbody>" + areas.map(([k, g]) => row(k, AREA_COL[k], g, evList.filter(x => x.area === k), `pickArea('${k}')`, mxA)).join("") + "</tbody>";
-    const pm = {}; data.forEach(d => (pm[d.pic] = pm[d.pic] || []).push(d));
+    const pm = {}, fPic = $("filterPIC").value; data.forEach(d => d.pics.forEach(pc => { if (fPic === "ALL" || pc === fPic) (pm[pc] = pm[pc] || []).push(d); }));
     const pics = Object.entries(pm).sort((a, b) => b[1].length - a[1].length), mxP = Math.max(1, ...pics.map(r => r[1].length));
     lastCtx.picList = pics.map(r => r[0]);
     $("heatPic").innerHTML = head("PIC") + "<tbody>" + pics.map(([p, g], i) => row(p, "#6366f1", g, evList.filter(x => x.pic.has(p)), `pickPicIdx(${i})`, mxP)).join("") + "</tbody>";
 }
 function renderAttn() {
     const c = lastCtx; if (!c) return;
-    const grp = {}; c.data.forEach(d => { const k = d[attnMode]; const g = grp[k] = grp[k] || { n: 0, done: 0 }; g.n++; if (d.finalStatus === "DONE") g.done++; });
+    const grp = {}; const fPic = $("filterPIC").value; c.data.forEach(d => (attnMode === "pic" ? [...d.pics].filter(k => fPic === "ALL" || k === fPic) : [d[attnMode]]).forEach(k => { const g = grp[k] = grp[k] || { n: 0, done: 0 }; g.n++; if (d.finalStatus === "DONE") g.done++; }));
     let list = Object.entries(grp).map(([k, g]) => [k, g.n, P(g.done, g.n)]);
     if (attnMode === "pic") { const big = list.filter(x => x[1] >= 3); if (big.length) list = big; }   // PIC: min. 3 peserta
     list = list.sort((a, b) => a[2] - b[2] || b[1] - a[1]).slice(0, 7);
@@ -693,7 +694,7 @@ function renderAttn() {
 // ==========================================
 function renderDashboard() {
     const fA = $("filterArea").value, fS = $("filterStatus").value, fP = $("filterPIC").value;
-    const data = rawData.filter(d => inScope(d) && (fA === "ALL" || d.area === fA) && (fS === "ALL" || d.finalStatus === fS) && (fP === "ALL" || d.pic === fP));
+    const data = rawData.filter(d => inScope(d) && (fA === "ALL" || d.area === fA) && (fS === "ALL" || d.finalStatus === fS) && (fP === "ALL" || d.pics.has(fP)));
     const evMap = new Map();   // event unik per area+modul; done jika ada NILAI
     rawEventData.filter(e => inScope({ key: e.key }) && AREA_KEYS.includes(e.area) && e.mod && (fA === "ALL" || e.area === fA) && (fP === "ALL" || e.pic === fP)).forEach(e => {
         const k = e.area + "|" + e.mod, o = evMap.get(k) || { area: e.area, mod: e.mod, pic: new Set(), done: false };
@@ -790,7 +791,7 @@ async function sendImport(action, token, data, confirm) {
 
 function generateReport() {
     const a = $("rArea").value, s = $("rStatus").value, p = $("rPic").value;
-    reportRows = rawData.filter(d => inScope(d) && (a === "ALL" || d.area === a) && (s === "ALL" || d.finalStatus === s) && (p === "ALL" || d.pic === p));
+    reportRows = rawData.filter(d => inScope(d) && (a === "ALL" || d.area === a) && (s === "ALL" || d.finalStatus === s) && (p === "ALL" || d.pics.has(p)));
     $("tblReport").querySelector("tbody").innerHTML = reportRows.map(d => `<tr><td><b>${esc(d.name)}</b></td><td>${esc(d.nrp) || "-"}</td><td style="text-align:center">${esc(d.area)}</td><td>${esc(d.pic)}</td><td style="text-align:center;font-weight:bold;color:${stColor(d.finalStatus)}">${d.finalStatus}</td></tr>`).join("") || noData(5, "Data tidak ditemukan.");
 }
 function saveXLSX(rows, sheet, file) { const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(rows), sheet); XLSX.writeFile(wb, file); }
